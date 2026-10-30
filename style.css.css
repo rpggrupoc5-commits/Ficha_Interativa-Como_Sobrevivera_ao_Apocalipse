@@ -1,0 +1,126 @@
+// --- 1. CÁLCULO DE ATRIBUTOS ---
+const forca = document.getElementById('forca');
+const destreza = document.getElementById('destreza');
+const forcaAcao = document.getElementById('forca-acao');
+const destrezaAcao = document.getElementById('destreza-acao');
+
+function calcular() {
+    if (forca.value) forcaAcao.value = parseInt(forca.value) * 3;
+    if (destreza.value) destrezaAcao.value = parseInt(destreza.value) * 3;
+}
+forca.addEventListener('input', calcular);
+destreza.addEventListener('input', calcular);
+
+// --- 2. UPLOAD DE IMAGENS ---
+function abrirSeletor(callback) {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => callback(event.target.result);
+            reader.readAsDataURL(file);
+        }
+    };
+    input.click();
+}
+
+function upload(elemento) {
+    abrirSeletor((imgBase64) => {
+        elemento.innerHTML = `<img src="${imgBase64}" class="w-full h-full object-cover absolute top-0 left-0 rounded">`;
+        // Adiciona botão de remover
+        const btn = document.createElement('div');
+        btn.innerHTML = 'X';
+        btn.className = 'absolute top-1 right-1 bg-red-800 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer z-10 text-sm font-bold';
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            elemento.innerHTML = elemento.getAttribute('data-original') + '<span class="text-xl text-black/30">+</span>';
+        };
+        elemento.appendChild(btn);
+    });
+}
+
+function uploadFoto(elemento) {
+    abrirSeletor((imgBase64) => {
+        elemento.innerHTML = `<img src="${imgBase64}" class="w-full h-full object-contain">`;
+        const btn = document.createElement('div');
+        btn.innerHTML = 'X';
+        btn.className = 'absolute top-1 right-1 bg-red-800 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer z-10 text-sm font-bold';
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            elemento.innerHTML = '<span class="text-4xl text-black/30 mb-2">📷</span>FOTO DO<br>PERSONAGEM';
+        };
+        elemento.appendChild(btn);
+    });
+}
+
+// Guarda o HTML original dos slots
+document.querySelectorAll('.slot-vazio').forEach(el => {
+    if (!el.innerText.includes('FOTO')) {
+        el.setAttribute('data-original', el.innerHTML.split('<span')[0]);
+    }
+});
+
+// --- 3. INVENTÁRIO ---
+const grid = document.getElementById('inventario');
+let pesoTotal = 0;
+let itens = 0;
+
+for (let i = 0; i < 16; i++) {
+    const q = document.createElement('div');
+    q.className = 'slot-vazio rounded aspect-square flex flex-col justify-center items-center cursor-pointer relative text-center p-1';
+    q.innerHTML = '<span class="text-2xl text-black/20">+</span>';
+    q.onclick = () => gerenciarItem(q);
+    grid.appendChild(q);
+}
+
+function gerenciarItem(q) {
+    if (q.classList.contains('ocupado')) {
+        if (confirm("Remover item?")) {
+            pesoTotal -= parseFloat(q.dataset.peso) || 0;
+            itens--;
+            atualizar();
+            q.innerHTML = '<span class="text-2xl text-black/20">+</span>';
+            q.classList.remove('ocupado');
+            q.removeAttribute('data-peso');
+        }
+        return;
+    }
+    abrirSeletor((img) => {
+        const nome = prompt("Nome do item:");
+        if (nome === null) return;
+        const peso = parseFloat(prompt("Peso (kg):")) || 0;
+
+        q.innerHTML = `<img src="${img}" class="max-h-[60%] object-contain mb-1"><div class="text-xs font-bold bg-white/50 px-1 rounded">${nome} - ${peso}kg</div>`;
+        const btn = document.createElement('div');
+        btn.innerHTML = 'X';
+        btn.className = 'absolute top-1 right-1 bg-red-800 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer z-10 text-xs font-bold';
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            pesoTotal -= peso; itens--; atualizar();
+            q.innerHTML = '<span class="text-2xl text-black/20">+</span>';
+            q.classList.remove('ocupado');
+        };
+        q.appendChild(btn);
+        
+        q.classList.add('ocupado');
+        q.dataset.peso = peso;
+        pesoTotal += peso; itens++;
+        atualizar();
+    });
+}
+
+function atualizar() {
+    document.getElementById('espacos').innerText = itens;
+    document.getElementById('peso-total').innerText = pesoTotal.toFixed(1);
+}
+
+// --- 4. TALENTOS ---
+const listaT = document.getElementById('talentos');
+for (let i = 1; i <= 20; i++) {
+    const l = document.createElement('div');
+    l.className = 'flex items-center gap-2 border-b border-black/20 pb-1';
+    l.innerHTML = `<span class="font-bold w-6 text-right text-[#111]">${i}.</span><input type="text" class="flex-1 bg-transparent border-none outline-none font-semibold text-[#111] text-lg">`;
+    listaT.appendChild(l);
+}
