@@ -17,7 +17,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let usuarioAtual = null;
-const emailMestre = "rpgrupoc5@gmail.com"; // Seu e-mail de Mestre
+const emailMestre = "rpgrupoc5@gmail.com"; // <--- SEU E-MAIL DE MESTRE AQUI
 
 // --- LÓGICA DOS ATRIBUTOS (Ação%) ---
 const forca = document.getElementById('forca');
@@ -73,11 +73,15 @@ onAuthStateChanged(auth, (user) => {
         usuarioAtual = user;
         telaLogin.classList.add('hidden');
         sitePrincipal.classList.remove('hidden');
-        carregarFicha();
         
+        // Verifica se é o mestre e mostra o botão
         if (user.email === emailMestre) {
-            document.getElementById('btn-painel-mestre').classList.remove('hidden');
+            const btnMestre = document.getElementById('btn-painel-mestre');
+            btnMestre.classList.remove('hidden');
+            btnMestre.style.display = 'block'; // Força a aparecer
         }
+        
+        carregarFicha();
     } else {
         usuarioAtual = null;
         telaLogin.classList.remove('hidden');
@@ -85,7 +89,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- UPLOAD E MODAL (Integrado) ---
+// --- UPLOAD E MODAL ---
 window.abrirSeletor = function(callback) {
     const input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/*';
@@ -319,10 +323,10 @@ document.getElementById('btn-painel-mestre').onclick = async () => {
         querySnapshot.forEach((doc) => {
             const ficha = doc.data();
             const div = document.createElement('div');
-            div.className = 'border-b border-black/20 p-2 mb-2 flex justify-between items-center';
+            div.className = 'border-b border-black/20 p-2 mb-2 flex justify-between items-center bg-white/20 rounded';
             div.innerHTML = `<div><strong>Nome:</strong> ${ficha.nome || 'Sem nome'} | <strong>Nível:</strong> ${ficha.nivel || 1} | <strong>Força:</strong> ${ficha.forca || '-'} (${ficha.forcaAcao || 0}%)</div>`;
             lista.appendChild(div);
         });
-    } catch (e) { lista.innerHTML = '<p>Erro.</p>'; }
+    } catch (e) { lista.innerHTML = '<p>Erro ao carregar.</p>'; }
 };
 document.getElementById('btn-fechar-mestre').onclick = () => document.getElementById('painel-mestre').classList.add('hidden');
