@@ -17,9 +17,9 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let usuarioAtual = null;
-const emailMestre = "rpgrupoc5@gmail.com"; // <--- SEU E-MAIL DE MESTRE AQUI
+const emailMestre = "rpgrupoc5@gmail.com"; // Seu e-mail
 
-// --- LÓGICA DOS ATRIBUTOS (Ação%) ---
+// --- ATRIBUTOS (Ação%) ---
 const forca = document.getElementById('forca');
 const destreza = document.getElementById('destreza');
 const forcaAcao = document.getElementById('forca-acao');
@@ -27,14 +27,12 @@ const destrezaAcao = document.getElementById('destreza-acao');
 
 function calcular() {
     if (forca.value) forcaAcao.value = parseInt(forca.value) * 3;
-    else forcaAcao.value = '';
     if (destreza.value) destrezaAcao.value = parseInt(destreza.value) * 3;
-    else destrezaAcao.value = '';
 }
 if(forca) forca.addEventListener('input', calcular);
 if(destreza) destreza.addEventListener('input', calcular);
 
-// --- SISTEMA DE LOGIN E CADASTRO ---
+// --- LOGIN ---
 const telaLogin = document.getElementById('tela-login');
 const sitePrincipal = document.getElementById('site-principal');
 const mensagemErro = document.getElementById('mensagem-erro');
@@ -42,46 +40,41 @@ const mensagemErro = document.getElementById('mensagem-erro');
 document.getElementById('btn-entrar').onclick = () => {
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
-    signInWithEmailAndPassword(auth, email, senha)
-        .catch((error) => {
-            mensagemErro.innerText = "Erro: E-mail ou senha incorretos.";
-            mensagemErro.classList.remove('hidden');
-        });
+    signInWithEmailAndPassword(auth, email, senha).catch(() => {
+        mensagemErro.innerText = "Erro: E-mail ou senha incorretos.";
+        mensagemErro.classList.remove('hidden');
+    });
 };
 
 document.getElementById('btn-cadastrar').onclick = () => {
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
-    createUserWithEmailAndPassword(auth, email, senha)
-        .then(() => {
-            alert("Conta criada com sucesso! Bem-vindo ao apocalipse.");
-        })
-        .catch((error) => {
-            mensagemErro.innerText = "Erro: " + error.message;
-            mensagemErro.classList.remove('hidden');
-        });
-};
-
-document.getElementById('btn-sair').onclick = () => {
-    signOut(auth).then(() => {
-        window.location.reload();
+    createUserWithEmailAndPassword(auth, email, senha).then(() => {
+        alert("Conta criada! Bem-vindo.");
+    }).catch((error) => {
+        mensagemErro.innerText = "Erro: " + error.message;
+        mensagemErro.classList.remove('hidden');
     });
 };
+
+document.getElementById('btn-sair').onclick = () => signOut(auth).then(() => window.location.reload());
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
         usuarioAtual = user;
         telaLogin.classList.add('hidden');
         sitePrincipal.classList.remove('hidden');
-        
-        // Verifica se é o mestre e mostra o botão
-        if (user.email === emailMestre) {
-            const btnMestre = document.getElementById('btn-painel-mestre');
-            btnMestre.classList.remove('hidden');
-            btnMestre.style.display = 'block'; // Força a aparecer
-        }
-        
         carregarFicha();
+        
+        // AQUI ESTÁ A CORREÇÃO DO BOTÃO
+        const btnMestre = document.getElementById('btn-painel-mestre');
+        if (user.email === emailMestre) {
+            btnMestre.classList.remove('hidden');
+            btnMestre.style.display = 'block';
+        } else {
+            btnMestre.classList.add('hidden');
+            btnMestre.style.display = 'none';
+        }
     } else {
         usuarioAtual = null;
         telaLogin.classList.remove('hidden');
@@ -89,7 +82,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- UPLOAD E MODAL ---
+// --- UPLOAD E MODAL DE ITENS ---
 window.abrirSeletor = function(callback) {
     const input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/*';
@@ -275,7 +268,6 @@ if (listaT) {
     }
 }
 
-// --- SALVAR FICHA NA NUVEM ---
 document.getElementById('btn-salvar-ficha').onclick = async () => {
     if (!usuarioAtual) return;
     const dadosFicha = {
@@ -319,7 +311,7 @@ document.getElementById('btn-painel-mestre').onclick = async () => {
     const lista = document.getElementById('lista-jogadores'); lista.innerHTML = '<p>Buscando...</p>';
     try {
         const querySnapshot = await getDocs(collection(db, "fichas")); lista.innerHTML = '';
-        if(querySnapshot.empty) return lista.innerHTML = '<p class="text-center mt-10">Nenhum sobrevivente.</p>';
+        if(querySnapshot.empty) return lista.innerHTML = '<p class="text-center mt-10">Nenhum sobrevivente cadastrado ainda.</p>';
         querySnapshot.forEach((doc) => {
             const ficha = doc.data();
             const div = document.createElement('div');
@@ -327,6 +319,6 @@ document.getElementById('btn-painel-mestre').onclick = async () => {
             div.innerHTML = `<div><strong>Nome:</strong> ${ficha.nome || 'Sem nome'} | <strong>Nível:</strong> ${ficha.nivel || 1} | <strong>Força:</strong> ${ficha.forca || '-'} (${ficha.forcaAcao || 0}%)</div>`;
             lista.appendChild(div);
         });
-    } catch (e) { lista.innerHTML = '<p>Erro ao carregar.</p>'; }
+    } catch (e) { lista.innerHTML = '<p>Erro ao carregar as fichas.</p>'; }
 };
 document.getElementById('btn-fechar-mestre').onclick = () => document.getElementById('painel-mestre').classList.add('hidden');
