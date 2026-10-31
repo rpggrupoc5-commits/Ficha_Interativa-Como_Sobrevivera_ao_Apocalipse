@@ -1,3 +1,4 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -17,7 +18,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let usuarioAtual = null;
-const emailMestre = "rpggrupoc5@gmail.com";
+const emailMestre = "rpggrupoc5@gmail.com"; // Seu e-mail
 
 // --- ATRIBUTOS (Ação%) ---
 const forca = document.getElementById('forca');
@@ -70,7 +71,8 @@ onAuthStateChanged(auth, (user) => {
             console.error("Falha ao carregar ficha do Firestore:", error);
             alert(`Erro ao carregar ficha (${error.code || "desconhecido"}): ${error.message}`);
         });
-
+        
+        // AQUI ESTÁ A CORREÇÃO DO BOTÃO
         const btnMestre = document.getElementById('btn-painel-mestre');
         if ((user.email || "").trim().toLowerCase() === emailMestre.toLowerCase()) {
             btnMestre.classList.remove('hidden');
@@ -108,9 +110,9 @@ window.uploadFoto = function(elemento) {
         const btn = document.createElement('div');
         btn.innerHTML = 'X';
         btn.className = 'absolute top-2 right-2 bg-red-800 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer z-20 text-sm font-bold shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none';
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            elemento.innerHTML = '<i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span>FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao">PROPORÇÃO IDEAL: 9x16</div>';
+        btn.onclick = (e) => { 
+            e.stopPropagation(); 
+            elemento.innerHTML = '<i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span>FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao">PROPORÇÃO IDEAL: 9x16</div>'; 
             elemento.onclick = () => window.uploadFoto(elemento);
         };
         elemento.appendChild(btn);
@@ -221,7 +223,7 @@ btnSalvarItem.onclick = () => {
     if (!nome.trim()) return alert("Digite o nome.");
     if (qtd <= 0) return alert("Quantidade > 0.");
     if (inputPeso.value.trim() === "") return alert("Digite o peso.");
-
+    
     const dados = { img: imagemAtualBase64, nome, qtd, peso: pesoString, desc: inputDesc.value };
     renderizarItem(quadradoAtual, dados); recalcularPesoTotal(); modal.classList.add('hidden');
 };
@@ -272,48 +274,8 @@ if (listaT) {
     }
 }
 
-// ============================================================
-// ETAPA 1 — DIAGNÓSTICO DO SALVAMENTO
-// Adiciona logs detalhados para descobrir por que o item
-// com imagem não confirma salvamento. Nada de comportamento
-// ou layout é alterado — apenas instrumentação.
-// ============================================================
-
-function _tamanhoKB(str) {
-    // Aproximação do tamanho em KB (UTF-8: ~2 bytes por char no Base64 é ok, mas usamos Blob pra precisão)
-    try {
-        return (new Blob([str]).size / 1024).toFixed(1);
-    } catch (e) {
-        return (str.length / 1024).toFixed(1);
-    }
-}
-
-function _diagnosticoPayload(dadosFicha) {
-    const json = JSON.stringify(dadosFicha);
-    const tamanhoTotal = _tamanhoKB(json);
-
-    console.group('%c[DIAGNÓSTICO SALVAMENTO]', 'color:#a81c1c;font-weight:bold');
-    console.log('Tamanho total do payload:', tamanhoTotal, 'KB (limite Firestore ≈ 1024 KB)');
-    console.log('Itens na mochila:', dadosFicha.itensMochila.length);
-    dadosFicha.itensMochila.forEach((it, i) => {
-        const imgKB = it.dados && it.dados.img ? _tamanhoKB(it.dados.img) : 0;
-        console.log(`  Mochila[${i}] "${it.dados?.nome || '?'}" — img: ${imgKB} KB — posição: ${it.posicao}`);
-    });
-    console.log('Itens no equipamento:', dadosFicha.itensEquipamento.length);
-    dadosFicha.itensEquipamento.forEach((it, i) => {
-        const imgKB = it.dados && it.dados.img ? _tamanhoKB(it.dados.img) : 0;
-        console.log(`  Equip[${i}] "${it.dados?.nome || '?'}" — img: ${imgKB} KB — posição: ${it.posicao}`);
-    });
-    console.log('Foto do personagem (HTML):', _tamanhoKB(dadosFicha.fotoPersonagem || ''), 'KB');
-    console.log('Payload completo:', dadosFicha);
-    console.groupEnd();
-
-    return { tamanhoTotal, json };
-}
-
 document.getElementById('btn-salvar-ficha').onclick = async () => {
     if (!usuarioAtual) return;
-
     const dadosFicha = {
         nome: document.getElementById('nome').value, idade: document.getElementById('idade').value,
         nivel: document.getElementById('nivel').value, exp: document.getElementById('exp').value,
@@ -324,53 +286,9 @@ document.getElementById('btn-salvar-ficha').onclick = async () => {
         movimentacao: document.getElementById('movimentacao').value, diario: document.getElementById('diario').value,
         fotoPersonagem: document.getElementById('foto-personagem').innerHTML, itensMochila: [], itensEquipamento: []
     };
-
-    document.querySelectorAll('#inventario .item-adicionado').forEach(el => {
-        try { dadosFicha.itensMochila.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.id }); }
-        catch (e) { console.error('Item da mochila com JSON inválido:', el.id, el.dataset.itemData, e); }
-    });
-    document.querySelectorAll('.slot-vazio.item-adicionado').forEach(el => {
-        try { dadosFicha.itensEquipamento.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.getAttribute('data-original') }); }
-        catch (e) { console.error('Item de equipamento com JSON inválido:', el.getAttribute('data-original'), el.dataset.itemData, e); }
-    });
-
-    const diag = _diagnosticoPayload(dadosFicha);
-
-    // Aviso antecipado se já passou do limite seguro do Firestore (~1 MB)
-    if (parseFloat(diag.tamanhoTotal) > 900) {
-        const continuar = confirm(
-            `ATENÇÃO: o payload tem ${diag.tamanhoTotal} KB e o Firestore tem limite de ~1024 KB por documento.\n\n` +
-            `Provavelmente as imagens em Base64 estão grandes demais.\n\n` +
-            `Deseja tentar salvar mesmo assim? (Recomendado: NÃO — reduza as imagens antes.)`
-        );
-        if (!continuar) {
-            console.warn('[DIAGNÓSTICO] Salvamento cancelado pelo usuário devido ao tamanho.');
-            return;
-        }
-    }
-
-    try {
-        await setDoc(doc(db, "fichas", usuarioAtual.uid), dadosFicha);
-        console.log('%c[DIAGNÓSTICO] Salvamento OK', 'color:green;font-weight:bold', `— ${diag.tamanhoTotal} KB`);
-        alert(`Ficha salva! (${diag.tamanhoTotal} KB)`);
-    } catch (e) {
-        console.error("Falha ao salvar ficha no Firestore:", e);
-        console.error("Detalhes:", {
-            code: e.code,
-            message: e.message,
-            payloadKB: diag.tamanhoTotal,
-            itensMochila: dadosFicha.itensMochila.length,
-            itensEquipamento: dadosFicha.itensEquipamento.length
-        });
-        alert(
-            `Erro ao salvar ficha.\n\n` +
-            `Código: ${e.code || "desconhecido"}\n` +
-            `Mensagem: ${e.message}\n\n` +
-            `Tamanho do payload: ${diag.tamanhoTotal} KB\n` +
-            `Itens mochila: ${dadosFicha.itensMochila.length} | equipamento: ${dadosFicha.itensEquipamento.length}\n\n` +
-            `Abra o Console (F12) e me mande o print do grupo [DIAGNÓSTICO SALVAMENTO].`
-        );
-    }
+    document.querySelectorAll('#inventario .item-adicionado').forEach(el => { dadosFicha.itensMochila.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.id }); });
+    document.querySelectorAll('.slot-vazio.item-adicionado').forEach(el => { dadosFicha.itensEquipamento.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.getAttribute('data-original') }); });
+    try { await setDoc(doc(db, "fichas", usuarioAtual.uid), dadosFicha); alert("Ficha salva!"); } catch (e) { console.error("Falha ao salvar ficha no Firestore:", e); alert(`Erro ao salvar ficha (${e.code || "desconhecido"}): ${e.message}`); }
 };
 
 async function carregarFicha() {
