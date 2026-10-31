@@ -1,3 +1,4 @@
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -17,7 +18,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let usuarioAtual = null;
-const emailMestre = "rpgrupoc5@gmail.com"; // Seu e-mail
+const emailMestre = "rpggrupoc5@gmail.com"; // Seu e-mail
 
 // --- ATRIBUTOS (Ação%) ---
 const forca = document.getElementById('forca');
@@ -40,8 +41,9 @@ const mensagemErro = document.getElementById('mensagem-erro');
 document.getElementById('btn-entrar').onclick = () => {
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
-    signInWithEmailAndPassword(auth, email, senha).catch(() => {
-        mensagemErro.innerText = "Erro: E-mail ou senha incorretos.";
+    signInWithEmailAndPassword(auth, email, senha).catch((error) => {
+        console.error("Falha no login Firebase:", error);
+        mensagemErro.innerText = `Erro no login (${error.code || "desconhecido"}): ${error.message}`;
         mensagemErro.classList.remove('hidden');
     });
 };
@@ -52,7 +54,8 @@ document.getElementById('btn-cadastrar').onclick = () => {
     createUserWithEmailAndPassword(auth, email, senha).then(() => {
         alert("Conta criada! Bem-vindo.");
     }).catch((error) => {
-        mensagemErro.innerText = "Erro: " + error.message;
+        console.error("Falha no cadastro Firebase:", error);
+        mensagemErro.innerText = `Erro no cadastro (${error.code || "desconhecido"}): ${error.message}`;
         mensagemErro.classList.remove('hidden');
     });
 };
@@ -64,11 +67,14 @@ onAuthStateChanged(auth, (user) => {
         usuarioAtual = user;
         telaLogin.classList.add('hidden');
         sitePrincipal.classList.remove('hidden');
-        carregarFicha();
+        carregarFicha().catch((error) => {
+            console.error("Falha ao carregar ficha do Firestore:", error);
+            alert(`Erro ao carregar ficha (${error.code || "desconhecido"}): ${error.message}`);
+        });
         
         // AQUI ESTÁ A CORREÇÃO DO BOTÃO
         const btnMestre = document.getElementById('btn-painel-mestre');
-        if (user.email === emailMestre) {
+        if ((user.email || "").trim().toLowerCase() === emailMestre.toLowerCase()) {
             btnMestre.classList.remove('hidden');
             btnMestre.style.display = 'block';
         } else {
@@ -282,7 +288,7 @@ document.getElementById('btn-salvar-ficha').onclick = async () => {
     };
     document.querySelectorAll('#inventario .item-adicionado').forEach(el => { dadosFicha.itensMochila.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.id }); });
     document.querySelectorAll('.slot-vazio.item-adicionado').forEach(el => { dadosFicha.itensEquipamento.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.getAttribute('data-original') }); });
-    try { await setDoc(doc(db, "fichas", usuarioAtual.uid), dadosFicha); alert("Ficha salva!"); } catch (e) { alert("Erro ao salvar."); }
+    try { await setDoc(doc(db, "fichas", usuarioAtual.uid), dadosFicha); alert("Ficha salva!"); } catch (e) { console.error("Falha ao salvar ficha no Firestore:", e); alert(`Erro ao salvar ficha (${e.code || "desconhecido"}): ${e.message}`); }
 };
 
 async function carregarFicha() {
@@ -319,6 +325,6 @@ document.getElementById('btn-painel-mestre').onclick = async () => {
             div.innerHTML = `<div><strong>Nome:</strong> ${ficha.nome || 'Sem nome'} | <strong>Nível:</strong> ${ficha.nivel || 1} | <strong>Força:</strong> ${ficha.forca || '-'} (${ficha.forcaAcao || 0}%)</div>`;
             lista.appendChild(div);
         });
-    } catch (e) { lista.innerHTML = '<p>Erro ao carregar as fichas.</p>'; }
+    } catch (e) { console.error('Falha ao listar fichas no Firestore:', e); lista.textContent = `Erro ao carregar as fichas (${e.code || 'desconhecido'}): ${e.message}`; }
 };
 document.getElementById('btn-fechar-mestre').onclick = () => document.getElementById('painel-mestre').classList.add('hidden');
