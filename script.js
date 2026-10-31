@@ -1,15 +1,30 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+    getAuth,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    onAuthStateChanged,
+    signOut
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import {
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc,
+    collection,
+    getDocs
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// --- CONFIGURAÇÃO DO FIREBASE ---
+// ======================================================
+// FIREBASE
+// ======================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyAdjZy-eaJmeGlvvEMTQXDZmy5WOOKNoGg",
-  authDomain: "painel-ficha-apocalipse.firebaseapp.com",
-  projectId: "painel-ficha-apocalipse",
-  storageBucket: "painel-ficha-apocalipse.firebasestorage.app",
-  messagingSenderId: "277003324514",
-  appId: "1:277003324514:web:80644b98aa895afdac553b"
+    apiKey: "AIzaSyAdjZy-eaJmeGlvvEMTQXDZmy5WOOKNoGg",
+    authDomain: "painel-ficha-apocalipse.firebaseapp.com",
+    projectId: "painel-ficha-apocalipse",
+    storageBucket: "painel-ficha-apocalipse.firebasestorage.app",
+    messagingSenderId: "277003324514",
+    appId: "1:277003324514:web:80644b98aa895afdac553b"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -17,382 +32,649 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let usuarioAtual = null;
-const emailMestre = "rpggrupoc5@gmail.com"; // Seu e-mail
+const emailMestre = "rpggrupoc5@gmail.com";
 
-// --- ATRIBUTOS (Ação%) ---
-const forca = document.getElementById('forca');
-const destreza = document.getElementById('destreza');
-const forcaAcao = document.getElementById('forca-acao');
-const destrezaAcao = document.getElementById('destreza-acao');
+// ======================================================
+// ELEMENTOS E ATRIBUTOS
+// ======================================================
+const $ = (id) => document.getElementById(id);
+
+const forca = $("forca");
+const destreza = $("destreza");
+const forcaAcao = $("forca-acao");
+const destrezaAcao = $("destreza-acao");
 
 function calcular() {
-    if (forca.value) forcaAcao.value = parseInt(forca.value) * 3;
-    if (destreza.value) destrezaAcao.value = parseInt(destreza.value) * 3;
+    if (forca && forcaAcao) {
+        forcaAcao.value = forca.value === "" ? "" : Number(forca.value) * 3;
+    }
+    if (destreza && destrezaAcao) {
+        destrezaAcao.value = destreza.value === "" ? "" : Number(destreza.value) * 3;
+    }
 }
-if(forca) forca.addEventListener('input', calcular);
-if(destreza) destreza.addEventListener('input', calcular);
 
-// --- LOGIN ---
-const telaLogin = document.getElementById('tela-login');
-const sitePrincipal = document.getElementById('site-principal');
-const mensagemErro = document.getElementById('mensagem-erro');
+forca?.addEventListener("input", calcular);
+destreza?.addEventListener("input", calcular);
 
-document.getElementById('btn-entrar').onclick = () => {
-    const email = document.getElementById('login-email').value;
-    const senha = document.getElementById('login-senha').value;
-    signInWithEmailAndPassword(auth, email, senha).catch((error) => {
-        console.error("Falha no login Firebase:", error);
-        mensagemErro.innerText = `Erro no login (${error.code || "desconhecido"}): ${error.message}`;
-        mensagemErro.classList.remove('hidden');
-    });
-};
+// ======================================================
+// LOGIN
+// ======================================================
+const telaLogin = $("tela-login");
+const sitePrincipal = $("site-principal");
+const mensagemErro = $("mensagem-erro");
 
-document.getElementById('btn-cadastrar').onclick = () => {
-    const email = document.getElementById('login-email').value;
-    const senha = document.getElementById('login-senha').value;
-    createUserWithEmailAndPassword(auth, email, senha).then(() => {
-        alert("Conta criada! Bem-vindo.");
-    }).catch((error) => {
-        console.error("Falha no cadastro Firebase:", error);
-        mensagemErro.innerText = `Erro no cadastro (${error.code || "desconhecido"}): ${error.message}`;
-        mensagemErro.classList.remove('hidden');
-    });
-};
+$("btn-entrar")?.addEventListener("click", async () => {
+    const email = $("login-email")?.value.trim();
+    const senha = $("login-senha")?.value;
 
-document.getElementById('btn-sair').onclick = () => signOut(auth).then(() => window.location.reload());
-
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        usuarioAtual = user;
-        telaLogin.classList.add('hidden');
-        sitePrincipal.classList.remove('hidden');
-        carregarFicha().catch((error) => {
-            console.error("Falha ao carregar ficha do Firestore:", error);
-            alert(`Erro ao carregar ficha (${error.code || "desconhecido"}): ${error.message}`);
-        });
-        
-        // AQUI ESTÁ A CORREÇÃO DO BOTÃO
-        const btnMestre = document.getElementById('btn-painel-mestre');
-        if ((user.email || "").trim().toLowerCase() === emailMestre.toLowerCase()) {
-            btnMestre.classList.remove('hidden');
-            btnMestre.style.display = 'block';
-        } else {
-            btnMestre.classList.add('hidden');
-            btnMestre.style.display = 'none';
+    try {
+        await signInWithEmailAndPassword(auth, email, senha);
+        mensagemErro?.classList.add("hidden");
+    } catch (error) {
+        console.error("Falha no login:", error);
+        if (mensagemErro) {
+            mensagemErro.textContent = `Erro no login (${error.code || "desconhecido"}): ${error.message}`;
+            mensagemErro.classList.remove("hidden");
         }
-    } else {
-        usuarioAtual = null;
-        telaLogin.classList.remove('hidden');
-        sitePrincipal.classList.add('hidden');
     }
 });
 
-// --- UPLOAD E MODAL DE ITENS ---
-window.abrirSeletor = function(callback) {
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*';
-    input.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => callback(event.target.result);
-            reader.readAsDataURL(file);
+$("btn-cadastrar")?.addEventListener("click", async () => {
+    const email = $("login-email")?.value.trim();
+    const senha = $("login-senha")?.value;
+
+    try {
+        await createUserWithEmailAndPassword(auth, email, senha);
+        alert("Conta criada! Bem-vindo.");
+    } catch (error) {
+        console.error("Falha no cadastro:", error);
+        if (mensagemErro) {
+            mensagemErro.textContent = `Erro no cadastro (${error.code || "desconhecido"}): ${error.message}`;
+            mensagemErro.classList.remove("hidden");
         }
+    }
+});
+
+$("btn-sair")?.addEventListener("click", () => {
+    signOut(auth).then(() => window.location.reload());
+});
+
+// ======================================================
+// AUTENTICAÇÃO E CARREGAMENTO
+// ======================================================
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        usuarioAtual = null;
+        telaLogin?.classList.remove("hidden");
+        sitePrincipal?.classList.add("hidden");
+        return;
+    }
+
+    usuarioAtual = user;
+    telaLogin?.classList.add("hidden");
+    sitePrincipal?.classList.remove("hidden");
+
+    const ehMestre = (user.email || "").trim().toLowerCase() === emailMestre.toLowerCase();
+    const btnMestre = $("btn-painel-mestre");
+
+    if (btnMestre) {
+        btnMestre.classList.toggle("hidden", !ehMestre);
+        btnMestre.style.display = ehMestre ? "block" : "none";
+    }
+
+    try {
+        await carregarFicha();
+    } catch (error) {
+        console.error("Falha ao carregar ficha:", error);
+        alert(`Erro ao carregar ficha (${error.code || "desconhecido"}): ${error.message}`);
+    }
+});
+
+// ======================================================
+// SELEÇÃO E UPLOAD DE IMAGENS
+// ======================================================
+window.abrirSeletor = function(callback) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+
+    input.onchange = (event) => {
+        const arquivo = event.target.files?.[0];
+        if (!arquivo) return;
+
+        const leitor = new FileReader();
+        leitor.onload = (eventoLeitura) => callback(eventoLeitura.target.result);
+        leitor.onerror = () => alert("Não foi possível ler a imagem selecionada.");
+        leitor.readAsDataURL(arquivo);
     };
+
     input.click();
-}
+};
 
 window.uploadFoto = function(elemento) {
-    window.abrirSeletor((imgBase64) => {
-        elemento.innerHTML = `<img src="${imgBase64}" style="width: 100%; height: 100%; object-fit: cover; object-position: top center; position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none;">`;
-        elemento.onclick = null;
-        const btn = document.createElement('div');
-        btn.innerHTML = 'X';
-        btn.className = 'absolute top-2 right-2 bg-red-800 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer z-20 text-sm font-bold shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none';
-        btn.onclick = (e) => { 
-            e.stopPropagation(); 
-            elemento.innerHTML = '<i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span>FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao">PROPORÇÃO IDEAL: 9x16</div>'; 
+    window.abrirSeletor((imagemBase64) => {
+        elemento.innerHTML = `
+            <img src="${imagemBase64}" style="width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;top:0;left:0;z-index:1;pointer-events:none;">
+            <button type="button" aria-label="Remover foto" class="absolute top-2 right-2 bg-red-800 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer z-20 text-sm font-bold shadow-lg">X</button>
+        `;
+
+        const botaoRemover = elemento.querySelector("button");
+        botaoRemover.onclick = (event) => {
+            event.stopPropagation();
+            elemento.innerHTML = `
+                <i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i>
+                <span class="z-10">FOTO DO<br>PERSONAGEM</span>
+                <div class="texto-proporcao z-10">PROPORÇÃO 9x16</div>
+            `;
             elemento.onclick = () => window.uploadFoto(elemento);
         };
-        elemento.appendChild(btn);
-        let timer;
-        elemento.onmouseenter = () => { clearTimeout(timer); btn.classList.remove('opacity-0'); btn.classList.add('opacity-100'); };
-        elemento.onmouseleave = () => { timer = setTimeout(() => { btn.classList.add('opacity-0'); btn.classList.remove('opacity-100'); }, 1500); };
-    });
-}
 
-const gridInv = document.getElementById('inventario');
-const espacosEl = document.getElementById('espacos');
-const pesoEl = document.getElementById('peso-total');
+        elemento.onclick = null;
+    });
+};
+
+// ======================================================
+// INVENTÁRIO E EQUIPAMENTOS
+// ======================================================
+const gridInv = $("inventario");
+const espacosEl = $("espacos");
+const pesoEl = $("peso-total");
+
 let quadradoAtual = null;
 let imagemAtualBase64 = null;
 
 function recalcularPesoTotal() {
     let pesoTotal = 0;
-    document.querySelectorAll('.item-adicionado').forEach(item => {
-        const qtd = parseFloat(item.dataset.qtd) || 1;
-        const pesoStr = (item.dataset.peso || "0").toString().replace(',', '.');
-        pesoTotal += (qtd * (parseFloat(pesoStr) || 0));
+
+    document.querySelectorAll(".item-adicionado").forEach((item) => {
+        const quantidade = Number.parseFloat(item.dataset.qtd) || 1;
+        const peso = Number.parseFloat(String(item.dataset.peso || "0").replace(",", ".")) || 0;
+        pesoTotal += quantidade * peso;
     });
-    if(pesoEl) pesoEl.innerText = pesoTotal.toFixed(2);
-    if(espacosEl) espacosEl.innerText = document.querySelectorAll('#inventario .item-adicionado').length;
+
+    if (pesoEl) pesoEl.textContent = pesoTotal.toFixed(2);
+    if (espacosEl) {
+        espacosEl.textContent = document.querySelectorAll("#inventario .item-adicionado").length;
+    }
 }
 
 const modalHTML = `
-    <div id="modal-item" class="fixed inset-0 bg-black/80 z-50 flex justify-center items-center hidden">
-        <div class="painel-papel p-6 rounded-lg w-[400px] flex flex-col gap-3 relative">
-            <h3 class="fonte-titulo text-2xl text-[#111] border-b border-black/30 pb-2 mb-2">DADOS DO ITEM</h3>
-            <div class="flex gap-4">
-                <div id="modal-preview" class="w-24 h-24 rounded flex flex-col justify-center items-center relative overflow-hidden text-black/30 border-2 border-dashed border-[#3a2e27] bg-black/10">
-                    <i class="fa-solid fa-camera text-2xl mb-1"></i>
-                    <span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>
-                </div>
-                <div class="flex-1 flex flex-col gap-2">
-                    <label class="flex flex-col text-sm font-bold text-[#111]">Nome do Item: <input type="text" id="modal-nome" class="input-campo p-2"></label>
-                    <button id="btn-upload" class="bg-[#3a2e27] text-white p-2 rounded font-bold hover:bg-[#a81c1c] transition text-sm"><i class="fa-solid fa-camera"></i> Escolher Imagem</button>
-                </div>
+<div id="modal-item" class="fixed inset-0 bg-black/80 z-50 flex justify-center items-center hidden">
+    <div class="painel-papel p-6 rounded-lg w-[400px] max-w-[95vw] flex flex-col gap-3 relative">
+        <h3 class="fonte-titulo text-2xl text-[#111] border-b border-black/30 pb-2 mb-2">DADOS DO ITEM</h3>
+        <div class="flex gap-4">
+            <div id="modal-preview" class="w-24 h-24 rounded flex flex-col justify-center items-center relative overflow-hidden text-black/30 border-2 border-dashed border-[#3a2e27] bg-black/10">
+                <i class="fa-solid fa-camera text-2xl mb-1"></i>
+                <span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>
             </div>
-            <div class="flex gap-2">
-                <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Quantidade: <input type="number" id="modal-qtd" value="1" class="input-campo p-2"></label>
-                <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg): <input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
-            </div>
-            <label class="flex flex-col text-sm font-bold text-[#111]">Descrição: <textarea id="modal-desc" class="input-campo p-2 resize-none h-16"></textarea></label>
-            <div class="flex justify-between mt-2 gap-2">
-                <button id="btn-excluir" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700 hidden">Excluir</button>
-                <button id="btn-cancelar" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700">Cancelar</button>
-                <button id="btn-salvar-item" class="bg-[#a81c1c] text-white p-2 rounded font-bold flex-1 hover:brightness-125">Salvar</button>
+            <div class="flex-1 flex flex-col gap-2">
+                <label class="flex flex-col text-sm font-bold text-[#111]">Nome do Item: <input type="text" id="modal-nome" class="input-campo p-2"></label>
+                <button type="button" id="btn-upload" class="bg-[#3a2e27] text-white p-2 rounded font-bold hover:bg-[#a81c1c] transition text-sm"><i class="fa-solid fa-camera"></i> Escolher Imagem</button>
             </div>
         </div>
+        <div class="flex gap-2">
+            <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Quantidade: <input type="number" id="modal-qtd" min="1" value="1" class="input-campo p-2"></label>
+            <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg): <input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
+        </div>
+        <label class="flex flex-col text-sm font-bold text-[#111]">Descrição: <textarea id="modal-desc" class="input-campo p-2 resize-none h-16"></textarea></label>
+        <div class="flex justify-between mt-2 gap-2">
+            <button type="button" id="btn-excluir" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700 hidden">Excluir</button>
+            <button type="button" id="btn-cancelar" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700">Cancelar</button>
+            <button type="button" id="btn-salvar-item" class="bg-[#a81c1c] text-white p-2 rounded font-bold flex-1 hover:brightness-125">Salvar</button>
+        </div>
     </div>
-`;
-document.body.insertAdjacentHTML('beforeend', modalHTML);
+</div>`;
 
-const modal = document.getElementById('modal-item');
-const modalPreview = document.getElementById('modal-preview');
-const inputNome = document.getElementById('modal-nome');
-const inputQtd = document.getElementById('modal-qtd');
-const inputPeso = document.getElementById('modal-peso');
-const inputDesc = document.getElementById('modal-desc');
-const btnExcluir = document.getElementById('btn-excluir');
-const btnCancelar = document.getElementById('btn-cancelar');
-const btnSalvarItem = document.getElementById('btn-salvar-item');
-const btnUpload = document.getElementById('btn-upload');
+document.body.insertAdjacentHTML("beforeend", modalHTML);
+
+const modal = $("modal-item");
+const modalPreview = $("modal-preview");
+const inputNome = $("modal-nome");
+const inputQtd = $("modal-qtd");
+const inputPeso = $("modal-peso");
+const inputDesc = $("modal-desc");
+const btnExcluir = $("btn-excluir");
+const btnCancelar = $("btn-cancelar");
+const btnSalvarItem = $("btn-salvar-item");
+const btnUpload = $("btn-upload");
 
 function atualizarPreviewModal() {
     if (imagemAtualBase64) {
-        modalPreview.innerHTML = `<img src="${imagemAtualBase64}" style="width: 100%; height: 100%; object-fit: contain; padding: 4px;"><button id="btn-remover-img-modal" class="absolute top-1 right-1 bg-red-800 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer z-20 text-[10px] font-bold">X</button>`;
-        modalPreview.classList.remove('border-dashed'); modalPreview.classList.add('border-solid');
-        document.getElementById('btn-remover-img-modal').onclick = (e) => { e.preventDefault(); imagemAtualBase64 = null; atualizarPreviewModal(); };
+        modalPreview.innerHTML = `
+            <img src="${imagemAtualBase64}" style="width:100%;height:100%;object-fit:contain;padding:4px;">
+            <button type="button" id="btn-remover-img-modal" class="absolute top-1 right-1 bg-red-800 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer z-20 text-[10px] font-bold">X</button>
+        `;
+        modalPreview.classList.remove("border-dashed");
+        modalPreview.classList.add("border-solid");
+
+        $("btn-remover-img-modal").onclick = (event) => {
+            event.preventDefault();
+            imagemAtualBase64 = null;
+            atualizarPreviewModal();
+        };
     } else {
-        modalPreview.innerHTML = `<i class="fa-solid fa-camera text-2xl mb-1"></i><span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>`;
-        modalPreview.classList.add('border-dashed'); modalPreview.classList.remove('border-solid');
+        modalPreview.innerHTML = `
+            <i class="fa-solid fa-camera text-2xl mb-1"></i>
+            <span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>
+        `;
+        modalPreview.classList.add("border-dashed");
+        modalPreview.classList.remove("border-solid");
     }
 }
 
-function abrirModal(q, dados = null) {
-    quadradoAtual = q;
-    if (dados && dados.nome) {
-        inputNome.value = dados.nome; inputQtd.value = dados.qtd; inputPeso.value = dados.peso; inputDesc.value = dados.desc || "";
-        imagemAtualBase64 = dados.img; btnExcluir.classList.remove('hidden');
-        document.querySelector('#modal-item h3').innerText = "EDITAR ITEM"; btnSalvarItem.innerText = "SALVAR";
+function abrirModal(quadrado, dados = null) {
+    quadradoAtual = quadrado;
+
+    if (dados?.nome) {
+        inputNome.value = dados.nome || "";
+        inputQtd.value = dados.qtd ?? 1;
+        inputPeso.value = dados.peso ?? "";
+        inputDesc.value = dados.desc || "";
+        imagemAtualBase64 = dados.img || null;
+        btnExcluir.classList.remove("hidden");
+        $("modal-item").querySelector("h3").textContent = "EDITAR ITEM";
+        btnSalvarItem.textContent = "SALVAR";
     } else {
-        inputNome.value = ""; inputQtd.value = 1; inputPeso.value = ""; inputDesc.value = "";
-        imagemAtualBase64 = null; btnExcluir.classList.add('hidden');
-        document.querySelector('#modal-item h3').innerText = "NOVO ITEM"; btnSalvarItem.innerText = "ADICIONAR";
+        inputNome.value = "";
+        inputQtd.value = 1;
+        inputPeso.value = "";
+        inputDesc.value = "";
+        imagemAtualBase64 = null;
+        btnExcluir.classList.add("hidden");
+        $("modal-item").querySelector("h3").textContent = "NOVO ITEM";
+        btnSalvarItem.textContent = "ADICIONAR";
     }
-    atualizarPreviewModal(); modal.classList.remove('hidden');
+
+    atualizarPreviewModal();
+    modal.classList.remove("hidden");
 }
 
-btnCancelar.onclick = () => modal.classList.add('hidden');
-btnUpload.onclick = () => { window.abrirSeletor((img) => { imagemAtualBase64 = img; atualizarPreviewModal(); }); };
+btnCancelar.onclick = () => modal.classList.add("hidden");
+
+btnUpload.onclick = () => {
+    window.abrirSeletor((imagem) => {
+        imagemAtualBase64 = imagem;
+        atualizarPreviewModal();
+    });
+};
+
+function limparItemDoSlot(slot) {
+    if (slot.id.startsWith("inv-")) {
+        slot.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
+    } else {
+        slot.innerHTML = (slot.dataset.original || "") + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
+    }
+
+    slot.classList.remove("item-adicionado");
+    delete slot.dataset.itemData;
+    delete slot.dataset.peso;
+    delete slot.dataset.qtd;
+}
 
 btnExcluir.onclick = () => {
-    if (quadradoAtual.id.startsWith('inv-')) quadradoAtual.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
-    else quadradoAtual.innerHTML = quadradoAtual.getAttribute('data-original') + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
-    quadradoAtual.classList.remove('item-adicionado'); quadradoAtual.removeAttribute('data-itemData');
-    quadradoAtual.removeAttribute('data-peso'); quadradoAtual.removeAttribute('data-qtd');
-    recalcularPesoTotal(); modal.classList.add('hidden');
+    if (!quadradoAtual) return;
+    limparItemDoSlot(quadradoAtual);
+    recalcularPesoTotal();
+    modal.classList.add("hidden");
 };
 
 btnSalvarItem.onclick = () => {
-    const nome = inputNome.value;
-    const pesoString = inputPeso.value.replace(',', '.');
-    const qtd = parseInt(inputQtd.value) || 0;
+    if (!quadradoAtual) return;
+
+    const nome = inputNome.value.trim();
+    const quantidade = Number.parseInt(inputQtd.value, 10);
+    const pesoTexto = inputPeso.value.trim().replace(",", ".");
+    const pesoNumero = Number.parseFloat(pesoTexto);
+
     if (!imagemAtualBase64) return alert("Escolha uma imagem.");
-    if (!nome.trim()) return alert("Digite o nome.");
-    if (qtd <= 0) return alert("Quantidade > 0.");
-    if (inputPeso.value.trim() === "") return alert("Digite o peso.");
-    
-    const dados = { img: imagemAtualBase64, nome, qtd, peso: pesoString, desc: inputDesc.value };
-    renderizarItem(quadradoAtual, dados); recalcularPesoTotal(); modal.classList.add('hidden');
+    if (!nome) return alert("Digite o nome do item.");
+    if (!Number.isInteger(quantidade) || quantidade <= 0) return alert("A quantidade deve ser maior que zero.");
+    if (pesoTexto === "" || !Number.isFinite(pesoNumero) || pesoNumero < 0) {
+        return alert("Digite um peso válido, igual ou maior que zero.");
+    }
+
+    const dados = {
+        img: imagemAtualBase64,
+        nome,
+        qtd: quantidade,
+        peso: pesoTexto,
+        desc: inputDesc.value || ""
+    };
+
+    renderizarItem(quadradoAtual, dados);
+    recalcularPesoTotal();
+    modal.classList.add("hidden");
 };
 
-function renderizarItem(q, dados) {
-    const isEquipamento = !q.id.startsWith('inv-');
-    const classeTexto = isEquipamento ? 'opacity-0 group-hover:opacity-100 transition-opacity' : 'opacity-100';
-    q.innerHTML = `
-        ${dados.img ? `<img src="${dados.img}" style="width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; padding: 4px; z-index: 1;">` : ''}
+function renderizarItem(slot, dados) {
+    const ehEquipamento = !slot.id.startsWith("inv-");
+    const classeTexto = ehEquipamento
+        ? "opacity-0 group-hover:opacity-100 transition-opacity"
+        : "opacity-100";
+
+    // Escapa texto digitado para evitar que nomes/descrições sejam interpretados como HTML.
+    const escaparHTML = (valor) => String(valor ?? "").replace(/[&<>"']/g, (caractere) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[caractere]);
+
+    slot.innerHTML = `
+        ${dados.img ? `<img src="${dados.img}" style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;padding:4px;z-index:1;">` : ""}
         <div class="text-[10px] font-bold bg-black/40 text-white px-1 rounded leading-tight w-full absolute bottom-0 left-0 z-10 text-center ${classeTexto}">
-            ${dados.nome} <br> <span class="text-gray-300">Qtd: ${dados.qtd}</span> | <span class="text-gray-300">${dados.peso}kg</span>
+            ${escaparHTML(dados.nome)} <br>
+            <span class="text-gray-300">Qtd: ${escaparHTML(dados.qtd)}</span> |
+            <span class="text-gray-300">${escaparHTML(dados.peso)}kg</span>
         </div>
         <div class="absolute inset-0 bg-black/80 text-white text-[10px] p-1 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center pointer-events-none z-20">
-            <span class="font-bold mb-1">EDITAR</span> ${dados.desc ? `<span class="italic text-gray-300 truncate w-full text-center">"${dados.desc}"</span>` : ''}
+            <span class="font-bold mb-1">EDITAR</span>
+            ${dados.desc ? `<span class="italic text-gray-300 truncate w-full text-center">"${escaparHTML(dados.desc)}"</span>` : ""}
         </div>
     `;
-    q.classList.add('item-adicionado'); q.dataset.itemData = JSON.stringify(dados);
-    q.dataset.peso = dados.peso; q.dataset.qtd = dados.qtd;
+
+    slot.classList.add("item-adicionado");
+    slot.dataset.itemData = JSON.stringify(dados);
+    slot.dataset.peso = String(dados.peso);
+    slot.dataset.qtd = String(dados.qtd);
 }
 
+// Cria os 16 espaços, sem alterar a estrutura visual definida no HTML.
 if (gridInv) {
     for (let i = 0; i < 16; i++) {
-        const q = document.createElement('div');
-        q.id = `inv-${i}`;
-        q.className = 'slot-vazio rounded aspect-square flex flex-col justify-center items-center relative text-center p-1 overflow-hidden group';
-        q.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
-        q.onclick = () => { if (q.classList.contains('item-adicionado')) abrirModal(q, JSON.parse(q.dataset.itemData)); else abrirModal(q); };
-        gridInv.appendChild(q);
+        const slot = document.createElement("div");
+        slot.id = `inv-${i}`;
+        slot.className = "slot-vazio rounded aspect-square flex flex-col justify-center items-center relative text-center p-1 overflow-hidden group";
+        slot.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
+
+        slot.onclick = () => {
+            if (slot.classList.contains("item-adicionado")) {
+                abrirModal(slot, JSON.parse(slot.dataset.itemData));
+            } else {
+                abrirModal(slot);
+            }
+        };
+
+        gridInv.appendChild(slot);
     }
 }
 
-const slotsEquipamento = document.querySelectorAll('.slot-vazio:not(#inventario .slot-vazio)');
-slotsEquipamento.forEach(slot => {
-    if(!slot.classList.contains('foto-personagem')) {
-        slot.setAttribute('data-original', slot.innerHTML.split('<span')[0]);
-        slot.removeAttribute('onclick');
-        slot.onclick = () => { if (slot.classList.contains('item-adicionado')) abrirModal(slot, JSON.parse(slot.dataset.itemData)); else abrirModal(slot); };
+// Seleciona os sete espaços de equipamento do HTML, sem incluir a foto nem a mochila.
+const slotsEquipamento = Array.from(
+    document.querySelectorAll(".slot-vazio")
+).filter((slot) => !slot.closest("#inventario") && !slot.classList.contains("foto-personagem"));
+
+slotsEquipamento.forEach((slot) => {
+    slot.dataset.original = slot.innerHTML.split("<span")[0];
+
+    // Remove o onclick="upload(this)" antigo do HTML e usa o modal de itens.
+    slot.removeAttribute("onclick");
+    slot.onclick = () => {
+        if (slot.classList.contains("item-adicionado")) {
+            abrirModal(slot, JSON.parse(slot.dataset.itemData));
+        } else {
+            abrirModal(slot);
+        }
+    };
+});
+
+// ======================================================
+// TALENTOS
+// ======================================================
+const listaTalentos = $("talentos");
+
+if (listaTalentos && !listaTalentos.children.length) {
+    for (let i = 1; i <= 20; i++) {
+        const linha = document.createElement("div");
+        linha.className = "flex items-center gap-2 border-b border-black/20 pb-1";
+        linha.innerHTML = `
+            <span class="font-bold w-5 text-right text-[#111] text-sm">${i}.</span>
+            <input type="text" class="bg-transparent border-none outline-none font-semibold text-[#111] text-base w-full">
+        `;
+        listaTalentos.appendChild(linha);
+    }
+}
+
+// ======================================================
+// SALVAMENTO COM DIAGNÓSTICO
+// ======================================================
+function dadosSegurosDoItem(slot) {
+    const dados = JSON.parse(slot.dataset.itemData || "{}");
+
+    return {
+        img: typeof dados.img === "string" ? dados.img : "",
+        nome: String(dados.nome ?? ""),
+        qtd: Number(dados.qtd) || 1,
+        peso: String(dados.peso ?? "0"),
+        desc: String(dados.desc ?? "")
+    };
+}
+
+function tamanhoEmBytes(valor) {
+    return new TextEncoder().encode(JSON.stringify(valor)).length;
+}
+
+const btnSalvarFicha = $("btn-salvar-ficha");
+
+btnSalvarFicha?.addEventListener("click", async () => {
+    if (!usuarioAtual) {
+        alert("Você precisa estar conectado para salvar a ficha.");
+        return;
+    }
+
+    const textoBotao = btnSalvarFicha.textContent;
+    btnSalvarFicha.disabled = true;
+    btnSalvarFicha.textContent = "SALVANDO...";
+
+    try {
+        const foto = $("foto-personagem");
+
+        const dadosFicha = {
+            nome: $("nome")?.value || "",
+            idade: $("idade")?.value || "",
+            nivel: $("nivel")?.value || "",
+            exp: $("exp")?.value || "",
+            forca: forca?.value || "",
+            destreza: destreza?.value || "",
+            forcaAcao: forcaAcao?.value || "",
+            destrezaAcao: destrezaAcao?.value || "",
+            constituicao: $("constituicao")?.value || "",
+            inteligencia: $("inteligencia")?.value || "",
+            percepcao: $("percepcao")?.value || "",
+            vontade: $("vontade")?.value || "",
+            carisma: $("carisma")?.value || "",
+            esquiva: $("esquiva")?.value || "",
+            movimentacao: $("movimentacao")?.value || "6",
+            diario: $("diario")?.value || "",
+            fotoPersonagem: foto?.innerHTML || "",
+            itensMochila: [],
+            itensEquipamento: [],
+            atualizadoEm: new Date().toISOString()
+        };
+
+        // Mochila: somente os slots dentro de #inventario.
+        document.querySelectorAll("#inventario .item-adicionado").forEach((slot) => {
+            dadosFicha.itensMochila.push({
+                dados: dadosSegurosDoItem(slot),
+                posicao: slot.id
+            });
+        });
+
+        // Equipamentos: somente os sete slots definidos fora da mochila.
+        slotsEquipamento.forEach((slot) => {
+            if (slot.classList.contains("item-adicionado")) {
+                dadosFicha.itensEquipamento.push({
+                    dados: dadosSegurosDoItem(slot),
+                    posicao: slot.dataset.original || slot.id
+                });
+            }
+        });
+
+        // Inclui os 20 talentos no salvamento, sem alterar o layout.
+        dadosFicha.talentos = Array.from(listaTalentos?.querySelectorAll("input") || [])
+            .map((input) => input.value || "");
+
+        const bytes = tamanhoEmBytes(dadosFicha);
+
+        console.info("Diagnóstico antes de salvar a ficha:", {
+            usuario: usuarioAtual.uid,
+            itensNaMochila: dadosFicha.itensMochila.length,
+            itensEquipados: dadosFicha.itensEquipamento.length,
+            tamanhoAproximadoKB: (bytes / 1024).toFixed(2)
+        });
+
+        // Margem de segurança abaixo do limite de 1 MiB por documento.
+        if (bytes > 950 * 1024) {
+            throw new Error("A ficha está muito grande para um único documento do Firestore. As imagens estão ocupando muito espaço. Reduza o tamanho das imagens e tente novamente.");
+        }
+
+        await setDoc(doc(db, "fichas", usuarioAtual.uid), dadosFicha);
+
+        alert("Ficha salva com sucesso!");
+    } catch (error) {
+        console.error("Erro detalhado ao salvar ficha:", error);
+        alert(`Não foi possível salvar a ficha (${error.code || "diagnóstico"}): ${error.message}`);
+    } finally {
+        btnSalvarFicha.disabled = false;
+        btnSalvarFicha.textContent = textoBotao;
     }
 });
 
-const listaT = document.getElementById('talentos');
-if (listaT) {
-    for (let i = 1; i <= 20; i++) {
-        const l = document.createElement('div');
-        l.className = 'flex items-center gap-2 border-b border-black/20 pb-1';
-        l.innerHTML = `<span class="font-bold w-5 text-right text-[#111] text-sm">${i}.</span><input type="text" class="bg-transparent border-none outline-none font-semibold text-[#111] text-base w-full">`;
-        listaT.appendChild(l);
-    }
-}
-
-// ============================================================
-// ETAPA 1 — DIAGNÓSTICO DO SALVAMENTO (única adição)
-// Não altera comportamento, layout ou a lógica do botão do mestre.
-// ============================================================
-function _tamanhoKB(str) {
-    try { return (new Blob([str]).size / 1024).toFixed(1); }
-    catch (e) { return (str.length / 1024).toFixed(1); }
-}
-
-function _diagnosticoPayload(dadosFicha) {
-    const json = JSON.stringify(dadosFicha);
-    const tamanhoTotal = _tamanhoKB(json);
-
-    console.group('%c[DIAGNÓSTICO SALVAMENTO]', 'color:#a81c1c;font-weight:bold');
-    console.log('Tamanho total do payload:', tamanhoTotal, 'KB (limite Firestore ≈ 1024 KB)');
-    console.log('Itens na mochila:', dadosFicha.itensMochila.length);
-    dadosFicha.itensMochila.forEach((it, i) => {
-        const imgKB = it.dados && it.dados.img ? _tamanhoKB(it.dados.img) : 0;
-        console.log(`  Mochila[${i}] "${it.dados?.nome || '?'}" — img: ${imgKB} KB — posição: ${it.posicao}`);
-    });
-    console.log('Itens no equipamento:', dadosFicha.itensEquipamento.length);
-    dadosFicha.itensEquipamento.forEach((it, i) => {
-        const imgKB = it.dados && it.dados.img ? _tamanhoKB(it.dados.img) : 0;
-        console.log(`  Equip[${i}] "${it.dados?.nome || '?'}" — img: ${imgKB} KB — posição: ${it.posicao}`);
-    });
-    console.log('Foto do personagem (HTML):', _tamanhoKB(dadosFicha.fotoPersonagem || ''), 'KB');
-    console.log('Payload completo:', dadosFicha);
-    console.groupEnd();
-
-    return { tamanhoTotal, json };
-}
-
-document.getElementById('btn-salvar-ficha').onclick = async () => {
-    if (!usuarioAtual) return;
-    const dadosFicha = {
-        nome: document.getElementById('nome').value, idade: document.getElementById('idade').value,
-        nivel: document.getElementById('nivel').value, exp: document.getElementById('exp').value,
-        forca: forca.value, destreza: destreza.value, forcaAcao: forcaAcao.value, destrezaAcao: destrezaAcao.value,
-        constituicao: document.getElementById('constituicao').value, inteligencia: document.getElementById('inteligencia').value,
-        percepcao: document.getElementById('percepcao').value, vontade: document.getElementById('vontade').value,
-        carisma: document.getElementById('carisma').value, esquiva: document.getElementById('esquiva').value,
-        movimentacao: document.getElementById('movimentacao').value, diario: document.getElementById('diario').value,
-        fotoPersonagem: document.getElementById('foto-personagem').innerHTML, itensMochila: [], itensEquipamento: []
-    };
-    document.querySelectorAll('#inventario .item-adicionado').forEach(el => {
-        try { dadosFicha.itensMochila.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.id }); }
-        catch (e) { console.error('Item da mochila com JSON inválido:', el.id, el.dataset.itemData, e); }
-    });
-    document.querySelectorAll('.slot-vazio.item-adicionado').forEach(el => {
-        try { dadosFicha.itensEquipamento.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.getAttribute('data-original') }); }
-        catch (e) { console.error('Item de equipamento com JSON inválido:', el.getAttribute('data-original'), el.dataset.itemData, e); }
-    });
-
-    const diag = _diagnosticoPayload(dadosFicha);
-
-    if (parseFloat(diag.tamanhoTotal) > 900) {
-        const continuar = confirm(
-            `ATENÇÃO: o payload tem ${diag.tamanhoTotal} KB e o Firestore tem limite de ~1024 KB por documento.\n\n` +
-            `Provavelmente as imagens em Base64 estão grandes demais.\n\n` +
-            `Deseja tentar salvar mesmo assim? (Recomendado: NÃO — reduza as imagens antes.)`
-        );
-        if (!continuar) { console.warn('[DIAGNÓSTICO] Salvamento cancelado pelo usuário devido ao tamanho.'); return; }
-    }
-
-    try {
-        await setDoc(doc(db, "fichas", usuarioAtual.uid), dadosFicha);
-        console.log('%c[DIAGNÓSTICO] Salvamento OK', 'color:green;font-weight:bold', `— ${diag.tamanhoTotal} KB`);
-        alert(`Ficha salva! (${diag.tamanhoTotal} KB)`);
-    } catch (e) {
-        console.error("Falha ao salvar ficha no Firestore:", e);
-        console.error("Detalhes:", {
-            code: e.code, message: e.message, payloadKB: diag.tamanhoTotal,
-            itensMochila: dadosFicha.itensMochila.length,
-            itensEquipamento: dadosFicha.itensEquipamento.length
-        });
-        alert(
-            `Erro ao salvar ficha.\n\n` +
-            `Código: ${e.code || "desconhecido"}\n` +
-            `Mensagem: ${e.message}\n\n` +
-            `Tamanho do payload: ${diag.tamanhoTotal} KB\n` +
-            `Itens mochila: ${dadosFicha.itensMochila.length} | equipamento: ${dadosFicha.itensEquipamento.length}\n\n` +
-            `Abra o Console (F12) e me mande o print do grupo [DIAGNÓSTICO SALVAMENTO].`
-        );
-    }
-};
-
+// ======================================================
+// CARREGAMENTO DA FICHA
+// ======================================================
 async function carregarFicha() {
     if (!usuarioAtual) return;
-    const docSnap = await getDoc(doc(db, "fichas", usuarioAtual.uid));
-    if (docSnap.exists()) {
-        const d = docSnap.data();
-        document.getElementById('nome').value = d.nome || ''; document.getElementById('idade').value = d.idade || '';
-        document.getElementById('nivel').value = d.nivel || ''; document.getElementById('exp').value = d.exp || '';
-        forca.value = d.forca || ''; destreza.value = d.destreza || ''; calcular();
-        document.getElementById('constituicao').value = d.constituicao || ''; document.getElementById('inteligencia').value = d.inteligencia || '';
-        document.getElementById('percepcao').value = d.percepcao || ''; document.getElementById('vontade').value = d.vontade || '';
-        document.getElementById('carisma').value = d.carisma || ''; document.getElementById('esquiva').value = d.esquiva || '';
-        document.getElementById('movimentacao').value = d.movimentacao || 6; document.getElementById('diario').value = d.diario || '';
-        if(d.fotoPersonagem && d.fotoPersonagem.includes('img')) document.getElementById('foto-personagem').innerHTML = d.fotoPersonagem;
-        document.querySelectorAll('.item-adicionado').forEach(el => el.classList.remove('item-adicionado'));
-        if (d.itensMochila) d.itensMochila.forEach(item => { const el = document.getElementById(item.posicao); if(el) renderizarItem(el, item.dados); });
-        if (d.itensEquipamento) d.itensEquipamento.forEach(item => { const el = Array.from(document.querySelectorAll('.slot-vazio')).find(e => e.getAttribute('data-original') === item.posicao); if(el) renderizarItem(el, item.dados); });
-        recalcularPesoTotal();
+
+    const referencia = doc(db, "fichas", usuarioAtual.uid);
+    const snapshot = await getDoc(referencia);
+    if (!snapshot.exists()) return;
+
+    const dados = snapshot.data();
+
+    const preencher = (id, valor) => {
+        const elemento = $(id);
+        if (elemento) elemento.value = valor ?? "";
+    };
+
+    preencher("nome", dados.nome);
+    preencher("idade", dados.idade);
+    preencher("nivel", dados.nivel);
+    preencher("exp", dados.exp);
+
+    if (forca) forca.value = dados.forca ?? "";
+    if (destreza) destreza.value = dados.destreza ?? "";
+    calcular();
+
+    preencher("constituicao", dados.constituicao);
+    preencher("inteligencia", dados.inteligencia);
+    preencher("percepcao", dados.percepcao);
+    preencher("vontade", dados.vontade);
+    preencher("carisma", dados.carisma);
+    preencher("esquiva", dados.esquiva);
+    preencher("movimentacao", dados.movimentacao ?? "6");
+    preencher("diario", dados.diario);
+
+    const foto = $("foto-personagem");
+    if (foto && typeof dados.fotoPersonagem === "string" && dados.fotoPersonagem.includes("<img")) {
+        foto.innerHTML = dados.fotoPersonagem;
+
+        // Restaura a possibilidade de remover ou trocar a foto.
+        const imagem = foto.querySelector("img");
+        if (imagem) {
+            foto.onclick = null;
+        }
     }
+
+    // Restaura os talentos salvos, quando existirem.
+    const inputsTalentos = listaTalentos?.querySelectorAll("input") || [];
+    if (Array.isArray(dados.talentos)) {
+        inputsTalentos.forEach((input, indice) => {
+            input.value = dados.talentos[indice] || "";
+        });
+    }
+
+    // Limpa os 16 espaços antes de carregar os itens gravados.
+    document.querySelectorAll("#inventario .item-adicionado").forEach(limparItemDoSlot);
+    document.querySelectorAll("#inventario .slot-vazio").forEach((slot) => {
+        slot.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
+    });
+
+    // Limpa os equipamentos.
+    slotsEquipamento.forEach((slot) => {
+        limparItemDoSlot(slot);
+    });
+
+    if (Array.isArray(dados.itensMochila)) {
+        dados.itensMochila.forEach((item) => {
+            const slot = $(item.posicao);
+            if (slot && slot.closest("#inventario") && item.dados) {
+                renderizarItem(slot, item.dados);
+            }
+        });
+    }
+
+    if (Array.isArray(dados.itensEquipamento)) {
+        dados.itensEquipamento.forEach((item) => {
+            const slot = slotsEquipamento.find(
+                (elemento) => (elemento.dataset.original || elemento.id) === item.posicao
+            );
+            if (slot && item.dados) renderizarItem(slot, item.dados);
+        });
+    }
+
+    recalcularPesoTotal();
 }
 
-// --- PAINEL DO MESTRE ---
-document.getElementById('btn-painel-mestre').onclick = async () => {
-    document.getElementById('painel-mestre').classList.remove('hidden');
-    const lista = document.getElementById('lista-jogadores'); lista.innerHTML = '<p>Buscando...</p>';
+// ======================================================
+// PAINEL DO MESTRE - LISTAGEM EXISTENTE
+// ======================================================
+const painelMestre = $("painel-mestre");
+const listaJogadores = $("lista-jogadores");
+
+$("btn-painel-mestre")?.addEventListener("click", async () => {
+    const ehMestre = usuarioAtual &&
+        (usuarioAtual.email || "").trim().toLowerCase() === emailMestre.toLowerCase();
+
+    if (!ehMestre) {
+        alert("Acesso não autorizado.");
+        return;
+    }
+
+    painelMestre?.classList.remove("hidden");
+    if (listaJogadores) listaJogadores.innerHTML = '<p>Buscando fichas...</p>';
+
     try {
-        const querySnapshot = await getDocs(collection(db, "fichas")); lista.innerHTML = '';
-        if(querySnapshot.empty) return lista.innerHTML = '<p class="text-center mt-10">Nenhum sobrevivente cadastrado ainda.</p>';
-        querySnapshot.forEach((doc) => {
-            const ficha = doc.data();
-            const div = document.createElement('div');
-            div.className = 'border-b border-black/20 p-2 mb-2 flex justify-between items-center bg-white/20 rounded';
-            div.innerHTML = `<div><strong>Nome:</strong> ${ficha.nome || 'Sem nome'} | <strong>Nível:</strong> ${ficha.nivel || 1} | <strong>Força:</strong> ${ficha.forca || '-'} (${ficha.forcaAcao || 0}%)</div>`;
-            lista.appendChild(div);
+        const resultado = await getDocs(collection(db, "fichas"));
+
+        if (!listaJogadores) return;
+        listaJogadores.innerHTML = "";
+
+        if (resultado.empty) {
+            listaJogadores.innerHTML = '<p class="text-center mt-10">Nenhum sobrevivente cadastrado ainda.</p>';
+            return;
+        }
+
+        resultado.forEach((documento) => {
+            const ficha = documento.data();
+            const linha = document.createElement("div");
+            linha.className = "border-b border-black/20 p-2 mb-2 flex justify-between items-center bg-white/20 rounded";
+
+            const resumo = document.createElement("div");
+            resumo.innerHTML = `
+                <strong>Nome:</strong> ${String(ficha.nome || "Sem nome").replace(/[&<>"']/g, "")}
+                | <strong>Nível:</strong> ${ficha.nivel || 1}
+                | <strong>Força:</strong> ${ficha.forca || "-"} (${ficha.forcaAcao || 0}%)
+            `;
+
+            linha.appendChild(resumo);
+            listaJogadores.appendChild(linha);
         });
-    } catch (e) { console.error('Falha ao listar fichas no Firestore:', e); lista.textContent = `Erro ao carregar as fichas (${e.code || 'desconhecido'}): ${e.message}`; }
-};
-document.getElementById('btn-fechar-mestre').onclick = () => document.getElementById('painel-mestre').classList.add('hidden');
+    } catch (error) {
+        console.error("Falha ao listar fichas:", error);
+        if (listaJogadores) {
+            listaJogadores.textContent = `Erro ao carregar as fichas (${error.code || "desconhecido"}): ${error.message}`;
+        }
+    }
+});
+
+$("btn-fechar-mestre")?.addEventListener("click", () => {
+    painelMestre?.classList.add("hidden");
+});
