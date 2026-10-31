@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -274,6 +273,38 @@ if (listaT) {
     }
 }
 
+// ============================================================
+// ETAPA 1 — DIAGNÓSTICO DO SALVAMENTO (única adição)
+// Não altera comportamento, layout ou a lógica do botão do mestre.
+// ============================================================
+function _tamanhoKB(str) {
+    try { return (new Blob([str]).size / 1024).toFixed(1); }
+    catch (e) { return (str.length / 1024).toFixed(1); }
+}
+
+function _diagnosticoPayload(dadosFicha) {
+    const json = JSON.stringify(dadosFicha);
+    const tamanhoTotal = _tamanhoKB(json);
+
+    console.group('%c[DIAGNÓSTICO SALVAMENTO]', 'color:#a81c1c;font-weight:bold');
+    console.log('Tamanho total do payload:', tamanhoTotal, 'KB (limite Firestore ≈ 1024 KB)');
+    console.log('Itens na mochila:', dadosFicha.itensMochila.length);
+    dadosFicha.itensMochila.forEach((it, i) => {
+        const imgKB = it.dados && it.dados.img ? _tamanhoKB(it.dados.img) : 0;
+        console.log(`  Mochila[${i}] "${it.dados?.nome || '?'}" — img: ${imgKB} KB — posição: ${it.posicao}`);
+    });
+    console.log('Itens no equipamento:', dadosFicha.itensEquipamento.length);
+    dadosFicha.itensEquipamento.forEach((it, i) => {
+        const imgKB = it.dados && it.dados.img ? _tamanhoKB(it.dados.img) : 0;
+        console.log(`  Equip[${i}] "${it.dados?.nome || '?'}" — img: ${imgKB} KB — posição: ${it.posicao}`);
+    });
+    console.log('Foto do personagem (HTML):', _tamanhoKB(dadosFicha.fotoPersonagem || ''), 'KB');
+    console.log('Payload completo:', dadosFicha);
+    console.groupEnd();
+
+    return { tamanhoTotal, json };
+}
+
 document.getElementById('btn-salvar-ficha').onclick = async () => {
     if (!usuarioAtual) return;
     const dadosFicha = {
@@ -286,9 +317,46 @@ document.getElementById('btn-salvar-ficha').onclick = async () => {
         movimentacao: document.getElementById('movimentacao').value, diario: document.getElementById('diario').value,
         fotoPersonagem: document.getElementById('foto-personagem').innerHTML, itensMochila: [], itensEquipamento: []
     };
-    document.querySelectorAll('#inventario .item-adicionado').forEach(el => { dadosFicha.itensMochila.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.id }); });
-    document.querySelectorAll('.slot-vazio.item-adicionado').forEach(el => { dadosFicha.itensEquipamento.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.getAttribute('data-original') }); });
-    try { await setDoc(doc(db, "fichas", usuarioAtual.uid), dadosFicha); alert("Ficha salva!"); } catch (e) { console.error("Falha ao salvar ficha no Firestore:", e); alert(`Erro ao salvar ficha (${e.code || "desconhecido"}): ${e.message}`); }
+    document.querySelectorAll('#inventario .item-adicionado').forEach(el => {
+        try { dadosFicha.itensMochila.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.id }); }
+        catch (e) { console.error('Item da mochila com JSON inválido:', el.id, el.dataset.itemData, e); }
+    });
+    document.querySelectorAll('.slot-vazio.item-adicionado').forEach(el => {
+        try { dadosFicha.itensEquipamento.push({ dados: JSON.parse(el.dataset.itemData), posicao: el.getAttribute('data-original') }); }
+        catch (e) { console.error('Item de equipamento com JSON inválido:', el.getAttribute('data-original'), el.dataset.itemData, e); }
+    });
+
+    const diag = _diagnosticoPayload(dadosFicha);
+
+    if (parseFloat(diag.tamanhoTotal) > 900) {
+        const continuar = confirm(
+            `ATENÇÃO: o payload tem ${diag.tamanhoTotal} KB e o Firestore tem limite de ~1024 KB por documento.\n\n` +
+            `Provavelmente as imagens em Base64 estão grandes demais.\n\n` +
+            `Deseja tentar salvar mesmo assim? (Recomendado: NÃO — reduza as imagens antes.)`
+        );
+        if (!continuar) { console.warn('[DIAGNÓSTICO] Salvamento cancelado pelo usuário devido ao tamanho.'); return; }
+    }
+
+    try {
+        await setDoc(doc(db, "fichas", usuarioAtual.uid), dadosFicha);
+        console.log('%c[DIAGNÓSTICO] Salvamento OK', 'color:green;font-weight:bold', `— ${diag.tamanhoTotal} KB`);
+        alert(`Ficha salva! (${diag.tamanhoTotal} KB)`);
+    } catch (e) {
+        console.error("Falha ao salvar ficha no Firestore:", e);
+        console.error("Detalhes:", {
+            code: e.code, message: e.message, payloadKB: diag.tamanhoTotal,
+            itensMochila: dadosFicha.itensMochila.length,
+            itensEquipamento: dadosFicha.itensEquipamento.length
+        });
+        alert(
+            `Erro ao salvar ficha.\n\n` +
+            `Código: ${e.code || "desconhecido"}\n` +
+            `Mensagem: ${e.message}\n\n` +
+            `Tamanho do payload: ${diag.tamanhoTotal} KB\n` +
+            `Itens mochila: ${dadosFicha.itensMochila.length} | equipamento: ${dadosFicha.itensEquipamento.length}\n\n` +
+            `Abra o Console (F12) e me mande o print do grupo [DIAGNÓSTICO SALVAMENTO].`
+        );
+    }
 };
 
 async function carregarFicha() {
