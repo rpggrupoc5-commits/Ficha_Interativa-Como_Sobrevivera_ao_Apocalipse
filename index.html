@@ -109,9 +109,13 @@
     </div>
 
     <div id="painel-mestre" class="fixed inset-0 bg-black/90 z-40 flex justify-center items-center hidden">
-        <div class="painel-papel p-6 rounded-lg w-[800px] h-[600px] flex flex-col relative">
+        <div class="painel-papel p-4 md:p-6 rounded-lg w-[96vw] max-w-[1100px] h-[90vh] flex flex-col relative">
             <button id="btn-fechar-mestre" class="absolute top-2 right-2 bg-red-800 text-white rounded-full w-8 h-8 font-bold">X</button>
-            <h2 class="fonte-titulo text-3xl text-[#111] mb-4">PAINEL DO MESTRE</h2>
+            <div class="flex flex-wrap justify-between items-center gap-3 pr-10 mb-4">
+                <h2 class="fonte-titulo text-3xl text-[#111]">PAINEL DO MESTRE</h2>
+                <button id="btn-criar-pdm" class="bg-[#a81c1c] text-white px-4 py-2 rounded font-bold hover:brightness-125">+ CRIAR PDM</button>
+            </div>
+            <p class="text-xs text-[#3a2e27] mb-3">As fichas abrem em novas abas. Para vincular um jogador, será necessário informar o UID da conta Firebase.</p>
             <div id="lista-jogadores" class="flex-1 overflow-y-auto bg-white/30 p-2 rounded border border-black/20 text-[#111]"><p class="text-center mt-10">Carregando fichas...</p></div>
         </div>
     </div>
