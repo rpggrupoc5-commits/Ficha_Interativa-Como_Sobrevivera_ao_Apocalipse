@@ -1,828 +1,513 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import {
-    getAuth,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    onAuthStateChanged,
-    signOut
+import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    onAuthStateChanged, 
+    signOut 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-import {
-    getFirestore,
-    doc,
-    setDoc,
-    getDoc,
-    collection,
-    getDocs,
-    deleteDoc
+import { 
+    getFirestore, 
+    doc, 
+    getDoc, 
+    setDoc, 
+    updateDoc, 
+    deleteDoc, 
+    collection, 
+    getDocs, 
+    query, 
+    where, 
+    addDoc, 
+    serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// --- CONFIGURAÇÃO DO FIREBASE ---
+// ==========================================
+// 1. CONFIGURAÇÃO DO FIREBASE
+// (Substitua pelos dados do seu projeto)
+// ==========================================
 const firebaseConfig = {
-    apiKey: "AIzaSyAdjZy-eaJmeGlvvEMTQXDZmy5WOOKNoGg",
-    authDomain: "painel-ficha-apocalipse.firebaseapp.com",
-    projectId: "painel-ficha-apocalipse",
-    storageBucket: "painel-ficha-apocalipse.firebasestorage.app",
-    messagingSenderId: "277003324514",
-    appId: "1:277003324514:web:80644b98aa895afdac553b"
+    apiKey: "SUA_API_KEY_AQUI",
+    authDomain: "SEU_PROJECT_ID.firebaseapp.com",
+    projectId: "SEU_PROJECT_ID",
+    storageBucket: "SEU_PROJECT_ID.appspot.com",
+    messagingSenderId: "SEU_SENDER_ID",
+    appId: "SEU_APP_ID"
 };
+
+const EMAIL_MESTRE = "rpggrupoc5@gmail.com";
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// Variables Globais de Estado
 let usuarioAtual = null;
-const emailMestre = "rpggrupoc5@gmail.com";
+let fichaIdAtual = null;
+let modoMestre = false;
+let dadosFichaAtual = {};
 
-// --- ATRIBUTOS (AÇÃO%) ---
-const forca = document.getElementById('forca');
-const destreza = document.getElementById('destreza');
-const forcaAcao = document.getElementById('forca-acao');
-const destrezaAcao = document.getElementById('destreza-acao');
+// Lista de Talentos Padrão
+const TALENTOS_PADRAO = [
+    "Atirador de Elite", "Primeiros Socorros", "Mecanico de Gambiarra", 
+    "Furtividade Urbana", "Atletismo Avançado", "Resistência Física", 
+    "Liderança Nato", "Sobrevivente Urbano", "Perícia com Lâminas", 
+    "Mestre de Armadilhas", "Negociador Frio", "Rastreamento"
+];
 
-function calcular() {
-    if (forca.value) forcaAcao.value = parseInt(forca.value) * 3;
-    if (destreza.value) destrezaAcao.value = parseInt(destreza.value) * 3;
+// ==========================================
+// 2. INICIALIZAÇÃO DA INTERFACE & EVENTOS
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+    configurarEventos();
+    renderizarTalentos();
+    renderizarInventario();
+    verificarParametroURL();
+});
+
+function verificarParametroURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const idParam = urlParams.get('fichaId');
+    if (idParam) {
+        fichaIdAtual = idParam;
+    }
 }
 
-if (forca) forca.addEventListener('input', calcular);
-if (destreza) destreza.addEventListener('input', calcular);
+function configurarEventos() {
+    // Autenticação
+    document.getElementById("btn-entrar")?.addEventListener("click", fazerLogin);
+    document.getElementById("btn-cadastrar")?.addEventListener("click", criarConta);
+    document.getElementById("btn-sair")?.addEventListener("click", fazerLogout);
 
-// --- LOGIN ---
-const telaLogin = document.getElementById('tela-login');
-const sitePrincipal = document.getElementById('site-principal');
-const mensagemErro = document.getElementById('mensagem-erro');
+    // Salvar Ficha
+    document.getElementById("btn-salvar-ficha")?.addEventListener("click", salvarFicha);
 
-document.getElementById('btn-entrar').onclick = () => {
-    const email = document.getElementById('login-email').value;
-    const senha = document.getElementById('login-senha').value;
+    // Painel do Mestre
+    document.getElementById("btn-painel-mestre")?.addEventListener("click", abrirPainelMestre);
+    document.getElementById("btn-fechar-mestre")?.addEventListener("click", fecharPainelMestre);
+    document.getElementById("btn-criar-pdm")?.addEventListener("click", criarPDM);
 
-    signInWithEmailAndPassword(auth, email, senha).catch((error) => {
-        console.error("Falha no login Firebase:", error);
-        mensagemErro.innerText = `Erro no login (${error.code || "desconhecido"}): ${error.message}`;
-        mensagemErro.classList.remove('hidden');
-    });
-};
+    // Cálculos Automáticos de Atributos
+    document.getElementById("forca")?.addEventListener("input", calcularAcoes);
+    document.getElementById("destreza")?.addEventListener("input", calcularAcoes);
 
-document.getElementById('btn-cadastrar').onclick = () => {
-    const email = document.getElementById('login-email').value;
-    const senha = document.getElementById('login-senha').value;
+    // Uploads Globais de Fotos/Slots
+    window.upload = fazerUploadSlot;
+    window.uploadFoto = fazerUploadFotoPersonagem;
+}
 
-    createUserWithEmailAndPassword(auth, email, senha).then(() => {
-        alert("Conta criada! Bem-vindo.");
-    }).catch((error) => {
-        console.error("Falha no cadastro Firebase:", error);
-        mensagemErro.innerText = `Erro no cadastro (${error.code || "desconhecido"}): ${error.message}`;
-        mensagemErro.classList.remove('hidden');
-    });
-};
+// Observador do Estado de Autenticação
+onAuthStateChanged(auth, async (user) => {
+    const telaLogin = document.getElementById("tela-login");
+    const sitePrincipal = document.getElementById("site-principal");
+    const btnMestre = document.getElementById("btn-painel-mestre");
 
-document.getElementById('btn-sair').onclick = () =>
-    signOut(auth).then(() => window.location.reload());
-
-onAuthStateChanged(auth, (user) => {
     if (user) {
         usuarioAtual = user;
-        telaLogin.classList.add('hidden');
-        sitePrincipal.classList.remove('hidden');
+        modoMestre = (user.email === EMAIL_MESTRE);
 
-        carregarFicha().catch((error) => {
-            console.error("Falha ao carregar ficha:", error);
-            alert(`Erro ao carregar ficha (${error.code || "desconhecido"}): ${error.message}`);
-        });
-
-        const btnMestre = document.getElementById('btn-painel-mestre');
-
-        if ((user.email || "").trim().toLowerCase() === emailMestre.toLowerCase()) {
-            btnMestre.classList.remove('hidden');
-            btnMestre.style.display = 'block';
-        } else {
-            btnMestre.classList.add('hidden');
-            btnMestre.style.display = 'none';
+        if (btnMestre) {
+            btnMestre.classList.toggle("hidden", !modoMestre);
         }
+
+        telaLogin?.classList.add("hidden");
+        sitePrincipal?.classList.remove("hidden");
+
+        // Se a URL não trouxer um fichaId específico, usa o UID do próprio jogador
+        if (!fichaIdAtual) {
+            fichaIdAtual = user.uid;
+        }
+
+        await carregarFicha(fichaIdAtual);
     } else {
         usuarioAtual = null;
-        telaLogin.classList.remove('hidden');
-        sitePrincipal.classList.add('hidden');
+        fichaIdAtual = null;
+        telaLogin?.classList.remove("hidden");
+        sitePrincipal?.classList.add("hidden");
     }
 });
 
-// ======================================================
-// COMPRESSÃO DAS IMAGENS
-// ======================================================
+// ==========================================
+// 3. FUNÇÕES DE AUTENTICAÇÃO
+// ==========================================
+async function fazerLogin() {
+    const email = document.getElementById("login-email").value.trim();
+    const senha = document.getElementById("login-senha").value.trim();
+    const msgErro = document.getElementById("mensagem-erro");
 
-function comprimirImagem(dataUrl) {
-    return new Promise((resolve, reject) => {
-        const imagem = new Image();
+    msgErro.classList.add("hidden");
+    try {
+        await signInWithEmailAndPassword(auth, email, senha);
+    } catch (err) {
+        msgErro.textContent = "Erro ao entrar: " + traduzirErroFirebase(err.code);
+        msgErro.classList.remove("hidden");
+    }
+}
 
-        imagem.onload = () => {
-            const limite = 1000;
-            let largura = imagem.width;
-            let altura = imagem.height;
+async function criarConta() {
+    const email = document.getElementById("login-email").value.trim();
+    const senha = document.getElementById("login-senha").value.trim();
+    const msgErro = document.getElementById("mensagem-erro");
 
-            if (largura > limite || altura > limite) {
-                const proporcao = Math.min(limite / largura, limite / altura);
-                largura = Math.round(largura * proporcao);
-                altura = Math.round(altura * proporcao);
-            }
+    msgErro.classList.add("hidden");
+    try {
+        const userCred = await createUserWithEmailAndPassword(auth, email, senha);
+        // Cria documento de ficha padrão para o novo usuário
+        await setDoc(doc(db, "fichas", userCred.user.uid), {
+            nome: "Novo Sobrevivente",
+            tipo: "jogador",
+            proprietarioUid: userCred.user.uid,
+            criadoPor: userCred.user.uid,
+            dataCriacao: serverTimestamp(),
+            atributos: { forca: 10, destreza: 10, constituicao: 10, inteligencia: 10, percepcao: 10, vontade: 10, carisma: 10 },
+            esquiva: 0,
+            movimentacao: 6,
+            talentos: {},
+            diario: ""
+        });
+    } catch (err) {
+        msgErro.textContent = "Erro ao cadastrar: " + traduzirErroFirebase(err.code);
+        msgErro.classList.remove("hidden");
+    }
+}
 
-            const canvas = document.createElement('canvas');
-            canvas.width = largura;
-            canvas.height = altura;
+async function fazerLogout() {
+    await signOut(auth);
+    window.location.search = ""; // Limpa parâmetros da URL
+}
 
-            const contexto = canvas.getContext('2d');
-            contexto.drawImage(imagem, 0, 0, largura, altura);
+function traduzirErroFirebase(code) {
+    switch (code) {
+        case "auth/invalid-email": return "E-mail inválido.";
+        case "auth/user-not-found": return "Usuário não encontrado.";
+        case "auth/wrong-password": return "Senha incorreta.";
+        case "auth/email-already-in-use": return "Este e-mail já está em uso.";
+        case "auth/weak-password": return "A senha deve ter pelo menos 6 caracteres.";
+        default: return "Ocorreu um erro no acesso.";
+    }
+}
 
-            const comprimida = canvas.toDataURL('image/webp', 0.78);
+// ==========================================
+// 4. CÁLCULOS E RENDERIZAÇÃO DA FICHA
+// ==========================================
+function calcularAcoes() {
+    const forca = parseInt(document.getElementById("forca").value) || 0;
+    const destreza = parseInt(document.getElementById("destreza").value) || 0;
 
-            resolve(comprimida);
-        };
+    const forcaAcao = document.getElementById("forca-acao");
+    const destrezaAcao = document.getElementById("destreza-acao");
 
-        imagem.onerror = () => reject(new Error("Não foi possível processar esta imagem."));
-        imagem.src = dataUrl;
+    if (forcaAcao) forcaAcao.value = forca * 5;
+    if (destrezaAcao) destrezaAcao.value = destreza * 5;
+}
+
+function renderizarTalentos() {
+    const container = document.getElementById("talentos");
+    if (!container) return;
+    container.innerHTML = "";
+
+    TALENTOS_PADRAO.forEach((talento, index) => {
+        const id = `talento-${index}`;
+        const div = document.createElement("div");
+        div.className = "flex items-center gap-2 text-xs font-bold text-[#111]";
+        div.innerHTML = `
+            <input type="checkbox" id="${id}" class="chk-talento cursor-pointer">
+            <label for="${id}" class="cursor-pointer">${talento}</label>
+        `;
+        container.appendChild(div);
     });
 }
 
-// --- SELEÇÃO DE IMAGENS ---
-window.abrirSeletor = function(callback) {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
+function renderizarInventario() {
+    const container = document.getElementById("inventario");
+    if (!container) return;
+    container.innerHTML = "";
 
-    input.onchange = async (e) => {
+    for (let i = 1; i <= 16; i++) {
+        const div = document.createElement("div");
+        div.className = "slot-vazio text-xs font-bold text-center h-16";
+        div.dataset.slotId = i;
+        div.innerHTML = `Slot ${i}`;
+        div.onclick = function() { fazerUploadSlot(this); };
+        container.appendChild(div);
+    }
+}
+
+// ==========================================
+// 5. UPLOADS DE IMAGENS (BASE64 INTEGRADO)
+// ==========================================
+function fazerUploadFotoPersonagem(elemento) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        if (!file.type.startsWith('image/')) {
-            alert("Selecione um arquivo de imagem.");
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            let img = elemento.querySelector("img");
+            if (!img) {
+                img = document.createElement("img");
+                elemento.appendChild(img);
+            }
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
+function fazerUploadSlot(elemento) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            let img = elemento.querySelector("img");
+            if (!img) {
+                img = document.createElement("img");
+                elemento.appendChild(img);
+            }
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+    input.click();
+}
+
+// ==========================================
+// 6. OPERAÇÕES DE FICHA (CARREGAR / SALVAR)
+// ==========================================
+async function carregarFicha(id) {
+    try {
+        const ref = doc(db, "fichas", id);
+        const snap = await getDoc(ref);
+
+        if (!snap.exists()) {
+            console.warn("Ficha não encontrada no Firestore.");
             return;
         }
 
-        try {
-            const reader = new FileReader();
+        dadosFichaAtual = snap.data();
 
-            reader.onload = async (event) => {
-                try {
-                    const imagemComprimida = await comprimirImagem(event.target.result);
-                    callback(imagemComprimida);
-                } catch (erro) {
-                    console.error(erro);
-                    alert("Não foi possível preparar a imagem.");
-                }
-            };
+        // Dados Básicos
+        document.getElementById("nome").value = dadosFichaAtual.nome || "";
+        document.getElementById("idade").value = dadosFichaAtual.idade || "";
+        document.getElementById("nivel").value = dadosFichaAtual.nivel || 1;
+        document.getElementById("exp").value = dadosFichaAtual.exp || "0";
 
-            reader.readAsDataURL(file);
-        } catch (erro) {
-            console.error(erro);
-            alert("Erro ao abrir a imagem.");
+        // Atributos
+        const atrb = dadosFichaAtual.atributos || {};
+        document.getElementById("forca").value = atrb.forca || 0;
+        document.getElementById("destreza").value = atrb.destreza || 0;
+        document.getElementById("constituicao").value = atrb.constituicao || 0;
+        document.getElementById("inteligencia").value = atrb.inteligencia || 0;
+        document.getElementById("percepcao").value = atrb.percepcao || 0;
+        document.getElementById("vontade").value = atrb.vontade || 0;
+        document.getElementById("carisma").value = atrb.carisma || 0;
+        
+        document.getElementById("esquiva").value = dadosFichaAtual.esquiva || 0;
+        document.getElementById("movimentacao").value = dadosFichaAtual.movimentacao || 6;
+        document.getElementById("diario").value = dadosFichaAtual.diario || "";
+
+        // Foto do Personagem
+        if (dadosFichaAtual.fotoPersonagem) {
+            const elFoto = document.getElementById("foto-personagem");
+            let img = elFoto.querySelector("img");
+            if (!img) {
+                img = document.createElement("img");
+                elFoto.appendChild(img);
+            }
+            img.src = dadosFichaAtual.fotoPersonagem;
         }
-    };
 
-    input.click();
-};
+        // Talentos
+        const talentosMarcados = dadosFichaAtual.talentos || {};
+        document.querySelectorAll(".chk-talento").forEach((chk, idx) => {
+            chk.checked = !!talentosMarcados[`talento_${idx}`];
+        });
 
-window.uploadFoto = function(elemento) {
-    window.abrirSeletor((imgBase64) => {
-        elemento.innerHTML = `
-            <img src="${imgBase64}" style="width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;top:0;left:0;z-index:1;pointer-events:none;">
-        `;
-
-        elemento.onclick = null;
-
-        const btn = document.createElement('div');
-        btn.innerHTML = 'X';
-        btn.className = 'absolute top-2 right-2 bg-red-800 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer z-20 text-sm font-bold shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none';
-
-        btn.onclick = (e) => {
-            e.stopPropagation();
-
-            elemento.innerHTML = '<i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span>FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao">PROPORÇÃO IDEAL: 9x16</div>';
-            elemento.onclick = () => window.uploadFoto(elemento);
-        };
-
-        elemento.appendChild(btn);
-
-        let timer;
-
-        elemento.onmouseenter = () => {
-            clearTimeout(timer);
-            btn.classList.remove('opacity-0');
-            btn.classList.add('opacity-100');
-        };
-
-        elemento.onmouseleave = () => {
-            timer = setTimeout(() => {
-                btn.classList.add('opacity-0');
-                btn.classList.remove('opacity-100');
-            }, 1500);
-        };
-    });
-};
-
-// ======================================================
-// INVENTÁRIO E EQUIPAMENTOS
-// ======================================================
-
-const gridInv = document.getElementById('inventario');
-const espacosEl = document.getElementById('espacos');
-const pesoEl = document.getElementById('peso-total');
-
-let quadradoAtual = null;
-let imagemAtualBase64 = null;
-
-function recalcularPesoTotal() {
-    let pesoTotal = 0;
-
-    document.querySelectorAll('.item-adicionado').forEach(item => {
-        const qtd = parseFloat(item.dataset.qtd) || 1;
-        const pesoStr = (item.dataset.peso || "0").toString().replace(',', '.');
-        pesoTotal += qtd * (parseFloat(pesoStr) || 0);
-    });
-
-    if (pesoEl) pesoEl.innerText = pesoTotal.toFixed(2);
-    if (espacosEl) {
-        espacosEl.innerText = document.querySelectorAll('#inventario .item-adicionado').length;
+        calcularAcoes();
+    } catch (err) {
+        console.error("Erro ao carregar ficha:", err);
     }
 }
 
-const modalHTML = `
-    <div id="modal-item" class="fixed inset-0 bg-black/80 z-50 flex justify-center items-center hidden">
-        <div class="painel-papel p-6 rounded-lg w-[400px] flex flex-col gap-3 relative">
-            <h3 class="fonte-titulo text-2xl text-[#111] border-b border-black/30 pb-2 mb-2">DADOS DO ITEM</h3>
+async function salvarFicha() {
+    if (!fichaIdAtual) return;
 
-            <div class="flex gap-4">
-                <div id="modal-preview" class="w-24 h-24 rounded flex flex-col justify-center items-center relative overflow-hidden text-black/30 border-2 border-dashed border-[#3a2e27] bg-black/10">
-                    <i class="fa-solid fa-camera text-2xl mb-1"></i>
-                    <span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>
-                </div>
-
-                <div class="flex-1 flex flex-col gap-2">
-                    <label class="flex flex-col text-sm font-bold text-[#111]">
-                        Nome do Item:
-                        <input type="text" id="modal-nome" class="input-campo p-2">
-                    </label>
-
-                    <button id="btn-upload" class="bg-[#3a2e27] text-white p-2 rounded font-bold hover:bg-[#a81c1c] transition text-sm">
-                        <i class="fa-solid fa-camera"></i> Escolher Imagem
-                    </button>
-                </div>
-            </div>
-
-            <div class="flex gap-2">
-                <label class="flex flex-col text-sm font-bold text-[#111] flex-1">
-                    Quantidade:
-                    <input type="number" id="modal-qtd" value="1" class="input-campo p-2">
-                </label>
-
-                <label class="flex flex-col text-sm font-bold text-[#111] flex-1">
-                    Peso Unit. (kg):
-                    <input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5">
-                </label>
-            </div>
-
-            <label class="flex flex-col text-sm font-bold text-[#111]">
-                Descrição:
-                <textarea id="modal-desc" class="input-campo p-2 resize-none h-16"></textarea>
-            </label>
-
-            <div class="flex justify-between mt-2 gap-2">
-                <button id="btn-excluir" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700 hidden">Excluir</button>
-                <button id="btn-cancelar" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700">Cancelar</button>
-                <button id="btn-salvar-item" class="bg-[#a81c1c] text-white p-2 rounded font-bold flex-1 hover:brightness-125">Salvar</button>
-            </div>
-        </div>
-    </div>
-`;
-
-document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-const modal = document.getElementById('modal-item');
-const modalPreview = document.getElementById('modal-preview');
-const inputNome = document.getElementById('modal-nome');
-const inputQtd = document.getElementById('modal-qtd');
-const inputPeso = document.getElementById('modal-peso');
-const inputDesc = document.getElementById('modal-desc');
-const btnExcluir = document.getElementById('btn-excluir');
-const btnCancelar = document.getElementById('btn-cancelar');
-const btnSalvarItem = document.getElementById('btn-salvar-item');
-const btnUpload = document.getElementById('btn-upload');
-
-function atualizarPreviewModal() {
-    if (imagemAtualBase64) {
-        modalPreview.innerHTML = `
-            <img src="${imagemAtualBase64}" style="width:100%;height:100%;object-fit:contain;padding:4px;">
-            <button id="btn-remover-img-modal" class="absolute top-1 right-1 bg-red-800 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer z-20 text-[10px] font-bold">X</button>
-        `;
-
-        modalPreview.classList.remove('border-dashed');
-        modalPreview.classList.add('border-solid');
-
-        document.getElementById('btn-remover-img-modal').onclick = (e) => {
-            e.preventDefault();
-            imagemAtualBase64 = null;
-            atualizarPreviewModal();
-        };
-    } else {
-        modalPreview.innerHTML = `
-            <i class="fa-solid fa-camera text-2xl mb-1"></i>
-            <span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>
-        `;
-
-        modalPreview.classList.add('border-dashed');
-        modalPreview.classList.remove('border-solid');
-    }
-}
-
-function abrirModal(q, dados = null) {
-    quadradoAtual = q;
-
-    if (dados && dados.nome) {
-        inputNome.value = dados.nome;
-        inputQtd.value = dados.qtd;
-        inputPeso.value = dados.peso;
-        inputDesc.value = dados.desc || "";
-
-        imagemAtualBase64 = dados.img || null;
-        btnExcluir.classList.remove('hidden');
-
-        document.querySelector('#modal-item h3').innerText = "EDITAR ITEM";
-        btnSalvarItem.innerText = "SALVAR";
-    } else {
-        inputNome.value = "";
-        inputQtd.value = 1;
-        inputPeso.value = "";
-        inputDesc.value = "";
-
-        imagemAtualBase64 = null;
-        btnExcluir.classList.add('hidden');
-
-        document.querySelector('#modal-item h3').innerText = "NOVO ITEM";
-        btnSalvarItem.innerText = "ADICIONAR";
-    }
-
-    atualizarPreviewModal();
-    modal.classList.remove('hidden');
-}
-
-btnCancelar.onclick = () => modal.classList.add('hidden');
-
-btnUpload.onclick = () => {
-    window.abrirSeletor((img) => {
-        imagemAtualBase64 = img;
-        atualizarPreviewModal();
+    const talentosMarcados = {};
+    document.querySelectorAll(".chk-talento").forEach((chk, idx) => {
+        talentosMarcados[`talento_${idx}`] = chk.checked;
     });
-};
 
-btnExcluir.onclick = () => {
-    if (quadradoAtual.id.startsWith('inv-')) {
-        quadradoAtual.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
-    } else {
-        quadradoAtual.innerHTML = quadradoAtual.getAttribute('data-original') + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
-    }
-
-    quadradoAtual.classList.remove('item-adicionado');
-    quadradoAtual.removeAttribute('data-itemData');
-    quadradoAtual.removeAttribute('data-peso');
-    quadradoAtual.removeAttribute('data-qtd');
-
-    recalcularPesoTotal();
-    modal.classList.add('hidden');
-};
-
-btnSalvarItem.onclick = () => {
-    const nome = inputNome.value;
-    const pesoString = inputPeso.value.replace(',', '.');
-    const qtd = parseInt(inputQtd.value) || 0;
-
-    if (!imagemAtualBase64) return alert("Escolha uma imagem.");
-    if (!nome.trim()) return alert("Digite o nome.");
-    if (qtd <= 0) return alert("Quantidade > 0.");
-    if (inputPeso.value.trim() === "") return alert("Digite o peso.");
+    const elFotoImg = document.getElementById("foto-personagem")?.querySelector("img");
 
     const dados = {
-        img: imagemAtualBase64,
-        nome,
-        qtd,
-        peso: pesoString,
-        desc: inputDesc.value
+        nome: document.getElementById("nome").value,
+        idade: document.getElementById("idade").value,
+        nivel: document.getElementById("nivel").value,
+        exp: document.getElementById("exp").value,
+        atributos: {
+            forca: parseInt(document.getElementById("forca").value) || 0,
+            destreza: parseInt(document.getElementById("destreza").value) || 0,
+            constituicao: parseInt(document.getElementById("constituicao").value) || 0,
+            inteligencia: parseInt(document.getElementById("inteligencia").value) || 0,
+            percepcao: parseInt(document.getElementById("percepcao").value) || 0,
+            vontade: parseInt(document.getElementById("vontade").value) || 0,
+            carisma: parseInt(document.getElementById("carisma").value) || 0,
+        },
+        esquiva: parseInt(document.getElementById("esquiva").value) || 0,
+        movimentacao: parseInt(document.getElementById("movimentacao").value) || 6,
+        diario: document.getElementById("diario").value,
+        talentos: talentosMarcados,
+        fotoPersonagem: elFotoImg ? elFotoImg.src : "",
+        dataAtualizacao: serverTimestamp()
     };
 
-    renderizarItem(quadradoAtual, dados);
-    recalcularPesoTotal();
-    modal.classList.add('hidden');
-};
-
-function renderizarItem(q, dados) {
-    const isEquipamento = !q.id.startsWith('inv-');
-    const classeTexto = isEquipamento
-        ? 'opacity-0 group-hover:opacity-100 transition-opacity'
-        : 'opacity-100';
-
-    q.innerHTML = `
-        ${dados.img ? `<img src="${dados.img}" style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;padding:4px;z-index:1;">` : ''}
-        <div class="text-[10px] font-bold bg-black/40 text-white px-1 rounded leading-tight w-full absolute bottom-0 left-0 z-10 text-center ${classeTexto}">
-            ${dados.nome} <br>
-            <span class="text-gray-300">Qtd: ${dados.qtd}</span> |
-            <span class="text-gray-300">${dados.peso}kg</span>
-        </div>
-        <div class="absolute inset-0 bg-black/80 text-white text-[10px] p-1 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-center items-center pointer-events-none z-20">
-            <span class="font-bold mb-1">EDITAR</span>
-            ${dados.desc ? `<span class="italic text-gray-300 truncate w-full text-center">"${dados.desc}"</span>` : ''}
-        </div>
-    `;
-
-    q.classList.add('item-adicionado');
-    q.dataset.itemData = JSON.stringify(dados);
-    q.dataset.peso = dados.peso;
-    q.dataset.qtd = dados.qtd;
-}
-
-if (gridInv) {
-    for (let i = 0; i < 16; i++) {
-        const q = document.createElement('div');
-
-        q.id = `inv-${i}`;
-        q.className = 'slot-vazio rounded aspect-square flex flex-col justify-center items-center relative text-center p-1 overflow-hidden group';
-        q.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
-
-        q.onclick = () => {
-            if (q.classList.contains('item-adicionado')) {
-                abrirModal(q, JSON.parse(q.dataset.itemData));
-            } else {
-                abrirModal(q);
-            }
-        };
-
-        gridInv.appendChild(q);
-    }
-}
-
-const slotsEquipamento = document.querySelectorAll('.slot-vazio:not(#inventario .slot-vazio)');
-
-slotsEquipamento.forEach(slot => {
-    if (!slot.classList.contains('foto-personagem')) {
-        slot.setAttribute('data-original', slot.innerHTML.split('<span')[0]);
-        slot.removeAttribute('onclick');
-
-        slot.onclick = () => {
-            if (slot.classList.contains('item-adicionado')) {
-                abrirModal(slot, JSON.parse(slot.dataset.itemData));
-            } else {
-                abrirModal(slot);
-            }
-        };
-    }
-});
-
-// --- TALENTOS ---
-const listaT = document.getElementById('talentos');
-
-if (listaT) {
-    for (let i = 1; i <= 20; i++) {
-        const l = document.createElement('div');
-
-        l.className = 'flex items-center gap-2 border-b border-black/20 pb-1';
-        l.innerHTML = `
-            <span class="font-bold w-5 text-right text-[#111] text-sm">${i}.</span>
-            <input type="text" class="bg-transparent border-none outline-none font-semibold text-[#111] text-base w-full">
-        `;
-
-        listaT.appendChild(l);
-    }
-}
-
-// ======================================================
-// IMAGENS SEPARADAS EM DOCUMENTOS DO FIRESTORE
-// ======================================================
-
-function imagemEhBase64(valor) {
-    return typeof valor === 'string' && valor.startsWith('data:image/');
-}
-
-async function salvarImagemSeparada(idImagem, dadosImagem) {
-    if (!dadosImagem) return;
-
-    await setDoc(
-        doc(db, "fichas", usuarioAtual.uid, "imagens", idImagem),
-        { imagem: dadosImagem }
-    );
-}
-
-async function carregarImagensSeparadas() {
-    const snapshot = await getDocs(
-        collection(db, "fichas", usuarioAtual.uid, "imagens")
-    );
-
-    const imagens = {};
-
-    snapshot.forEach(documento => {
-        imagens[documento.id] = documento.data().imagem || "";
-    });
-
-    return imagens;
-}
-
-// ======================================================
-// SALVAR FICHA
-// ======================================================
-
-document.getElementById('btn-salvar-ficha').onclick = async () => {
-    if (!usuarioAtual) return;
-
-    const botaoSalvar = document.getElementById('btn-salvar-ficha');
-    const textoOriginal = botaoSalvar.innerText;
-
-    botaoSalvar.disabled = true;
-    botaoSalvar.innerText = "SALVANDO...";
-
     try {
-        const dadosFicha = {
-            nome: document.getElementById('nome').value,
-            idade: document.getElementById('idade').value,
-            nivel: document.getElementById('nivel').value,
-            exp: document.getElementById('exp').value,
-
-            forca: forca.value,
-            destreza: destreza.value,
-            forcaAcao: forcaAcao.value,
-            destrezaAcao: destrezaAcao.value,
-
-            constituicao: document.getElementById('constituicao').value,
-            inteligencia: document.getElementById('inteligencia').value,
-            percepcao: document.getElementById('percepcao').value,
-            vontade: document.getElementById('vontade').value,
-            carisma: document.getElementById('carisma').value,
-            esquiva: document.getElementById('esquiva').value,
-            movimentacao: document.getElementById('movimentacao').value,
-            diario: document.getElementById('diario').value,
-
-            fotoPersonagem: "",
-            itensMochila: [],
-            itensEquipamento: []
-        };
-
-        const imagensAtivas = {};
-
-        // FOTO DO PERSONAGEM
-        const fotoContainer = document.getElementById('foto-personagem');
-        const imagemRetrato = fotoContainer.querySelector('img');
-
-        if (imagemRetrato) {
-            const foto = imagemRetrato.getAttribute('src');
-
-            if (imagemEhBase64(foto)) {
-                imagensAtivas.personagem = foto;
-            } else {
-                imagensAtivas.personagem = foto;
-            }
-
-            dadosFicha.fotoPersonagem = fotoContainer.innerHTML.replace(
-                foto,
-                "__IMAGEM_PERSONAGEM__"
-            );
-        } else {
-            dadosFicha.fotoPersonagem = fotoContainer.innerHTML;
-        }
-
-        // ITENS DA MOCHILA
-        const itensMochila = document.querySelectorAll('#inventario .item-adicionado');
-
-        for (const el of itensMochila) {
-            const dados = JSON.parse(el.dataset.itemData);
-            const imagemId = `mochila_${el.id}`;
-
-            if (dados.img) {
-                imagensAtivas[imagemId] = dados.img;
-            }
-
-            dadosFicha.itensMochila.push({
-                dados: {
-                    nome: dados.nome,
-                    qtd: dados.qtd,
-                    peso: dados.peso,
-                    desc: dados.desc || "",
-                    img: ""
-                },
-                imagemId,
-                posicao: el.id
-            });
-        }
-
-        // ITENS DOS EQUIPAMENTOS
-        const todosSlots = Array.from(document.querySelectorAll('.slot-vazio'));
-        const itensEquipamento = document.querySelectorAll('.slot-vazio.item-adicionado');
-
-        for (const el of itensEquipamento) {
-            const dados = JSON.parse(el.dataset.itemData);
-            const indice = todosSlots.indexOf(el);
-            const imagemId = `equipamento_${indice}`;
-
-            if (dados.img) {
-                imagensAtivas[imagemId] = dados.img;
-            }
-
-            dadosFicha.itensEquipamento.push({
-                dados: {
-                    nome: dados.nome,
-                    qtd: dados.qtd,
-                    peso: dados.peso,
-                    desc: dados.desc || "",
-                    img: ""
-                },
-                imagemId,
-                posicao: el.getAttribute('data-original')
-            });
-        }
-
-        // SALVA CADA IMAGEM EM SEU PRÓPRIO DOCUMENTO
-        for (const [idImagem, imagem] of Object.entries(imagensAtivas)) {
-            await salvarImagemSeparada(idImagem, imagem);
-        }
-
-        // REMOVE IMAGENS ANTIGAS QUE NÃO ESTÃO MAIS SENDO USADAS
-        const imagensAntigas = await getDocs(
-            collection(db, "fichas", usuarioAtual.uid, "imagens")
-        );
-
-        for (const documento of imagensAntigas.docs) {
-            if (!imagensAtivas[documento.id]) {
-                await deleteDoc(documento.ref);
-            }
-        }
-
-        // SALVA OS DADOS PRINCIPAIS DA FICHA
-        await setDoc(
-            doc(db, "fichas", usuarioAtual.uid),
-            dadosFicha
-        );
-
+        await updateDoc(doc(db, "fichas", fichaIdAtual), dados);
         alert("Ficha salva com sucesso!");
-
-    } catch (e) {
-        console.error("Falha ao salvar ficha:", e);
-
-        alert(
-            `Erro ao salvar ficha (${e.code || "desconhecido"}): ${e.message}`
-        );
-
-    } finally {
-        botaoSalvar.disabled = false;
-        botaoSalvar.innerText = textoOriginal;
+    } catch (err) {
+        console.error("Erro ao salvar ficha:", err);
+        alert("Erro ao salvar: " + err.message);
     }
-};
-
-// ======================================================
-// CARREGAR FICHA
-// ======================================================
-
-async function carregarFicha() {
-    if (!usuarioAtual) return;
-
-    const docSnap = await getDoc(
-        doc(db, "fichas", usuarioAtual.uid)
-    );
-
-    if (!docSnap.exists()) return;
-
-    const d = docSnap.data();
-
-    // BUSCA AS IMAGENS SEPARADAS
-    const imagensSeparadas = await carregarImagensSeparadas();
-
-    document.getElementById('nome').value = d.nome || '';
-    document.getElementById('idade').value = d.idade || '';
-    document.getElementById('nivel').value = d.nivel || '';
-    document.getElementById('exp').value = d.exp || '';
-
-    forca.value = d.forca || '';
-    destreza.value = d.destreza || '';
-    calcular();
-
-    document.getElementById('constituicao').value = d.constituicao || '';
-    document.getElementById('inteligencia').value = d.inteligencia || '';
-    document.getElementById('percepcao').value = d.percepcao || '';
-    document.getElementById('vontade').value = d.vontade || '';
-    document.getElementById('carisma').value = d.carisma || '';
-    document.getElementById('esquiva').value = d.esquiva || '';
-    document.getElementById('movimentacao').value = d.movimentacao || 6;
-    document.getElementById('diario').value = d.diario || '';
-
-    // FOTO DO PERSONAGEM
-    if (d.fotoPersonagem && d.fotoPersonagem.includes('img')) {
-        let fotoHTML = d.fotoPersonagem;
-
-        if (imagensSeparadas.personagem) {
-            fotoHTML = fotoHTML.replace(
-                "__IMAGEM_PERSONAGEM__",
-                imagensSeparadas.personagem
-            );
-        }
-
-        document.getElementById('foto-personagem').innerHTML = fotoHTML;
-    }
-
-    // LIMPA OS ITENS VISUAIS ANTES DE RECARREGAR
-    document.querySelectorAll('.item-adicionado').forEach(el => {
-        el.classList.remove('item-adicionado');
-        el.removeAttribute('data-itemData');
-        el.removeAttribute('data-peso');
-        el.removeAttribute('data-qtd');
-    });
-
-    // CARREGA ITENS DA MOCHILA
-    if (d.itensMochila) {
-        d.itensMochila.forEach(item => {
-            const el = document.getElementById(item.posicao);
-
-            if (el) {
-                const dados = { ...item.dados };
-
-                if (item.imagemId && imagensSeparadas[item.imagemId]) {
-                    dados.img = imagensSeparadas[item.imagemId];
-                }
-
-                // Compatibilidade com fichas antigas
-                if (!dados.img && item.dados.img) {
-                    dados.img = item.dados.img;
-                }
-
-                renderizarItem(el, dados);
-            }
-        });
-    }
-
-    // CARREGA EQUIPAMENTOS
-    if (d.itensEquipamento) {
-        d.itensEquipamento.forEach(item => {
-            const el = Array.from(document.querySelectorAll('.slot-vazio'))
-                .find(e => e.getAttribute('data-original') === item.posicao);
-
-            if (el) {
-                const dados = { ...item.dados };
-
-                if (item.imagemId && imagensSeparadas[item.imagemId]) {
-                    dados.img = imagensSeparadas[item.imagemId];
-                }
-
-                // Compatibilidade com fichas antigas
-                if (!dados.img && item.dados.img) {
-                    dados.img = item.dados.img;
-                }
-
-                renderizarItem(el, dados);
-            }
-        });
-    }
-
-    recalcularPesoTotal();
 }
 
-// ======================================================
-// PAINEL DO MESTRE
-// ======================================================
+// ==========================================
+// 7. PAINEL DO MESTRE & GERENCIAMENTO
+// ==========================================
+async function abrirPainelMestre() {
+    if (!modoMestre) return;
+    const modal = document.getElementById("painel-mestre");
+    modal?.classList.remove("hidden");
+    await carregarListaFichas();
+}
 
-document.getElementById('btn-painel-mestre').onclick = async () => {
-    document.getElementById('painel-mestre').classList.remove('hidden');
+function fecharPainelMestre() {
+    document.getElementById("painel-mestre")?.classList.add("hidden");
+}
 
-    const lista = document.getElementById('lista-jogadores');
-    lista.innerHTML = '<p>Buscando...</p>';
+async function carregarListaFichas() {
+    const listaContainer = document.getElementById("lista-jogadores");
+    if (!listaContainer) return;
+
+    listaContainer.innerHTML = "<p class='text-center mt-4 font-bold'>Buscando fichas...</p>";
 
     try {
         const querySnapshot = await getDocs(collection(db, "fichas"));
-
-        lista.innerHTML = '';
+        listaContainer.innerHTML = "";
 
         if (querySnapshot.empty) {
-            return lista.innerHTML = '<p class="text-center mt-10">Nenhum sobrevivente cadastrado ainda.</p>';
+            listaContainer.innerHTML = "<p class='text-center mt-4'>Nenhuma ficha registrada.</p>";
+            return;
         }
 
-        querySnapshot.forEach((documento) => {
-            const ficha = documento.data();
+        querySnapshot.forEach((documentoSnap) => {
+            const ficha = documentoSnap.data();
+            const id = documentoSnap.id;
+            const tipo = ficha.tipo || "jogador";
 
-            const div = document.createElement('div');
-
-            div.className = 'border-b border-black/20 p-2 mb-2 flex justify-between items-center bg-white/20 rounded';
-
-            div.innerHTML = `
+            const divCard = document.createElement("div");
+            divCard.className = "flex flex-wrap justify-between items-center p-3 bg-white/50 mb-2 rounded border border-black/20 gap-2";
+            divCard.innerHTML = `
                 <div>
-                    <strong>Nome:</strong> ${ficha.nome || 'Sem nome'} |
-                    <strong>Nível:</strong> ${ficha.nivel || 1} |
-                    <strong>Força:</strong> ${ficha.forca || '-'} (${ficha.forcaAcao || 0}%)
+                    <span class="font-bold text-lg text-[#111]">${ficha.nome || "Sem Nome"}</span>
+                    <span class="text-xs ml-2 px-2 py-0.5 rounded text-white ${tipo === 'pdm' ? 'bg-purple-800' : 'bg-blue-800'}">${tipo.toUpperCase()}</span>
+                    <div class="text-xs text-black/70">ID: ${id} | Proprietário: ${ficha.proprietarioUid || 'Não vinculado'}</div>
+                </div>
+                <div class="flex gap-1 flex-wrap">
+                    <button class="btn-abrir bg-blue-700 text-white text-xs px-2 py-1 rounded font-bold hover:bg-blue-800">Abrir</button>
+                    <button class="btn-vincular bg-yellow-700 text-white text-xs px-2 py-1 rounded font-bold hover:bg-yellow-800">Vincular UID</button>
+                    <button class="btn-duplicar bg-green-700 text-white text-xs px-2 py-1 rounded font-bold hover:bg-green-800">Duplicar</button>
+                    <button class="btn-excluir bg-red-700 text-white text-xs px-2 py-1 rounded font-bold hover:bg-red-800">Excluir</button>
                 </div>
             `;
 
-            lista.appendChild(div);
+            // Eventos dos botões do card
+            divCard.querySelector(".btn-abrir").onclick = () => window.open(`?fichaId=${id}`, "_blank");
+            divCard.querySelector(".btn-vincular").onclick = () => vincularJogador(id, ficha.proprietarioUid);
+            divCard.querySelector(".btn-duplicar").onclick = () => duplicarFicha(id, ficha);
+            divCard.querySelector(".btn-excluir").onclick = () => excluirFicha(id);
+
+            listaContainer.appendChild(divCard);
+        });
+    } catch (err) {
+        console.error("Erro ao listar fichas:", err);
+        listaContainer.innerHTML = "<p class='text-center mt-4 text-red-700 font-bold'>Erro ao carregar fichas.</p>";
+    }
+}
+
+async function criarPDM() {
+    const nomePDM = prompt("Informe o nome do PDM:");
+    if (!nomePDM) return;
+
+    try {
+        const novaFichaRef = await addDoc(collection(db, "fichas"), {
+            nome: nomePDM,
+            tipo: "pdm",
+            criadoPor: usuarioAtual.uid,
+            proprietarioUid: usuarioAtual.uid,
+            dataCriacao: serverTimestamp(),
+            atributos: { forca: 10, destreza: 10, constituicao: 10, inteligencia: 10, percepcao: 10, vontade: 10, carisma: 10 },
+            esquiva: 0,
+            movimentacao: 6,
+            diario: "",
+            talentos: {}
         });
 
-    } catch (e) {
-        console.error('Falha ao listar fichas:', e);
-
-        lista.textContent =
-            `Erro ao carregar as fichas (${e.code || 'desconhecido'}): ${e.message}`;
+        alert("PDM criado com sucesso!");
+        carregarListaFichas();
+    } catch (err) {
+        console.error("Erro ao criar PDM:", err);
+        alert("Erro ao criar PDM: " + err.message);
     }
-};
+}
 
-document.getElementById('btn-fechar-mestre').onclick = () => {
-    document.getElementById('painel-mestre').classList.add('hidden');
-};
+async function vincularJogador(fichaId, uidAtual) {
+    const novoUid = prompt("Digite o UID da conta Firebase do Jogador:", uidAtual || "");
+    if (novoUid === null) return;
+
+    try {
+        await updateDoc(doc(db, "fichas", fichaId), {
+            proprietarioUid: novoUid.trim()
+        });
+        alert("Proprietário atualizado!");
+        carregarListaFichas();
+    } catch (err) {
+        alert("Erro ao vincular jogador: " + err.message);
+    }
+}
+
+async function duplicarFicha(fichaId, dadosOriginais) {
+    if (!confirm(`Deseja duplicar a ficha "${dadosOriginais.nome}"?`)) return;
+
+    try {
+        const copia = { ...dadosOriginais };
+        delete copia.id;
+        copia.nome = `${dadosOriginais.nome} (Cópia)`;
+        copia.dataCriacao = serverTimestamp();
+
+        await addDoc(collection(db, "fichas"), copia);
+        alert("Ficha duplicada com sucesso!");
+        carregarListaFichas();
+    } catch (err) {
+        alert("Erro ao duplicar ficha: " + err.message);
+    }
+}
+
+async function excluirFicha(fichaId) {
+    if (!confirm("Tem certeza que deseja excluir esta ficha permanentemente?")) return;
+
+    try {
+        await deleteDoc(doc(db, "fichas", fichaId));
+        alert("Ficha excluída com sucesso!");
+        carregarListaFichas();
+    } catch (err) {
+        alert("Erro ao excluir ficha: " + err.message);
+    }
+}
