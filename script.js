@@ -1,4 +1,3 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import {
     getAuth,
@@ -15,7 +14,11 @@ import {
     getDoc,
     collection,
     getDocs,
-    deleteDoc
+    query,
+    where,
+    limit,
+    deleteDoc,
+    writeBatch
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
@@ -33,6 +36,11 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let usuarioAtual = null;
+let fichaAtualId = null;
+let fichaAtualTipo = "jogador";
+let fichaAtualProprietarioUid = null;
+let fichaAtualCriadoPor = null;
+
 const emailMestre = "rpggrupoc5@gmail.com";
 
 // --- ATRIBUTOS (AÇÃO%) ---
@@ -42,8 +50,13 @@ const forcaAcao = document.getElementById('forca-acao');
 const destrezaAcao = document.getElementById('destreza-acao');
 
 function calcular() {
-    if (forca.value) forcaAcao.value = parseInt(forca.value) * 3;
-    if (destreza.value) destrezaAcao.value = parseInt(destreza.value) * 3;
+    if (forca && forcaAcao) {
+        forcaAcao.value = forca.value ? parseInt(forca.value) * 3 : '';
+    }
+
+    if (destreza && destrezaAcao) {
+        destrezaAcao.value = destreza.value ? parseInt(destreza.value) * 3 : '';
+    }
 }
 
 if (forca) forca.addEventListener('input', calcular);
@@ -87,6 +100,12 @@ onAuthStateChanged(auth, (user) => {
         telaLogin.classList.add('hidden');
         sitePrincipal.classList.remove('hidden');
 
+        const ehMestre = (user.email || "").trim().toLowerCase() === emailMestre.toLowerCase();
+        const parametros = new URLSearchParams(window.location.search);
+        const fichaSolicitada = parametros.get("ficha");
+
+        fichaAtualId = fichaSolicitada || user.uid;
+
         carregarFicha().catch((error) => {
             console.error("Falha ao carregar ficha:", error);
             alert(`Erro ao carregar ficha (${error.code || "desconhecido"}): ${error.message}`);
@@ -94,12 +113,14 @@ onAuthStateChanged(auth, (user) => {
 
         const btnMestre = document.getElementById('btn-painel-mestre');
 
-        if ((user.email || "").trim().toLowerCase() === emailMestre.toLowerCase()) {
-            btnMestre.classList.remove('hidden');
-            btnMestre.style.display = 'block';
-        } else {
-            btnMestre.classList.add('hidden');
-            btnMestre.style.display = 'none';
+        if (btnMestre) {
+            if (ehMestre) {
+                btnMestre.classList.remove('hidden');
+                btnMestre.style.display = 'block';
+            } else {
+                btnMestre.classList.add('hidden');
+                btnMestre.style.display = 'none';
+            }
         }
     } else {
         usuarioAtual = null;
@@ -241,6 +262,7 @@ function recalcularPesoTotal() {
     });
 
     if (pesoEl) pesoEl.innerText = pesoTotal.toFixed(2);
+
     if (espacosEl) {
         espacosEl.innerText = document.querySelectorAll('#inventario .item-adicionado').length;
     }
@@ -504,14 +526,14 @@ async function salvarImagemSeparada(idImagem, dadosImagem) {
     if (!dadosImagem) return;
 
     await setDoc(
-        doc(db, "fichas", usuarioAtual.uid, "imagens", idImagem),
+        doc(db, "fichas", fichaAtualId, "imagens", idImagem),
         { imagem: dadosImagem }
     );
 }
 
 async function carregarImagensSeparadas() {
     const snapshot = await getDocs(
-        collection(db, "fichas", usuarioAtual.uid, "imagens")
+        collection(db, "fichas", fichaAtualId, "imagens")
     );
 
     const imagens = {};
@@ -538,6 +560,9 @@ document.getElementById('btn-salvar-ficha').onclick = async () => {
 
     try {
         const dadosFicha = {
+            tipo: fichaAtualTipo,
+            proprietarioUid: fichaAtualProprietarioUid || (fichaAtualTipo === 'jogador' ? fichaAtualId : null),
+            criadoPor: fichaAtualCriadoPor || usuarioAtual.uid,
             nome: document.getElementById('nome').value,
             idade: document.getElementById('idade').value,
             nivel: document.getElementById('nivel').value,
@@ -556,6 +581,7 @@ document.getElementById('btn-salvar-ficha').onclick = async () => {
             esquiva: document.getElementById('esquiva').value,
             movimentacao: document.getElementById('movimentacao').value,
             diario: document.getElementById('diario').value,
+            talentos: Array.from(document.querySelectorAll('#talentos input')).map(input => input.value),
 
             fotoPersonagem: "",
             itensMochila: [],
@@ -642,7 +668,7 @@ document.getElementById('btn-salvar-ficha').onclick = async () => {
 
         // REMOVE IMAGENS ANTIGAS QUE NÃO ESTÃO MAIS SENDO USADAS
         const imagensAntigas = await getDocs(
-            collection(db, "fichas", usuarioAtual.uid, "imagens")
+            collection(db, "fichas", fichaAtualId, "imagens")
         );
 
         for (const documento of imagensAntigas.docs) {
@@ -653,7 +679,7 @@ document.getElementById('btn-salvar-ficha').onclick = async () => {
 
         // SALVA OS DADOS PRINCIPAIS DA FICHA
         await setDoc(
-            doc(db, "fichas", usuarioAtual.uid),
+            doc(db, "fichas", fichaAtualId),
             dadosFicha
         );
 
@@ -677,15 +703,43 @@ document.getElementById('btn-salvar-ficha').onclick = async () => {
 // ======================================================
 
 async function carregarFicha() {
-    if (!usuarioAtual) return;
+    if (!usuarioAtual || !fichaAtualId) return;
 
-    const docSnap = await getDoc(
-        doc(db, "fichas", usuarioAtual.uid)
-    );
+    let docSnap = await getDoc(doc(db, "fichas", fichaAtualId));
+    const ehMestre = (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
 
-    if (!docSnap.exists()) return;
+    if (!docSnap.exists() && fichaAtualId === usuarioAtual.uid) {
+        const vinculadas = await getDocs(query(
+            collection(db, 'fichas'),
+            where('proprietarioUid', '==', usuarioAtual.uid),
+            limit(1)
+        ));
+
+        if (!vinculadas.empty) {
+            docSnap = vinculadas.docs[0];
+            fichaAtualId = docSnap.id;
+        }
+    }
+
+    if (!docSnap.exists()) {
+        if (fichaAtualId !== usuarioAtual.uid) {
+            alert("Esta ficha não foi encontrada ou você não tem acesso a ela.");
+            window.location.href = window.location.pathname;
+        }
+        return;
+    }
 
     const d = docSnap.data();
+
+    if (!ehMestre && fichaAtualId !== usuarioAtual.uid && d.proprietarioUid !== usuarioAtual.uid) {
+        alert('Você não tem permissão para abrir esta ficha.');
+        window.location.href = window.location.pathname;
+        return;
+    }
+
+    fichaAtualTipo = d.tipo || (fichaAtualId === usuarioAtual.uid ? "jogador" : "jogador");
+    fichaAtualProprietarioUid = d.proprietarioUid || (fichaAtualTipo === "jogador" ? fichaAtualId : null);
+    fichaAtualCriadoPor = d.criadoPor || fichaAtualProprietarioUid || usuarioAtual.uid;
 
     // BUSCA AS IMAGENS SEPARADAS
     const imagensSeparadas = await carregarImagensSeparadas();
@@ -707,6 +761,11 @@ async function carregarFicha() {
     document.getElementById('esquiva').value = d.esquiva || '';
     document.getElementById('movimentacao').value = d.movimentacao || 6;
     document.getElementById('diario').value = d.diario || '';
+
+    const camposTalentos = document.querySelectorAll('#talentos input');
+    camposTalentos.forEach((input, indice) => {
+        input.value = (d.talentos || [])[indice] || '';
+    });
 
     // FOTO DO PERSONAGEM
     if (d.fotoPersonagem && d.fotoPersonagem.includes('img')) {
@@ -779,50 +838,323 @@ async function carregarFicha() {
 }
 
 // ======================================================
-// PAINEL DO MESTRE
+// PAINEL DO MESTRE - GERENCIAMENTO DE FICHAS
 // ======================================================
 
-document.getElementById('btn-painel-mestre').onclick = async () => {
-    document.getElementById('painel-mestre').classList.remove('hidden');
+function abrirFichaEmNovaAba(idFicha) {
+    const url = new URL(window.location.href);
+    url.searchParams.set("ficha", idFicha);
+    window.open(url.toString(), "_blank");
+}
 
+function criarBotaoPainel(texto, classe, acao) {
+    const botao = document.createElement('button');
+    botao.type = 'button';
+    botao.textContent = texto;
+    botao.className = `px-2 py-1 rounded text-xs font-bold text-white ${classe}`;
+    botao.addEventListener('click', acao);
+    return botao;
+}
+
+async function atualizarPainelMestre() {
     const lista = document.getElementById('lista-jogadores');
-    lista.innerHTML = '<p>Buscando...</p>';
+
+    if (!lista) return;
+
+    lista.textContent = 'Buscando fichas...';
 
     try {
-        const querySnapshot = await getDocs(collection(db, "fichas"));
-
+        const snapshot = await getDocs(collection(db, 'fichas'));
         lista.innerHTML = '';
 
-        if (querySnapshot.empty) {
-            return lista.innerHTML = '<p class="text-center mt-10">Nenhum sobrevivente cadastrado ainda.</p>';
+        if (snapshot.empty) {
+            lista.textContent = 'Nenhuma ficha cadastrada ainda.';
+            return;
         }
 
-        querySnapshot.forEach((documento) => {
+        const fichasOrdenadas = [...snapshot.docs].sort((a, b) =>
+            (a.data().nome || '').localeCompare(b.data().nome || '', 'pt-BR')
+        );
+
+        fichasOrdenadas.forEach((documento) => {
             const ficha = documento.data();
+            const idFicha = documento.id;
+            const tipo = ficha.tipo || 'jogador';
 
-            const div = document.createElement('div');
+            const proprietario = ficha.proprietarioNome || ficha.proprietarioEmail ||
+                (ficha.proprietarioUid
+                    ? `Conta vinculada (${ficha.proprietarioUid.slice(0, 8)}...)`
+                    : (tipo === 'jogador'
+                        ? `Conta antiga (${idFicha.slice(0, 8)}...)`
+                        : 'Sem proprietário'));
 
-            div.className = 'border-b border-black/20 p-2 mb-2 flex justify-between items-center bg-white/20 rounded';
+            const linha = document.createElement('div');
+            linha.className = 'border-b border-black/20 p-3 mb-2 flex flex-col gap-2 bg-white/30 rounded';
 
-            div.innerHTML = `
-                <div>
-                    <strong>Nome:</strong> ${ficha.nome || 'Sem nome'} |
-                    <strong>Nível:</strong> ${ficha.nivel || 1} |
-                    <strong>Força:</strong> ${ficha.forca || '-'} (${ficha.forcaAcao || 0}%)
-                </div>
-            `;
+            const topo = document.createElement('div');
+            topo.className = 'flex flex-wrap justify-between gap-2 items-start';
 
-            lista.appendChild(div);
+            const info = document.createElement('div');
+            info.className = 'min-w-0';
+
+            const nome = document.createElement('strong');
+            nome.className = 'text-lg';
+            nome.textContent = ficha.nome || 'Sem nome';
+
+            const detalhes = document.createElement('div');
+            detalhes.className = 'text-sm';
+            detalhes.textContent = `${tipo === 'pdm' ? 'PDM' : 'Jogador'} | Nível ${ficha.nivel || 1} | Força ${ficha.forca || '-'} (${ficha.forcaAcao || 0}%)`;
+
+            const dono = document.createElement('div');
+            dono.className = 'text-xs opacity-80';
+            dono.textContent = `Proprietário: ${proprietario}`;
+
+            info.append(nome, detalhes, dono);
+
+            const abrir = criarBotaoPainel(
+                'ABRIR',
+                'bg-[#3a2e27]',
+                () => abrirFichaEmNovaAba(idFicha)
+            );
+
+            topo.append(info, abrir);
+
+            const acoes = document.createElement('div');
+            acoes.className = 'flex flex-wrap gap-2';
+
+            acoes.append(
+                criarBotaoPainel('EDITAR', 'bg-[#7a4e32]', () => abrirFichaEmNovaAba(idFicha)),
+                criarBotaoPainel('DUPLICAR', 'bg-blue-800', () => duplicarFicha(idFicha, ficha)),
+                criarBotaoPainel('VINCULAR JOGADOR', 'bg-green-800', () => vincularJogador(idFicha, ficha)),
+                criarBotaoPainel('DESVINCULAR', 'bg-gray-700', () => desvincularJogador(idFicha, ficha)),
+                criarBotaoPainel('EXCLUIR', 'bg-red-800', () => excluirFicha(idFicha, ficha))
+            );
+
+            linha.append(topo, acoes);
+            lista.appendChild(linha);
         });
 
     } catch (e) {
         console.error('Falha ao listar fichas:', e);
-
-        lista.textContent =
-            `Erro ao carregar as fichas (${e.code || 'desconhecido'}): ${e.message}`;
+        lista.textContent = `Erro ao carregar as fichas (${e.code || 'desconhecido'}): ${e.message}`;
     }
-};
+}
 
-document.getElementById('btn-fechar-mestre').onclick = () => {
-    document.getElementById('painel-mestre').classList.add('hidden');
-};
+async function criarPDM() {
+    if (!usuarioAtual || (usuarioAtual.email || '').toLowerCase() !== emailMestre.toLowerCase()) {
+        return;
+    }
+
+    const nome = prompt('Nome do novo PDM:', 'Novo PDM');
+    if (nome === null) return;
+
+    try {
+        const novaFicha = doc(collection(db, 'fichas'));
+
+        await setDoc(novaFicha, {
+            tipo: 'pdm',
+            proprietarioUid: null,
+            proprietarioNome: '',
+            criadoPor: usuarioAtual.uid,
+            nome: nome.trim() || 'Novo PDM',
+            idade: '',
+            nivel: '1',
+            exp: '',
+            forca: '',
+            destreza: '',
+            forcaAcao: '',
+            destrezaAcao: '',
+            constituicao: '',
+            inteligencia: '',
+            percepcao: '',
+            vontade: '',
+            carisma: '',
+            esquiva: '',
+            movimentacao: '6',
+            diario: '',
+            talentos: [],
+            fotoPersonagem: '',
+            itensMochila: [],
+            itensEquipamento: []
+        });
+
+        await atualizarPainelMestre();
+
+        alert('PDM criado! Ele já está na lista. Clique em ABRIR ou EDITAR para trabalhar na ficha.');
+
+    } catch (e) {
+        console.error(e);
+        alert(`Não foi possível criar o PDM: ${e.message}`);
+    }
+}
+
+async function excluirFicha(idFicha, ficha) {
+    const nome = ficha.nome || 'esta ficha';
+
+    if (!confirm(`Tem certeza de que deseja excluir ${nome}? Esta ação não pode ser desfeita.`)) {
+        return;
+    }
+
+    try {
+        const imagens = await getDocs(collection(db, 'fichas', idFicha, 'imagens'));
+        const lote = writeBatch(db);
+
+        imagens.forEach(item => lote.delete(item.ref));
+
+        lote.delete(doc(db, 'fichas', idFicha));
+
+        await lote.commit();
+        await atualizarPainelMestre();
+
+        alert('Ficha e imagens excluídas.');
+
+    } catch (e) {
+        console.error(e);
+        alert(`Erro ao excluir ficha: ${e.message}`);
+    }
+}
+
+async function duplicarFicha(idFicha, ficha) {
+    const novoNome = prompt('Nome da cópia:', `${ficha.nome || 'Personagem'} (Cópia)`);
+
+    if (novoNome === null) return;
+
+    try {
+        const imagensOrigem = await getDocs(collection(db, 'fichas', idFicha, 'imagens'));
+        const novaRef = doc(collection(db, 'fichas'));
+
+        const copia = {
+            ...ficha,
+            nome: novoNome.trim() || `${ficha.nome || 'Personagem'} (Cópia)`,
+            tipo: 'pdm',
+            proprietarioUid: null,
+            proprietarioNome: '',
+            proprietarioEmail: '',
+            criadoPor: usuarioAtual.uid
+        };
+
+        await setDoc(novaRef, copia);
+
+        const lote = writeBatch(db);
+
+        imagensOrigem.forEach(item => {
+            lote.set(
+                doc(db, 'fichas', novaRef.id, 'imagens', item.id),
+                item.data()
+            );
+        });
+
+        if (!imagensOrigem.empty) {
+            await lote.commit();
+        }
+
+        await atualizarPainelMestre();
+
+        alert('Cópia criada como PDM independente, sem vínculo com jogador.');
+
+    } catch (e) {
+        console.error(e);
+        alert(`Erro ao duplicar ficha: ${e.message}`);
+    }
+}
+
+async function vincularJogador(idFicha, ficha) {
+    const uid = prompt(
+        'Informe o UID da conta Firebase do jogador. O e-mail sozinho não identifica a conta com segurança:',
+        ficha.proprietarioUid || ''
+    );
+
+    if (uid === null) return;
+
+    const uidLimpo = uid.trim();
+
+    if (!uidLimpo) {
+        return alert('O UID não pode ficar vazio. Use DESVINCULAR para retirar um vínculo.');
+    }
+
+    if (uidLimpo.length < 10) {
+        return alert('Esse UID parece incompleto. Peça ao jogador o UID completo da conta Firebase.');
+    }
+
+    const nomeJogador = prompt('Nome do jogador (opcional):', ficha.proprietarioNome || '');
+
+    if (nomeJogador === null) return;
+
+    try {
+        await setDoc(
+            doc(db, 'fichas', idFicha),
+            {
+                proprietarioUid: uidLimpo,
+                proprietarioNome: nomeJogador.trim(),
+                tipo: 'jogador'
+            },
+            { merge: true }
+        );
+
+        await atualizarPainelMestre();
+
+        alert('Vínculo registrado. O jogador poderá acessar esta ficha ao entrar com a conta correspondente, desde que as regras atualizadas do Firestore também estejam publicadas.');
+
+    } catch (e) {
+        console.error(e);
+        alert(`Erro ao vincular jogador: ${e.message}`);
+    }
+}
+
+async function desvincularJogador(idFicha, ficha) {
+    if (!ficha.proprietarioUid) {
+        return alert('Esta ficha não possui jogador vinculado.');
+    }
+
+    if (!confirm(`Desvincular o jogador desta ficha (${ficha.nome || 'Sem nome'})?`)) {
+        return;
+    }
+
+    try {
+        await setDoc(
+            doc(db, 'fichas', idFicha),
+            {
+                proprietarioUid: null,
+                proprietarioNome: '',
+                proprietarioEmail: '',
+                tipo: 'pdm'
+            },
+            { merge: true }
+        );
+
+        await atualizarPainelMestre();
+
+        alert('Jogador desvinculado. A ficha agora está independente.');
+
+    } catch (e) {
+        console.error(e);
+        alert(`Erro ao desvincular: ${e.message}`);
+    }
+}
+
+// ======================================================
+// BOTÕES DO PAINEL DO MESTRE
+// ======================================================
+
+const btnPainelMestre = document.getElementById('btn-painel-mestre');
+
+if (btnPainelMestre) {
+    btnPainelMestre.onclick = async () => {
+        document.getElementById('painel-mestre').classList.remove('hidden');
+        await atualizarPainelMestre();
+    };
+}
+
+const btnFecharMestre = document.getElementById('btn-fechar-mestre');
+
+if (btnFecharMestre) {
+    btnFecharMestre.onclick = () => {
+        document.getElementById('painel-mestre').classList.add('hidden');
+    };
+}
+
+const btnCriarPDM = document.getElementById('btn-criar-pdm');
+
+if (btnCriarPDM) {
+    btnCriarPDM.onclick = criarPDM;
+}
