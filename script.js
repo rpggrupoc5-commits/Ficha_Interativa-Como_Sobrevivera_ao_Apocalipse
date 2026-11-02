@@ -19,7 +19,8 @@ import {
     where,
     limit,
     deleteDoc,
-    writeBatch
+    writeBatch,
+    serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // --- CONFIGURAÇÃO DO FIREBASE ---
@@ -92,6 +93,18 @@ document.getElementById('btn-sair').onclick = () =>
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         usuarioAtual = user;
+        // Registra/atualiza a conta no Firestore para que o mestre veja o UID
+        // sem precisar abrir o Firebase Authentication.
+        try {
+            await setDoc(doc(db, 'usuarios', user.uid), {
+                uid: user.uid,
+                email: user.email || '',
+                nome: user.displayName || (user.email ? user.email.split('@')[0] : 'Jogador'),
+                atualizadoEm: serverTimestamp()
+            }, { merge: true });
+        } catch (erroPerfil) {
+            console.warn('Não foi possível registrar o perfil do jogador:', erroPerfil);
+        }
         telaLogin.classList.add('hidden');
         sitePrincipal.classList.remove('hidden');
         const ehMestre = (user.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
@@ -109,7 +122,7 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('dashboard-mestre').classList.remove('hidden');
             document.getElementById('dashboard-jogador').classList.add('hidden');
             document.getElementById('area-ficha').classList.add('hidden');
-            carregarDashboardMestre();
+            atualizarPainelMestre();
         } else {
             document.getElementById('dashboard-jogador').classList.remove('hidden');
             document.getElementById('dashboard-mestre').classList.add('hidden');
@@ -916,6 +929,55 @@ async function carregarDashboardJogador() {
     }
 }
 
+function criarLinhaContaJogador(uid, dados) {
+    const linha = document.createElement('div');
+    linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-2 bg-white/60 border border-black/20 rounded p-3 text-[#111]';
+    const info = document.createElement('div');
+    info.className = 'min-w-0';
+    const nome = document.createElement('div');
+    nome.className = 'font-bold text-lg';
+    nome.textContent = dados.nome || 'Jogador';
+    const email = document.createElement('div');
+    email.className = 'text-sm';
+    email.textContent = dados.email || 'E-mail não disponível';
+    const identificador = document.createElement('div');
+    identificador.className = 'text-xs text-[#3a2e27] break-all';
+    identificador.textContent = `UID: ${uid}`;
+    info.append(nome, email, identificador);
+    const copiar = criarBotaoPainel('COPIAR UID', 'bg-green-800', async () => {
+        try {
+            await navigator.clipboard.writeText(uid);
+            alert(`UID copiado! Agora use VINCULAR na ficha desejada.\n\n${uid}`);
+        } catch (e) {
+            prompt('Copie o UID abaixo:', uid);
+        }
+    });
+    linha.append(info, copiar);
+    return linha;
+}
+
+async function carregarContasJogadores() {
+    const lista = document.getElementById('lista-contas-jogadores');
+    if (!lista) return;
+    lista.innerHTML = '<p class="text-[#111]">Carregando contas registradas...</p>';
+    try {
+        const snapshot = await getDocs(collection(db, 'usuarios'));
+        const contas = snapshot.docs.map(d => ({ uid: d.id, dados: d.data() }))
+            .filter(conta => (conta.dados.email || '').toLowerCase() !== emailMestre.toLowerCase())
+            .sort((a, b) => (a.dados.nome || a.dados.email || '').localeCompare(b.dados.nome || b.dados.email || '', 'pt-BR'));
+        lista.innerHTML = '';
+        document.getElementById('contador-contas').textContent = `Contas: ${contas.length}`;
+        if (!contas.length) {
+            lista.innerHTML = '<p class="text-[#111]">Nenhuma conta registrada ainda. Os jogadores aparecerão aqui quando fizerem login no painel.</p>';
+            return;
+        }
+        contas.forEach(conta => lista.appendChild(criarLinhaContaJogador(conta.uid, conta.dados)));
+    } catch (e) {
+        console.error('Erro ao carregar contas de jogadores:', e);
+        lista.innerHTML = `<p class="text-red-800">Não foi possível carregar as contas (${e.code || 'erro'}): ${e.message}</p>`;
+    }
+}
+
 async function carregarDashboardMestre() {
     const lista = document.getElementById('cards-mestre');
     lista.innerHTML = '<p class="text-[#111]">Carregando todas as fichas...</p>';
@@ -934,7 +996,9 @@ async function carregarDashboardMestre() {
     }
 }
 
-async function atualizarPainelMestre() { return carregarDashboardMestre(); }
+async function atualizarPainelMestre() {
+    await Promise.all([carregarDashboardMestre(), carregarContasJogadores()]);
+}
 
 function voltarAoPainel() {
     const url = new URL(window.location.href); url.searchParams.delete('ficha'); window.location.href = url.toString();
@@ -944,6 +1008,8 @@ document.getElementById('btn-voltar-painel').onclick = voltarAoPainel;
 document.getElementById('btn-sair-jogador').onclick = () => signOut(auth).then(() => window.location.reload());
 document.getElementById('btn-sair-mestre').onclick = () => signOut(auth).then(() => window.location.reload());
 document.getElementById('btn-criar-pdm-dashboard').onclick = criarPDM;
+const btnAtualizarContas = document.getElementById('btn-atualizar-contas');
+if (btnAtualizarContas) btnAtualizarContas.onclick = carregarContasJogadores;
 
 // ======================================================
 // ADMINISTRAÇÃO DE FICHAS PELO MESTRE
