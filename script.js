@@ -897,7 +897,7 @@ async function carregarContasJogadores() {
             email.className = 'text-sm text-[#3a2e27] break-all';
             email.textContent = conta.email || 'E-mail não informado';
             const uid = document.createElement('p');
-            uid.className = 'text-xs text-[#211b17] break-all mt-1';
+            uid.className = 'uid-conta break-all mt-2';
             uid.textContent = `UID: ${conta.uid || conta.id}`;
             dados.append(nome, email, uid);
             const botao = criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => copiarTexto(conta.uid || conta.id));
@@ -928,7 +928,7 @@ function criarBotaoPainel(texto, classe, acao) {
     const botao = document.createElement('button');
     botao.type = 'button';
     botao.textContent = texto;
-    botao.className = `px-3 py-2 rounded text-xs font-bold text-white ${classe}`;
+    botao.className = `px-4 py-3 rounded text-sm md:text-base font-bold text-white tracking-wide shadow-md hover:brightness-110 active:scale-[.98] transition ${classe}`;
     botao.addEventListener('click', acao);
     return botao;
 }
@@ -965,7 +965,7 @@ function criarCardFicha(idFicha, ficha, modoMestre = false) {
         conteudo.append(dono);
         if (ficha.proprietarioUid) {
             const uidDono = document.createElement('p');
-            uidDono.className = 'text-xs text-white/80 break-all';
+            uidDono.className = 'uid-ficha break-all mt-2';
             uidDono.textContent = `UID DO JOGADOR: ${ficha.proprietarioUid}`;
             conteudo.append(uidDono);
         }
