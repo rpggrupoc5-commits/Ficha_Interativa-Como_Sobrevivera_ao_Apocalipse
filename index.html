@@ -20,6 +20,36 @@
         .foto-personagem { border: 2px dashed var(--metal); background: rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; height: 100%; width: 100%; }
         .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
         .texto-proporcao { position: absolute; bottom: 5px; background: rgba(0,0,0,0.7); color: white; padding: 2px 8px; border-radius: 4px; font-size: 9px; pointer-events: none; z-index: 10; }
+        /* Botões: tipografia mais limpa, forte e legível em todas as telas */
+        button { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: .045em; line-height: 1.2; text-shadow: 0 1px 1px rgba(0,0,0,.22); -webkit-tap-highlight-color: transparent; }
+        button:focus-visible { outline: 3px solid #d2b48c; outline-offset: 2px; }
+        #lista-contas-jogadores .uid-conta { font-size: 1rem; line-height: 1.45; font-weight: 700; letter-spacing: .025em; color: #211b17; overflow-wrap: anywhere; }
+        #cards-mestre .uid-ficha { font-size: .95rem; line-height: 1.45; font-weight: 700; letter-spacing: .02em; overflow-wrap: anywhere; color: #f3dfc1; }
+        .equip-grid { min-height: 450px; }
+        @media (max-width: 767px) {
+            #area-ficha > div:first-child { margin-left: 8px; margin-right: 8px; flex-wrap: wrap; gap: 10px; }
+            #area-ficha > div:first-child > span { font-size: 1.15rem; }
+            #area-ficha > div:first-child > div { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+            #area-ficha > div:first-child > div button { min-height: 44px; padding: 9px 5px; font-size: .95rem; }
+            .equip-grid { height: auto !important; min-height: 0; grid-template-columns: repeat(2, minmax(0,1fr)) !important; grid-template-rows: auto !important; gap: 10px !important; }
+            .equip-grid > .foto-personagem { grid-column: 1 / -1 !important; grid-row: 1 !important; height: min(112vw, 430px) !important; min-height: 300px; }
+            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; }
+            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; }
+            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 1; grid-row: 3; }
+            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 2; grid-row: 3; }
+            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 4; }
+            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 4; }
+            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 5; }
+            .equip-grid > .slot-vazio { min-height: 112px; font-size: .9rem !important; padding: 8px; }
+            .equip-grid > .slot-vazio span { font-size: 1.5rem; }
+            .texto-proporcao { font-size: 11px; padding: 3px 8px; }
+            #lista-contas-jogadores .uid-conta { font-size: 1.05rem; }
+            #cards-mestre .uid-ficha { font-size: 1rem; }
+        }
+        @media (max-width: 380px) {
+            #area-ficha > div:first-child > div { grid-template-columns: 1fr; }
+            .equip-grid > .foto-personagem { height: 320px !important; }
+        }
     </style>
 </head>
 <body>
@@ -109,7 +139,7 @@
                 </section>
                 <section class="painel-papel flex flex-col">
                     <h3 class="titulo-painel">EQUIPAMENTO</h3>
-                    <div class="p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
+                    <div class="equip-grid p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
                         <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">CABEÇA<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
                         <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">COLETE<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
                         <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">FACE<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
