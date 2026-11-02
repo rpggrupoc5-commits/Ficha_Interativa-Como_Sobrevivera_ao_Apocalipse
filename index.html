@@ -56,7 +56,15 @@
                     <div><h1 class="fonte-titulo text-4xl text-[#111]">CENTRAL DO MESTRE</h1><p class="text-[#3a2e27]">Administração de personagens dos jogadores e PDMs.</p></div>
                     <div class="flex gap-2"><button id="btn-criar-pdm-dashboard" class="fonte-titulo text-lg px-4 py-2 rounded bg-[#a81c1c] text-white">+ CRIAR PDM</button><button id="btn-sair-mestre" class="fonte-titulo text-lg px-4 py-2 rounded bg-[#3a2e27] text-white">SAIR</button></div>
                 </div>
-                <div class="flex flex-wrap gap-3 mb-4 text-[#111] font-bold"><span id="contador-fichas">Fichas: —</span><span id="contador-pdms">PDMs: —</span></div>
+                <div class="flex flex-wrap gap-3 mb-4 text-[#111] font-bold"><span id="contador-fichas">Fichas: —</span><span id="contador-pdms">PDMs: —</span><span id="contador-contas">Contas: —</span></div>
+                <section class="mb-8 rounded-lg border-2 border-[#3a2e27] bg-black/5 p-4">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                        <div><h2 class="fonte-titulo text-2xl text-[#111]">CONTAS DE JOGADORES</h2><p class="text-sm text-[#3a2e27]">UIDs registrados automaticamente quando o jogador entra no painel. Use COPIAR UID para vincular uma ficha.</p></div>
+                        <button id="btn-atualizar-contas" class="px-3 py-2 rounded bg-[#3a2e27] text-white font-bold text-sm">ATUALIZAR CONTAS</button>
+                    </div>
+                    <div id="lista-contas-jogadores" class="flex flex-col gap-2"><p class="text-[#111]">Carregando contas...</p></div>
+                </section>
+                <div class="mb-3"><h2 class="fonte-titulo text-2xl text-[#111]">FICHAS E PDMs</h2></div>
                 <div id="cards-mestre" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#111]">Carregando fichas...</p></div>
             </div>
         </section>
