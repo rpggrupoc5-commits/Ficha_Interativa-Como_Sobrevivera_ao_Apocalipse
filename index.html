@@ -40,10 +40,32 @@
     </div>
 
     <div id="site-principal" class="hidden">
+        <section id="dashboard-jogador" class="hidden max-w-[1500px] mx-auto px-3 py-8">
+            <div class="painel-papel p-6 md:p-8">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <div><h1 class="fonte-titulo text-4xl text-[#111]">PAINEL DE PERSONAGENS</h1><p class="text-[#3a2e27]">Escolha um sobrevivente para abrir sua ficha em uma nova aba.</p></div>
+                    <button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded bg-[#3a2e27] text-white">SAIR</button>
+                </div>
+                <div id="cards-jogador" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#111]">Carregando personagens...</p></div>
+            </div>
+        </section>
+
+        <section id="dashboard-mestre" class="hidden max-w-[1500px] mx-auto px-3 py-8">
+            <div class="painel-papel p-6 md:p-8">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <div><h1 class="fonte-titulo text-4xl text-[#111]">CENTRAL DO MESTRE</h1><p class="text-[#3a2e27]">Administração de personagens dos jogadores e PDMs.</p></div>
+                    <div class="flex gap-2"><button id="btn-criar-pdm-dashboard" class="fonte-titulo text-lg px-4 py-2 rounded bg-[#a81c1c] text-white">+ CRIAR PDM</button><button id="btn-sair-mestre" class="fonte-titulo text-lg px-4 py-2 rounded bg-[#3a2e27] text-white">SAIR</button></div>
+                </div>
+                <div class="flex flex-wrap gap-3 mb-4 text-[#111] font-bold"><span id="contador-fichas">Fichas: —</span><span id="contador-pdms">PDMs: —</span></div>
+                <div id="cards-mestre" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#111]">Carregando fichas...</p></div>
+            </div>
+        </section>
+
+        <div id="area-ficha" class="hidden">
         <div class="max-w-[1500px] mx-auto mb-4 flex justify-between items-center bg-[#111] p-2 border-b-2 border-[#7a4e32] mt-4">
             <span class="fonte-titulo text-2xl border-2 border-[#7a4e32] px-4 py-1">MINHA FICHA</span>
             <div class="flex gap-2">
-                <button id="btn-painel-mestre" class="fonte-titulo text-xl px-4 py-1 rounded bg-[#3a2e27] text-white hover:bg-[#7a4e32] transition">PAINEL DO MESTRE</button>
+                <button id="btn-voltar-painel" class="fonte-titulo text-xl px-4 py-1 rounded bg-[#3a2e27] text-white hover:bg-[#7a4e32] transition">PAINEL</button>
                 <button id="btn-salvar-ficha" class="fonte-titulo text-xl px-4 py-1 rounded bg-[#a81c1c] text-white hover:brightness-125 transition">SALVAR FICHA</button>
                 <button id="btn-sair" class="fonte-titulo text-xl px-4 py-1 rounded border border-gray-500 hover:bg-gray-800 transition">SAIR</button>
             </div>
@@ -106,6 +128,7 @@
                 <section class="painel-papel flex flex-col"><h3 class="titulo-painel">DIÁRIO</h3><div class="p-4 flex-1"><textarea id="diario" class="input-campo w-full h-full resize-none p-2" placeholder="Registre sua jornada..."></textarea></div></section>
             </div>
         </main>
+        </div>
     </div>
 
     <div id="painel-mestre" class="fixed inset-0 bg-black/90 z-40 flex justify-center items-center hidden">
