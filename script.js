@@ -1140,7 +1140,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     acoes.append(criarBotaoPainel(modoMestre ? 'ABRIR / EDITAR' : 'ABRIR FICHA', 'bg-[#a81c1c] hover:brightness-125', () => abrirFichaEmNovaAba(idFicha)));
 
     if (modoMestre) {
-        acoes.append(criarBotaoPainel('GERAR LINK', 'bg-purple-800', () => gerarLinkConvite(idFicha)));
+        acoes.append(criarBotaoPainel('CONVIDAR POR LINK', 'bg-purple-800', () => gerarLinkConvite(idFicha)));
         if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => copiarTexto(ficha.proprietarioUid)));
         acoes.append(criarBotaoPainel('DUPLICAR', 'bg-blue-800', () => duplicarFicha(idFicha, ficha)));
         acoes.append(criarBotaoPainel('VINCULAR', 'bg-green-800', () => vincularJogador(idFicha, ficha)));
