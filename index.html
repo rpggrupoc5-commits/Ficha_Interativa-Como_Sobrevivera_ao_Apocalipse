@@ -20,7 +20,6 @@
         .foto-personagem { border: 2px dashed var(--metal); background: rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; height: 100%; width: 100%; }
         .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
         .texto-proporcao { position: absolute; bottom: 5px; background: rgba(0,0,0,0.7); color: white; padding: 2px 8px; border-radius: 4px; font-size: 9px; pointer-events: none; z-index: 10; }
-        /* Botões: tipografia mais limpa, forte e legível em todas as telas */
         button { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: .045em; line-height: 1.2; text-shadow: 0 1px 1px rgba(0,0,0,.22); -webkit-tap-highlight-color: transparent; }
         button:focus-visible { outline: 3px solid #d2b48c; outline-offset: 2px; }
         #lista-contas-jogadores .uid-conta { font-size: 1rem; line-height: 1.45; font-weight: 700; letter-spacing: .025em; color: #211b17; overflow-wrap: anywhere; }
@@ -94,6 +93,18 @@
                     </div>
                     <div id="lista-contas-jogadores" class="flex flex-col gap-2"><p class="text-[#111]">Carregando contas...</p></div>
                 </section>
+
+                <section class="mb-8 rounded-lg border-2 border-[#7a4e32] bg-yellow-100/40 p-4">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                        <div>
+                            <h2 class="fonte-titulo text-2xl text-[#111]">SOLICITAÇÕES DE ACESSO PENDENTES</h2>
+                            <p class="text-sm text-[#3a2e27]">Convidados que pediram acesso a alguma ficha. Aprove como EDITAR ou VISUALIZAR.</p>
+                        </div>
+                        <button id="btn-atualizar-solicitacoes" class="px-3 py-2 rounded bg-[#3a2e27] text-white font-bold text-sm">ATUALIZAR</button>
+                    </div>
+                    <div id="solicitacoes-mestre" class="flex flex-col gap-2"><p class="text-[#111]">Carregando solicitações...</p></div>
+                </section>
+
                 <div class="mb-3"><h2 class="fonte-titulo text-2xl text-[#111]">FICHAS E PDMs</h2></div>
                 <div id="cards-mestre" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#111]">Carregando fichas...</p></div>
             </div>
