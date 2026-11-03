@@ -54,19 +54,27 @@ let tempoUltimoSomTecla = 0;
 const emailMestre = "rpggrupoc5@gmail.com";
 
 // ==========================================
-// GERENCIADOR DE ÁUDIO
+// GERENCIADOR DE ÁUDIO (8 SONS SEPARADOS)
 // ==========================================
 const audioAbertura = new Audio('abertura.mp3');
 const audioTecla = new Audio('tecla.mp3');
 const audioClique = new Audio('clique.mp3');
-const audioSalvar = new Audio('salvar.mp3');
-const audioNavegar = new Audio('navegar.mp3');
+const audioSalvarAuto = new Audio('salvar_auto.mp3');
+const audioSalvarManual = new Audio('salvar_manual.mp3');
+const audioEntrarFicha = new Audio('entrar_ficha.mp3');
+const audioSairFicha = new Audio('sair_ficha.mp3');
+const audioEntrarPainel = new Audio('entrar_painel.mp3');
+const audioSairPainel = new Audio('sair_painel.mp3');
 
 audioAbertura.volume = 1.0; 
 audioTecla.volume = 0.4; 
 audioClique.volume = 0.7;
-audioSalvar.volume = 0.8;
-audioNavegar.volume = 0.6;
+audioSalvarAuto.volume = 0.8;
+audioSalvarManual.volume = 0.9;
+audioEntrarFicha.volume = 0.8;
+audioSairFicha.volume = 0.8;
+audioEntrarPainel.volume = 0.8;
+audioSairPainel.volume = 0.8;
 
 function tocarSom(audio, pausarAnterior = true) {
     if (!audio) return;
@@ -74,13 +82,12 @@ function tocarSom(audio, pausarAnterior = true) {
         if (pausarAnterior) {
             audio.currentTime = 0;
         }
-        audio.play().catch(e => { /* Ignora erro de bloqueio */ });
+        audio.play().catch(e => { /* Ignora bloqueio do navegador */ });
     } catch (e) {}
 }
 
 function tocarSomTecla() {
     const agora = Date.now();
-    // Limita a 50ms entre sons para não dar eco/sobreposição
     if (agora - tempoUltimoSomTecla > 50) {
         tocarSom(audioTecla, true);
         tempoUltimoSomTecla = agora;
@@ -106,8 +113,7 @@ const sitePrincipal = document.getElementById('site-principal');
 const mensagemErro = document.getElementById('mensagem-erro');
 
 document.getElementById('btn-entrar').onclick = () => {
-    // Toca o áudio de abertura assim que o usuário clica para entrar
-    tocarSom(audioAbertura);
+    tocarSom(audioAbertura); // Vinheta de abertura
     
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
@@ -135,7 +141,7 @@ document.getElementById('btn-cadastrar').onclick = () => {
 };
 
 document.getElementById('btn-sair').onclick = () => {
-    tocarSom(audioNavegar);
+    tocarSom(audioSairFicha);
     signOut(auth).then(() => window.location.reload());
 };
 
@@ -177,11 +183,13 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('dashboard-mestre').classList.remove('hidden');
             document.getElementById('dashboard-jogador').classList.add('hidden');
             document.getElementById('area-ficha').classList.add('hidden');
+            tocarSom(audioEntrarPainel); // Som ao entrar no painel
             carregarDashboardMestre();
         } else {
             document.getElementById('dashboard-jogador').classList.remove('hidden');
             document.getElementById('dashboard-mestre').classList.add('hidden');
             document.getElementById('area-ficha').classList.add('hidden');
+            tocarSom(audioEntrarPainel); // Som ao entrar no painel
             carregarDashboardJogador();
         }
     } else {
@@ -201,6 +209,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 async function abrirRotaFicha(fichaId, veioDeConvite) {
+    tocarSom(audioEntrarFicha); // Som ao entrar na ficha
     mostrarAreaFicha();
     fichaAtualId = fichaId;
     const mestreLogado = (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
@@ -331,7 +340,7 @@ function mostrarTelaSolicitacao(estado) {
             </div>
         `;
         document.getElementById('btn-solicitar-acesso').onclick = () => { tocarSom(audioClique); solicitarAcesso(); };
-        document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioNavegar); window.location.href = window.location.pathname; };
+        document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioSairFicha); window.location.href = window.location.pathname; };
     } else if (estado === 'pendente') {
         painel.innerHTML = `
             <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
@@ -342,7 +351,7 @@ function mostrarTelaSolicitacao(estado) {
             </div>
         `;
         document.getElementById('btn-verificar').onclick = () => { tocarSom(audioClique); window.location.reload(); };
-        document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioNavegar); signOut(auth).then(() => window.location.reload()); };
+        document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioSairFicha); signOut(auth).then(() => window.location.reload()); };
     } else if (estado === 'recusado') {
         painel.innerHTML = `
             <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
@@ -351,7 +360,7 @@ function mostrarTelaSolicitacao(estado) {
                 <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">SAIR</button>
             </div>
         `;
-        document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioNavegar); signOut(auth).then(() => window.location.reload()); };
+        document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioSairFicha); signOut(auth).then(() => window.location.reload()); };
     }
 }
 
@@ -659,6 +668,7 @@ btnUploadFoto.onclick = () => {
 };
 btnExcluirFoto.onclick = () => {
     if (!quadradoFotoAtual) return;
+    tocarSom(audioSairPainel); // Som de exclusão/cancelamento
     quadradoFotoAtual.innerHTML = '<i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span>FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao">PROPORÇÃO IDEAL: 9x16</div>';
     quadradoFotoAtual.removeAttribute('data-nome-foto');
     quadradoFotoAtual.removeAttribute('data-desc-foto');
@@ -724,7 +734,7 @@ btnUpload.onclick = () => {
 };
 
 btnExcluir.onclick = () => {
-    tocarSom(audioClique);
+    tocarSom(audioSairPainel);
     if (quadradoAtual.id.startsWith('inv-')) {
         quadradoAtual.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
     } else {
@@ -913,6 +923,7 @@ async function salvarFicha(opcoes = {}) {
     if (!opcoes.silencioso) {
         const btn = document.getElementById('btn-salvar-ficha');
         if (btn) { btn.disabled = true; btn.innerText = "SALVANDO..."; }
+        tocarSom(audioSalvarManual); // SOM DE SALVAR MANUAL
     } else {
         mostrarIndicador('Salvando...', 'bg-yellow-700');
     }
@@ -933,7 +944,7 @@ async function salvarFicha(opcoes = {}) {
         if (!opcoes.silencioso && !opcoes.semAlerta) alert("Ficha salva com sucesso!");
         if (opcoes.silencioso) {
             mostrarIndicador('Salvo ✓', 'bg-green-700');
-            tocarSom(audioSalvar); // Toca o som quando o autosave salva
+            tocarSom(audioSalvarAuto); // SOM DE AUTOSAVE
         }
     } catch (e) {
         console.error("Falha ao salvar ficha:", e);
@@ -948,7 +959,7 @@ async function salvarFicha(opcoes = {}) {
     }
 }
 
-document.getElementById('btn-salvar-ficha').onclick = () => { tocarSom(audioClique); salvarFicha({ silencioso: false }); };
+document.getElementById('btn-salvar-ficha').onclick = () => salvarFicha({ silencioso: false });
 
 async function carregarFicha() {
     if (!usuarioAtual || !fichaAtualId) return;
@@ -1254,7 +1265,7 @@ async function carregarDashboardMestre() {
 async function atualizarPainelMestre() { return carregarDashboardMestre(); }
 
 function voltarAoPainel() {
-    tocarSom(audioNavegar);
+    tocarSom(audioSairFicha);
     if (autosaveHabilitado) {
         salvarFicha({ silencioso: true, semAlerta: true }).finally(() => {
             const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
@@ -1267,8 +1278,8 @@ function voltarAoPainel() {
 }
 
 document.getElementById('btn-voltar-painel').onclick = voltarAoPainel;
-document.getElementById('btn-sair-jogador').onclick = () => { tocarSom(audioNavegar); signOut(auth).then(() => window.location.reload()); };
-document.getElementById('btn-sair-mestre').onclick = () => { tocarSom(audioNavegar); signOut(auth).then(() => window.location.reload()); };
+document.getElementById('btn-sair-jogador').onclick = () => { tocarSom(audioSairPainel); signOut(auth).then(() => window.location.reload()); };
+document.getElementById('btn-sair-mestre').onclick = () => { tocarSom(audioSairPainel); signOut(auth).then(() => window.location.reload()); };
 document.getElementById('btn-criar-pdm-dashboard').onclick = () => { tocarSom(audioClique); criarPDM(); };
 
 function gerarLinkConvite(idFicha) {
@@ -1341,7 +1352,7 @@ async function carregarSolicitacoesPendentes() {
             
             acoes.append(criarBotaoPainel('APROVAR (EDITAR)', 'bg-green-800 text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'editar'); }));
             acoes.append(criarBotaoPainel('APROVAR (VER)', 'bg-blue-800 text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'visualizar'); }));
-            acoes.append(criarBotaoPainel('RECUSAR', 'bg-red-900 text-base', () => { tocarSom(audioClique); recusarSolicitacao(sol.fichaId, sol.uidConvidado); }));
+            acoes.append(criarBotaoPainel('RECUSAR', 'bg-red-900 text-base', () => { tocarSom(audioSairPainel); recusarSolicitacao(sol.fichaId, sol.uidConvidado); }));
             
             linha.append(dados, acoes);
             container.appendChild(linha);
