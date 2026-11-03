@@ -345,8 +345,10 @@ function aplicarPermissoesNaTela() {
         document.getElementById('btn-voltar-painel').classList.add('hidden');
     } else if (modoAcesso === "convidado-editar") {
         document.getElementById('btn-voltar-painel').classList.add('hidden');
+        if (btnSalvar) btnSalvar.classList.remove('hidden');
     } else if (modoAcesso === "mestre" || modoAcesso === "dono") {
         document.getElementById('btn-voltar-painel').classList.remove('hidden');
+        if (btnSalvar) btnSalvar.classList.remove('hidden');
     }
 }
 
@@ -371,8 +373,7 @@ function mostrarAreaFicha() {
 function configurarAutosave() {
     if (modoAcesso === "convidado-visualizar") return;
     autosaveHabilitado = true;
-    const btnSalvar = document.getElementById('btn-salvar-ficha');
-    if (btnSalvar) btnSalvar.classList.add('hidden');
+    
     let indicador = document.getElementById('indicador-autosave');
     if (!indicador) {
         indicador = document.createElement('div');
@@ -594,6 +595,16 @@ const btnExcluirFoto = document.getElementById('btn-excluir-foto');
 const btnCancelarFoto = document.getElementById('btn-cancelar-foto');
 const btnSalvarFoto = document.getElementById('btn-salvar-foto');
 const btnUploadFoto = document.getElementById('btn-upload-foto');
+
+// CORREÇÃO DA FOTO: Garante que o clique abra o modal e não o seletor de arquivos direto
+const fotoContainer = document.getElementById('foto-personagem');
+if (fotoContainer) {
+    fotoContainer.onclick = null; 
+    fotoContainer.addEventListener('click', (e) => {
+        if (e.target.closest('#btn-remover-img-modal')) return; // Ignora clique no botão de X
+        window.uploadFoto(fotoContainer);
+    });
+}
 
 btnCancelarFoto.onclick = () => modalFoto.classList.add('hidden');
 btnUploadFoto.onclick = () => {
