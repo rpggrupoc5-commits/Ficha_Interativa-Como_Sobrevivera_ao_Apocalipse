@@ -35,7 +35,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const DURACAO_ACESSO_MS = 12 * 60 * 60 * 1000;
 const DEBOUNCE_AUTOSAVE_MS = 30 * 1000;
 
 let usuarioAtual = null;
@@ -45,12 +44,11 @@ let fichaAtualProprietarioUid = null;
 let fichaAtualCriadoPor = null;
 let modoAcesso = "nenhum";
 let ehConvidado = false;
-let expiracaoAcesso = null;
 let autosaveTimer = null;
 let autosaveHabilitado = false;
 let salvandoEmProgresso = false;
 let ultimoEstadoSalvo = "";
-let listenerExpiracao = null;
+let intervalMonitorRevogacao = null;
 
 const emailMestre = "rpggrupoc5@gmail.com";
 
@@ -191,28 +189,15 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
 
     const acessoSnap = await getDoc(doc(db, 'fichas', fichaId, 'acessos', usuarioAtual.uid));
     if (acessoSnap.exists()) {
-        const dadosAcesso = acessoSnap.data();
-        const permissao = dadosAcesso.permissao || "visualizar";
-        expiracaoAcesso = dadosAcesso.expiraEm?.toDate ? dadosAcesso.expiraEm.toDate() : new Date(dadosAcesso.expiraEm);
-        const expirado = expiracaoAcesso && expiracaoAcesso.getTime() <= Date.now();
-
-        if (expirado) {
-            modoAcesso = "convidado-expirado";
-            ehConvidado = true;
-            mostrarTelaSolicitacao('expirado');
-            return;
-        }
-
+        const permissao = acessoSnap.data().permissao || "visualizar";
         modoAcesso = permissao === "editar" ? "convidado-editar" : "convidado-visualizar";
         ehConvidado = true;
         try {
             await carregarFicha();
             aplicarPermissoesNaTela();
-            mostrarBannerConvidado(`Acesso aprovado como <b>${permissao === 'editar' ? 'EDITOR' : 'VISUALIZADOR'}</b>. <span id="contagem-banner">—</span>`);
-            iniciarContagemRegressiva(expiracaoAcesso, 'contagem-banner', () => {
-                bloquearPorExpiracao();
-            });
+            mostrarBannerConvidado(`Acesso aprovado como <b>${permissao === 'editar' ? 'EDITOR' : 'VISUALIZADOR'}</b>.`);
             if (modoAcesso === "convidado-editar") configurarAutosave();
+            monitorarRevogacao(fichaId);
         } catch (e) {
             alert(`Erro ao carregar ficha (${e.code || 'desconhecido'}): ${e.message}`);
         }
@@ -240,6 +225,25 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
         alert("Você não tem permissão para abrir esta ficha.");
         window.location.href = window.location.pathname;
     }
+}
+
+// Monitora se o mestre removeu o acesso (a cada 5s)
+function monitorarRevogacao(fichaId) {
+    if (intervalMonitorRevogacao) clearInterval(intervalMonitorRevogacao);
+    intervalMonitorRevogacao = setInterval(async () => {
+        try {
+            const snap = await getDoc(doc(db, 'fichas', fichaId, 'acessos', usuarioAtual.uid));
+            if (!snap.exists()) {
+                clearInterval(intervalMonitorRevogacao);
+                desativarAutosave();
+                document.querySelectorAll('#area-ficha input, #area-ficha textarea').forEach(el => el.disabled = true);
+                document.getElementById('btn-salvar-ficha').classList.add('hidden');
+                const banner = document.getElementById('banner-convidado');
+                if (banner) banner.innerHTML = '<div class="painel-papel p-3 text-[#a81c1c] font-bold text-center rounded">ACESSO REVOGADO — solicite novamente ao mestre.</div>';
+                alert('Seu acesso a esta ficha foi revogado pelo mestre.');
+            }
+        } catch (e) {}
+    }, 5000);
 }
 
 async function verificarSolicitacaoExistente(fichaId) {
@@ -305,17 +309,6 @@ function mostrarTelaSolicitacao(estado) {
             </div>
         `;
         document.getElementById('btn-voltar-login').onclick = () => signOut(auth).then(() => window.location.reload());
-    } else if (estado === 'expirado') {
-        painel.innerHTML = `
-            <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
-                <h2 class="fonte-titulo text-3xl text-[#111] text-center">ACESSO EXPIRADO</h2>
-                <p class="text-[#111] text-center font-bold">Seu acesso de 12 horas expirou. Solicite novamente ao mestre para continuar editando.</p>
-                <button id="btn-solicitar-acesso" class="w-full bg-[#a81c1c] text-white p-3 rounded font-bold hover:brightness-125">SOLICITAR NOVAMENTE</button>
-                <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">SAIR</button>
-            </div>
-        `;
-        document.getElementById('btn-solicitar-acesso').onclick = solicitarAcesso;
-        document.getElementById('btn-voltar-login').onclick = () => signOut(auth).then(() => window.location.reload());
     }
 }
 
@@ -356,42 +349,6 @@ function aplicarPermissoesNaTela() {
     } else if (modoAcesso === "mestre" || modoAcesso === "dono") {
         document.getElementById('btn-voltar-painel').classList.remove('hidden');
     }
-}
-
-function bloquearPorExpiracao() {
-    modoAcesso = "convidado-expirado";
-    const inputs = document.querySelectorAll('#area-ficha input, #area-ficha textarea');
-    inputs.forEach(el => { el.disabled = true; el.classList.add('opacity-60'); });
-    const btnSalvar = document.getElementById('btn-salvar-ficha');
-    if (btnSalvar) btnSalvar.classList.add('hidden');
-    const slots = document.querySelectorAll('#area-ficha .slot-vazio, #area-ficha .foto-personagem');
-    slots.forEach(el => { el.onclick = null; el.style.pointerEvents = 'none'; });
-    desativarAutosave();
-    const banner = document.getElementById('banner-convidado');
-    if (banner) banner.innerHTML = '<div class="painel-papel p-3 text-[#a81c1c] font-bold text-center rounded">ACESSO EXPIRADO — solicite novamente ao mestre.</div>';
-    alert('Seu acesso de 12 horas expirou. A ficha foi bloqueada.');
-}
-
-function iniciarContagemRegressiva(dataExpiracao, idElemento, aoExpirar) {
-    if (listenerExpiracao) { clearInterval(listenerExpiracao); listenerExpiracao = null; }
-    function atualizar() {
-        const el = document.getElementById(idElemento);
-        if (!el) return;
-        const restante = dataExpiracao.getTime() - Date.now();
-        if (restante <= 0) {
-            el.textContent = 'EXPIRADO';
-            clearInterval(listenerExpiracao);
-            listenerExpiracao = null;
-            if (aoExpirar) aoExpirar();
-            return;
-        }
-        const h = Math.floor(restante / 3600000);
-        const m = Math.floor((restante % 3600000) / 60000);
-        const s = Math.floor((restante % 60000) / 1000);
-        el.textContent = `Expira em ${h}h ${String(m).padStart(2,'0')}min ${String(s).padStart(2,'0')}s`;
-    }
-    atualizar();
-    listenerExpiracao = setInterval(atualizar, 1000);
 }
 
 function mostrarBannerConvidado(html) {
@@ -500,7 +457,7 @@ window.abrirSeletor = function(callback) {
 };
 
 window.uploadFoto = function(elemento) {
-    if (modoAcesso === "convidado-visualizar" || modoAcesso === "convidado-expirado") return;
+    if (modoAcesso === "convidado-visualizar") return;
     abrirModalFoto(elemento);
 };
 
@@ -680,7 +637,7 @@ function atualizarPreviewModal() {
 }
 
 function abrirModal(q, dados = null) {
-    if (modoAcesso === "convidado-visualizar" || modoAcesso === "convidado-expirado") return;
+    if (modoAcesso === "convidado-visualizar") return;
     quadradoAtual = q;
     if (dados && dados.nome) {
         inputNome.value = dados.nome;
@@ -809,7 +766,7 @@ async function carregarImagensSeparadas() {
 
 async function salvarFicha(opcoes = {}) {
     if (!usuarioAtual || !fichaAtualId) return;
-    if (modoAcesso === "convidado-visualizar" || modoAcesso === "convidado-expirado") return;
+    if (modoAcesso === "convidado-visualizar") return;
     if (salvandoEmProgresso) return;
 
     const dadosFicha = {
@@ -1111,26 +1068,6 @@ async function obterImagemRetrato(idFicha, ficha) {
     return match ? match[1] : '';
 }
 
-async function obterExpiracaoAcesso(fichaId, uid) {
-    try {
-        const snap = await getDoc(doc(db, 'fichas', fichaId, 'acessos', uid));
-        if (snap.exists()) {
-            const d = snap.data();
-            return d.expiraEm?.toDate ? d.expiraEm.toDate() : new Date(d.expiraEm);
-        }
-    } catch (e) {}
-    return null;
-}
-
-function formatarRestante(dataExpiracao) {
-    if (!dataExpiracao) return '';
-    const restante = dataExpiracao.getTime() - Date.now();
-    if (restante <= 0) return 'EXPIRADO';
-    const h = Math.floor(restante / 3600000);
-    const m = Math.floor((restante % 3600000) / 60000);
-    return `${h}h ${String(m).padStart(2,'0')}min`;
-}
-
 async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     const card = document.createElement('article');
     card.className = 'bg-[#211b17] text-[#e6d5b8] rounded-lg overflow-hidden border-2 border-[#7a4e32] shadow-xl flex flex-col';
@@ -1149,30 +1086,42 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     conteudo.append(nome, detalhes);
 
     if (modoMestre) {
-        const dono = document.createElement('p'); dono.className = 'text-xs text-white/60 break-all';
+        const dono = document.createElement('p'); dono.className = 'text-sm text-white/80 break-all mt-1 font-bold';
         dono.textContent = ficha.proprietarioNome || ficha.proprietarioEmail || (ficha.proprietarioUid ? 'Jogador vinculado' : (ficha.tipo === 'pdm' ? 'Sem jogador vinculado' : `Ficha antiga • ${idFicha.slice(0, 8)}`));
         conteudo.append(dono);
+        
         if (ficha.proprietarioUid) {
             const uidDono = document.createElement('p');
             uidDono.className = 'uid-ficha break-all mt-2';
             uidDono.textContent = `UID DO JOGADOR: ${ficha.proprietarioUid}`;
             conteudo.append(uidDono);
         }
+        
         try {
             const acessosSnap = await getDocs(collection(db, 'fichas', idFicha, 'acessos'));
             if (!acessosSnap.empty) {
                 const tituloAcesso = document.createElement('p');
-                tituloAcesso.className = 'text-xs font-bold text-[#f3dfc1] mt-2';
+                tituloAcesso.className = 'text-sm font-bold text-[#f3dfc1] mt-4 mb-2 border-b border-[#7a4e32] pb-1';
                 tituloAcesso.textContent = 'CONVIDADOS COM ACESSO:';
                 conteudo.append(tituloAcesso);
-                acessosSnap.forEach(a => {
+                
+                for (const a of acessosSnap.docs) {
                     const d = a.data();
-                    const exp = d.expiraEm?.toDate ? d.expiraEm.toDate() : new Date(d.expiraEm);
-                    const linha = document.createElement('p');
-                    linha.className = 'text-xs text-[#e6d5b8] break-all';
-                    linha.textContent = `${d.permissao} • ${formatarRestante(exp)} • UID ${a.id.slice(0,8)}…`;
+                    const linha = document.createElement('div');
+                    linha.className = 'flex items-center justify-between gap-2 bg-black/30 p-2 rounded mb-1';
+                    
+                    const txtPermissao = document.createElement('span');
+                    txtPermissao.className = 'text-sm font-bold text-[#e6d5b8]';
+                    txtPermissao.textContent = `${d.permissao.toUpperCase()}`;
+                    
+                    const btnRevogar = document.createElement('button');
+                    btnRevogar.className = 'bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition';
+                    btnRevogar.textContent = 'REVOGAR';
+                    btnRevogar.onclick = () => revogarAcesso(idFicha, a.id);
+                    
+                    linha.append(txtPermissao, btnRevogar);
                     conteudo.append(linha);
-                });
+                }
             }
         } catch (e) {}
     }
@@ -1270,7 +1219,7 @@ function gerarLinkConvite(idFicha) {
 async function carregarSolicitacoesPendentes() {
     const container = document.getElementById('solicitacoes-mestre');
     if (!container) return;
-    container.innerHTML = '<p class="text-[#111]">Carregando solicitações...</p>';
+    container.innerHTML = '<p class="text-[#111] text-lg">Carregando solicitações...</p>';
     try {
         const fichasSnap = await getDocs(collection(db, 'fichas'));
         const todas = [];
@@ -1284,51 +1233,62 @@ async function carregarSolicitacoesPendentes() {
             });
         }
         container.innerHTML = '';
-        if (!todas.length) { container.innerHTML = '<p class="text-[#111]">Nenhuma solicitação pendente.</p>'; return; }
+        if (!todas.length) { container.innerHTML = '<p class="text-[#111] text-lg">Nenhuma solicitação pendente.</p>'; return; }
         todas.forEach(sol => {
             const linha = document.createElement('div');
-            linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 rounded border border-[#7a4e32] bg-white/70 p-3';
+            linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 rounded border-2 border-[#7a4e32] bg-white/90 p-4';
             const dados = document.createElement('div');
             dados.className = 'min-w-0';
-            const nome = document.createElement('p'); nome.className = 'font-bold text-[#211b17]'; nome.textContent = `Ficha: ${sol.fichaNome}`;
-            const uid = document.createElement('p'); uid.className = 'uid-conta break-all mt-1'; uid.textContent = `Convidado UID: ${sol.uidConvidado}`;
+            const nome = document.createElement('p'); nome.className = 'font-bold text-[#211b17] text-lg'; nome.textContent = `Ficha: ${sol.fichaNome}`;
+            const uid = document.createElement('p'); uid.className = 'text-[#211b17] font-bold mt-1 break-all text-base'; uid.textContent = `UID do Convidado: ${sol.uidConvidado}`;
             dados.append(nome, uid);
             const acoes = document.createElement('div'); acoes.className = 'flex flex-wrap gap-2';
-            acoes.append(criarBotaoPainel('APROVAR (EDITAR)', 'bg-green-800', () => aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'editar')));
-            acoes.append(criarBotaoPainel('APROVAR (VER)', 'bg-blue-800', () => aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'visualizar')));
-            acoes.append(criarBotaoPainel('RECUSAR', 'bg-red-900', () => recusarSolicitacao(sol.fichaId, sol.uidConvidado)));
+            acoes.append(criarBotaoPainel('APROVAR (EDITAR)', 'bg-green-800 text-base', () => aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'editar')));
+            acoes.append(criarBotaoPainel('APROVAR (VER)', 'bg-blue-800 text-base', () => aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'visualizar')));
+            acoes.append(criarBotaoPainel('RECUSAR', 'bg-red-900 text-base', () => recusarSolicitacao(sol.fichaId, sol.uidConvidado)));
             linha.append(dados, acoes);
             container.appendChild(linha);
         });
     } catch (e) {
         console.error('Erro ao carregar solicitações:', e);
-        container.innerHTML = `<p class="text-red-800">Erro ao carregar solicitações (${e.code || 'erro'}): ${e.message}</p>`;
+        container.innerHTML = `<p class="text-red-800 font-bold text-lg">Erro ao carregar solicitações (${e.code || 'erro'}): ${e.message}</p>`;
     }
 }
 
 async function aprovarSolicitacao(fichaId, uidConvidado, permissao) {
     try {
-        const agora = new Date();
-        // Adiciona margem de 5 minutos para evitar bloqueio por diferença de relógio
-        const expiraEm = new Date(agora.getTime() + DURACAO_ACESSO_MS + (5 * 60 * 1000));
-        
         await setDoc(doc(db, 'fichas', fichaId, 'acessos', uidConvidado), {
             permissao: permissao,
             aprovadoEm: new Date().toISOString(),
-            aprovadoPor: usuarioAtual.uid,
-            expiraEm: expiraEm.toISOString()
+            aprovadoPor: usuarioAtual.uid
         });
         await setDoc(doc(db, 'fichas', fichaId, 'solicitacoes', uidConvidado), {
             status: 'aprovado',
             permissao: permissao,
             respondidoEm: new Date().toISOString()
         }, { merge: true });
-        alert(`Acesso aprovado como ${permissao} por 12 horas.`);
+        alert(`Acesso aprovado como ${permissao}.`);
         carregarSolicitacoesPendentes();
         carregarDashboardMestre();
     } catch (e) {
         console.error("Erro ao aprovar:", e);
         alert(`Erro ao aprovar (${e.code || 'erro'}): ${e.message}`);
+    }
+}
+
+async function revogarAcesso(fichaId, uidConvidado) {
+    if (!confirm("Tem certeza que deseja revogar o acesso deste convidado? A ficha fechará para ele.")) return;
+    try {
+        await deleteDoc(doc(db, 'fichas', fichaId, 'acessos', uidConvidado));
+        await setDoc(doc(db, 'fichas', fichaId, 'solicitacoes', uidConvidado), {
+            status: 'revogado',
+            respondidoEm: new Date().toISOString()
+        }, { merge: true });
+        alert('Acesso revogado com sucesso.');
+        carregarDashboardMestre();
+    } catch (e) {
+        console.error("Erro ao revogar:", e);
+        alert(`Erro ao revogar (${e.code || 'erro'}): ${e.message}`);
     }
 }
 
