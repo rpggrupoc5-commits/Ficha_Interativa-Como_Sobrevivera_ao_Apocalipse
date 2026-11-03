@@ -35,6 +35,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+const DURACAO_ACESSO_MS = 12 * 60 * 60 * 1000;
+const DEBOUNCE_AUTOSAVE_MS = 30 * 1000;
+
 let usuarioAtual = null;
 let fichaAtualId = null;
 let fichaAtualTipo = "jogador";
@@ -42,6 +45,12 @@ let fichaAtualProprietarioUid = null;
 let fichaAtualCriadoPor = null;
 let modoAcesso = "nenhum";
 let ehConvidado = false;
+let expiracaoAcesso = null;
+let autosaveTimer = null;
+let autosaveHabilitado = false;
+let salvandoEmProgresso = false;
+let ultimoEstadoSalvo = "";
+let listenerExpiracao = null;
 
 const emailMestre = "rpggrupoc5@gmail.com";
 
@@ -160,6 +169,7 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
         try {
             await carregarFicha();
             aplicarPermissoesNaTela();
+            configurarAutosave();
         } catch (e) {
             alert(`Erro ao carregar ficha (${e.code || 'desconhecido'}): ${e.message}`);
         }
@@ -172,6 +182,7 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
         try {
             await carregarFicha();
             aplicarPermissoesNaTela();
+            configurarAutosave();
         } catch (e) {
             alert(`Erro ao carregar ficha (${e.code || 'desconhecido'}): ${e.message}`);
         }
@@ -180,13 +191,28 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
 
     const acessoSnap = await getDoc(doc(db, 'fichas', fichaId, 'acessos', usuarioAtual.uid));
     if (acessoSnap.exists()) {
-        const permissao = acessoSnap.data().permissao || "visualizar";
+        const dadosAcesso = acessoSnap.data();
+        const permissao = dadosAcesso.permissao || "visualizar";
+        expiracaoAcesso = dadosAcesso.expiraEm?.toDate ? dadosAcesso.expiraEm.toDate() : new Date(dadosAcesso.expiraEm);
+        const expirado = expiracaoAcesso && expiracaoAcesso.getTime() <= Date.now();
+
+        if (expirado) {
+            modoAcesso = "convidado-expirado";
+            ehConvidado = true;
+            mostrarTelaSolicitacao('expirado');
+            return;
+        }
+
         modoAcesso = permissao === "editar" ? "convidado-editar" : "convidado-visualizar";
         ehConvidado = true;
         try {
             await carregarFicha();
             aplicarPermissoesNaTela();
-            mostrarBannerConvidado(`Acesso aprovado como <b>${permissao === 'editar' ? 'EDITOR' : 'VISUALIZADOR'}</b>.`);
+            mostrarBannerConvidado(`Acesso aprovado como <b>${permissao === 'editar' ? 'EDITOR' : 'VISUALIZADOR'}</b>. <span id="contagem-banner">—</span>`);
+            iniciarContagemRegressiva(expiracaoAcesso, 'contagem-banner', () => {
+                bloquearPorExpiracao();
+            });
+            if (modoAcesso === "convidado-editar") configurarAutosave();
         } catch (e) {
             alert(`Erro ao carregar ficha (${e.code || 'desconhecido'}): ${e.message}`);
         }
@@ -200,6 +226,7 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
             ehConvidado = false;
             await carregarFicha();
             aplicarPermissoesNaTela();
+            configurarAutosave();
             return;
         }
     } catch (e) {}
@@ -278,6 +305,17 @@ function mostrarTelaSolicitacao(estado) {
             </div>
         `;
         document.getElementById('btn-voltar-login').onclick = () => signOut(auth).then(() => window.location.reload());
+    } else if (estado === 'expirado') {
+        painel.innerHTML = `
+            <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
+                <h2 class="fonte-titulo text-3xl text-[#111] text-center">ACESSO EXPIRADO</h2>
+                <p class="text-[#111] text-center font-bold">Seu acesso de 12 horas expirou. Solicite novamente ao mestre para continuar editando.</p>
+                <button id="btn-solicitar-acesso" class="w-full bg-[#a81c1c] text-white p-3 rounded font-bold hover:brightness-125">SOLICITAR NOVAMENTE</button>
+                <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">SAIR</button>
+            </div>
+        `;
+        document.getElementById('btn-solicitar-acesso').onclick = solicitarAcesso;
+        document.getElementById('btn-voltar-login').onclick = () => signOut(auth).then(() => window.location.reload());
     }
 }
 
@@ -320,6 +358,42 @@ function aplicarPermissoesNaTela() {
     }
 }
 
+function bloquearPorExpiracao() {
+    modoAcesso = "convidado-expirado";
+    const inputs = document.querySelectorAll('#area-ficha input, #area-ficha textarea');
+    inputs.forEach(el => { el.disabled = true; el.classList.add('opacity-60'); });
+    const btnSalvar = document.getElementById('btn-salvar-ficha');
+    if (btnSalvar) btnSalvar.classList.add('hidden');
+    const slots = document.querySelectorAll('#area-ficha .slot-vazio, #area-ficha .foto-personagem');
+    slots.forEach(el => { el.onclick = null; el.style.pointerEvents = 'none'; });
+    desativarAutosave();
+    const banner = document.getElementById('banner-convidado');
+    if (banner) banner.innerHTML = '<div class="painel-papel p-3 text-[#a81c1c] font-bold text-center rounded">ACESSO EXPIRADO — solicite novamente ao mestre.</div>';
+    alert('Seu acesso de 12 horas expirou. A ficha foi bloqueada.');
+}
+
+function iniciarContagemRegressiva(dataExpiracao, idElemento, aoExpirar) {
+    if (listenerExpiracao) { clearInterval(listenerExpiracao); listenerExpiracao = null; }
+    function atualizar() {
+        const el = document.getElementById(idElemento);
+        if (!el) return;
+        const restante = dataExpiracao.getTime() - Date.now();
+        if (restante <= 0) {
+            el.textContent = 'EXPIRADO';
+            clearInterval(listenerExpiracao);
+            listenerExpiracao = null;
+            if (aoExpirar) aoExpirar();
+            return;
+        }
+        const h = Math.floor(restante / 3600000);
+        const m = Math.floor((restante % 3600000) / 60000);
+        const s = Math.floor((restante % 60000) / 1000);
+        el.textContent = `Expira em ${h}h ${String(m).padStart(2,'0')}min ${String(s).padStart(2,'0')}s`;
+    }
+    atualizar();
+    listenerExpiracao = setInterval(atualizar, 1000);
+}
+
 function mostrarBannerConvidado(html) {
     let banner = document.getElementById('banner-convidado');
     if (!banner) {
@@ -338,6 +412,56 @@ function mostrarAreaFicha() {
     document.getElementById('area-ficha').classList.remove('hidden');
 }
 
+// ============ AUTOSAVE ============
+function configurarAutosave() {
+    if (modoAcesso === "convidado-visualizar" || modoAcesso === "mestre" && false) return;
+    autosaveHabilitado = true;
+    const btnSalvar = document.getElementById('btn-salvar-ficha');
+    if (btnSalvar) btnSalvar.classList.add('hidden');
+    let indicador = document.getElementById('indicador-autosave');
+    if (!indicador) {
+        indicador = document.createElement('div');
+        indicador.id = 'indicador-autosave';
+        indicador.className = 'fixed bottom-4 right-4 z-50 px-4 py-2 rounded font-bold shadow-lg text-white transition-opacity';
+        indicador.style.opacity = '0';
+        document.body.appendChild(indicador);
+    }
+    document.querySelectorAll('#area-ficha input, #area-ficha textarea').forEach(el => {
+        el.addEventListener('input', agendarAutosave);
+        el.addEventListener('change', agendarAutosave);
+    });
+    // Slots já salvam via onclick, mas o item modal altera o DOM. Reagendar ao clicar.
+    document.querySelectorAll('#area-ficha .slot-vazio, #area-ficha .foto-personagem').forEach(el => {
+        el.addEventListener('click', agendarAutosave);
+    });
+    window.addEventListener('beforeunload', () => {
+        if (autosaveHabilitado) salvarFicha({ silencioso: true, semAlerta: true });
+    });
+}
+
+function desativarAutosave() {
+    autosaveHabilitado = false;
+    if (autosaveTimer) { clearTimeout(autosaveTimer); autosaveTimer = null; }
+}
+
+function agendarAutosave() {
+    if (!autosaveHabilitado) return;
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => salvarFicha({ silencioso: true }), DEBOUNCE_AUTOSAVE_MS);
+}
+
+function mostrarIndicador(texto, cor) {
+    const ind = document.getElementById('indicador-autosave');
+    if (!ind) return;
+    ind.textContent = texto;
+    ind.className = `fixed bottom-4 right-4 z-50 px-4 py-2 rounded font-bold shadow-lg text-white transition-opacity ${cor}`;
+    ind.style.opacity = '1';
+    if (texto.startsWith('Salvo') || texto.startsWith('Erro')) {
+        setTimeout(() => { ind.style.opacity = '0'; }, 3000);
+    }
+}
+
+// ============ COMPRESSÃO DE IMAGENS ============
 function comprimirImagem(dataUrl) {
     return new Promise((resolve, reject) => {
         const imagem = new Image();
@@ -378,45 +502,77 @@ window.abrirSeletor = function(callback) {
     input.click();
 };
 
+// ============ FOTO DO PERSONAGEM (modal próprio, sem qtd/peso) ============
 window.uploadFoto = function(elemento) {
-    if (modoAcesso === "convidado-visualizar") return;
-    window.abrirSeletor((imgBase64) => {
-        elemento.innerHTML = `
-            <img src="${imgBase64}" style="width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;top:0;left:0;z-index:1;pointer-events:none;">
-        `;
-        elemento.onclick = null;
-        const btn = document.createElement('div');
-        btn.innerHTML = 'X';
-        btn.className = 'absolute top-2 right-2 bg-red-800 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer z-20 text-sm font-bold shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none';
-        btn.onclick = (e) => {
-            e.stopPropagation();
-            elemento.innerHTML = '<i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span>FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao">PROPORÇÃO IDEAL: 9x16</div>';
-            elemento.onclick = () => window.uploadFoto(elemento);
-        };
-        elemento.appendChild(btn);
-        let timer;
-        elemento.onmouseenter = () => { clearTimeout(timer); btn.classList.remove('opacity-0'); btn.classList.add('opacity-100'); };
-        elemento.onmouseleave = () => { timer = setTimeout(() => { btn.classList.add('opacity-0'); btn.classList.remove('opacity-100'); }, 1500); };
-    });
+    if (modoAcesso === "convidado-visualizar" || modoAcesso === "convidado-expirado") return;
+    abrirModalFoto(elemento);
 };
 
+function abrirModalFoto(elemento) {
+    const imgAtual = elemento.querySelector('img');
+    const dadosAtuais = imgAtual ? { img: imgAtual.getAttribute('src') } : {};
+    quadradoFotoAtual = elemento;
+    inputFotoNome.value = elemento.getAttribute('data-nome-foto') || '';
+    inputFotoDesc.value = elemento.getAttribute('data-desc-foto') || '';
+    imagemFotoBase64 = dadosAtuais.img || null;
+    atualizarPreviewFoto();
+    modalFoto.classList.remove('hidden');
+}
+
+function atualizarPreviewFoto() {
+    if (imagemFotoBase64) {
+        previewFoto.innerHTML = `<img src="${imagemFotoBase64}" style="width:100%;height:100%;object-fit:cover;object-position:top center;">
+            <button id="btn-remover-img-foto" class="absolute top-1 right-1 bg-red-800 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer z-20 text-[10px] font-bold">X</button>`;
+        previewFoto.classList.remove('border-dashed');
+        previewFoto.classList.add('border-solid');
+        document.getElementById('btn-remover-img-foto').onclick = (e) => {
+            e.preventDefault(); imagemFotoBase64 = null; atualizarPreviewFoto();
+        };
+    } else {
+        previewFoto.innerHTML = `<i class="fa-solid fa-camera text-2xl mb-1"></i><span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>`;
+        previewFoto.classList.add('border-dashed');
+        previewFoto.classList.remove('border-solid');
+    }
+}
+
+// ============ INVENTÁRIO E EQUIPAMENTOS ============
 const gridInv = document.getElementById('inventario');
 const espacosEl = document.getElementById('espacos');
 const pesoEl = document.getElementById('peso-total');
+const pesoPersonagemEl = document.getElementById('peso-total-personagem');
+const pesoTotalGeralEl = document.getElementById('peso-total-geral');
+const pesoPersonagemInput = document.getElementById('peso-personagem');
 
 let quadradoAtual = null;
 let imagemAtualBase64 = null;
 
-function recalcularPesoTotal() {
-    let pesoTotal = 0;
+let quadradoFotoAtual = null;
+let imagemFotoBase64 = null;
+
+function calcularPesoGeral() {
+    let pesoItens = 0;
     document.querySelectorAll('.item-adicionado').forEach(item => {
         const qtd = parseFloat(item.dataset.qtd) || 1;
         const pesoStr = (item.dataset.peso || "0").toString().replace(',', '.');
-        pesoTotal += qtd * (parseFloat(pesoStr) || 0);
+        pesoItens += qtd * (parseFloat(pesoStr) || 0);
     });
-    if (pesoEl) pesoEl.innerText = pesoTotal.toFixed(2);
+    if (pesoEl) pesoEl.innerText = pesoItens.toFixed(2);
+
+    let pesoEquip = 0;
+    document.querySelectorAll('.slot-vazio.item-adicionado').forEach(item => {
+        if (item.id === 'foto-personagem') return;
+        const qtd = parseFloat(item.dataset.qtd) || 1;
+        const pesoStr = (item.dataset.peso || "0").toString().replace(',', '.');
+        pesoEquip += qtd * (parseFloat(pesoStr) || 0);
+    });
+
+    const pesoPers = parseFloat((pesoPersonagemInput?.value || '0').toString().replace(',', '.')) || 0;
+    if (pesoPersonagemEl) pesoPersonagemEl.innerText = (pesoPers + pesoEquip).toFixed(2);
+    if (pesoTotalGeralEl) pesoTotalGeralEl.innerText = (pesoPers + pesoEquip + pesoItens).toFixed(2);
     if (espacosEl) espacosEl.innerText = document.querySelectorAll('#inventario .item-adicionado').length;
 }
+
+if (pesoPersonagemInput) pesoPersonagemInput.addEventListener('input', calcularPesoGeral);
 
 const modalHTML = `
     <div id="modal-item" class="fixed inset-0 bg-black/80 z-50 flex justify-center items-center hidden">
@@ -444,6 +600,28 @@ const modalHTML = `
             </div>
         </div>
     </div>
+
+    <div id="modal-foto" class="fixed inset-0 bg-black/80 z-50 flex justify-center items-center hidden">
+        <div class="painel-papel p-6 rounded-lg w-[400px] flex flex-col gap-3 relative">
+            <h3 class="fonte-titulo text-2xl text-[#111] border-b border-black/30 pb-2 mb-2">FOTO DO PERSONAGEM</h3>
+            <div class="flex gap-4">
+                <div id="modal-preview-foto" class="w-24 h-32 rounded flex flex-col justify-center items-center relative overflow-hidden text-black/30 border-2 border-dashed border-[#3a2e27] bg-black/10">
+                    <i class="fa-solid fa-camera text-2xl mb-1"></i>
+                    <span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>
+                </div>
+                <div class="flex-1 flex flex-col gap-2">
+                    <label class="flex flex-col text-sm font-bold text-[#111]">Nome (opcional):<input type="text" id="modal-foto-nome" class="input-campo p-2" placeholder="Nome do personagem"></label>
+                    <button id="btn-upload-foto" class="bg-[#3a2e27] text-white p-2 rounded font-bold hover:bg-[#a81c1c] transition text-sm"><i class="fa-solid fa-camera"></i> Escolher Imagem</button>
+                </div>
+            </div>
+            <label class="flex flex-col text-sm font-bold text-[#111]">Descrição:<textarea id="modal-foto-desc" class="input-campo p-2 resize-none h-16"></textarea></label>
+            <div class="flex justify-between mt-2 gap-2">
+                <button id="btn-excluir-foto" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700 hidden">Excluir</button>
+                <button id="btn-cancelar-foto" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700">Cancelar</button>
+                <button id="btn-salvar-foto" class="bg-[#a81c1c] text-white p-2 rounded font-bold flex-1 hover:brightness-125">Salvar</button>
+            </div>
+        </div>
+    </div>
 `;
 document.body.insertAdjacentHTML('beforeend', modalHTML);
 
@@ -457,6 +635,37 @@ const btnExcluir = document.getElementById('btn-excluir');
 const btnCancelar = document.getElementById('btn-cancelar');
 const btnSalvarItem = document.getElementById('btn-salvar-item');
 const btnUpload = document.getElementById('btn-upload');
+
+const modalFoto = document.getElementById('modal-foto');
+const previewFoto = document.getElementById('modal-preview-foto');
+const inputFotoNome = document.getElementById('modal-foto-nome');
+const inputFotoDesc = document.getElementById('modal-foto-desc');
+const btnExcluirFoto = document.getElementById('btn-excluir-foto');
+const btnCancelarFoto = document.getElementById('btn-cancelar-foto');
+const btnSalvarFoto = document.getElementById('btn-salvar-foto');
+const btnUploadFoto = document.getElementById('btn-upload-foto');
+
+btnCancelarFoto.onclick = () => modalFoto.classList.add('hidden');
+btnUploadFoto.onclick = () => {
+    window.abrirSeletor((img) => { imagemFotoBase64 = img; atualizarPreviewFoto(); });
+};
+btnExcluirFoto.onclick = () => {
+    if (!quadradoFotoAtual) return;
+    quadradoFotoAtual.innerHTML = '<i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span>FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao">PROPORÇÃO IDEAL: 9x16</div>';
+    quadradoFotoAtual.removeAttribute('data-nome-foto');
+    quadradoFotoAtual.removeAttribute('data-desc-foto');
+    modalFoto.classList.add('hidden');
+    agendarAutosave();
+};
+btnSalvarFoto.onclick = () => {
+    if (!quadradoFotoAtual) return;
+    if (!imagemFotoBase64) return alert("Escolha uma imagem.");
+    quadradoFotoAtual.innerHTML = `<img src="${imagemFotoBase64}" style="width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;top:0;left:0;z-index:1;pointer-events:none;">`;
+    quadradoFotoAtual.setAttribute('data-nome-foto', inputFotoNome.value || '');
+    quadradoFotoAtual.setAttribute('data-desc-foto', inputFotoDesc.value || '');
+    modalFoto.classList.add('hidden');
+    agendarAutosave();
+};
 
 function atualizarPreviewModal() {
     if (imagemAtualBase64) {
@@ -477,7 +686,7 @@ function atualizarPreviewModal() {
 }
 
 function abrirModal(q, dados = null) {
-    if (modoAcesso === "convidado-visualizar") return;
+    if (modoAcesso === "convidado-visualizar" || modoAcesso === "convidado-expirado") return;
     quadradoAtual = q;
     if (dados && dados.nome) {
         inputNome.value = dados.nome;
@@ -515,8 +724,9 @@ btnExcluir.onclick = () => {
     quadradoAtual.removeAttribute('data-itemData');
     quadradoAtual.removeAttribute('data-peso');
     quadradoAtual.removeAttribute('data-qtd');
-    recalcularPesoTotal();
+    calcularPesoGeral();
     modal.classList.add('hidden');
+    agendarAutosave();
 };
 
 btnSalvarItem.onclick = () => {
@@ -529,8 +739,9 @@ btnSalvarItem.onclick = () => {
     if (inputPeso.value.trim() === "") return alert("Digite o peso.");
     const dados = { img: imagemAtualBase64, nome, qtd, peso: pesoString, desc: inputDesc.value };
     renderizarItem(quadradoAtual, dados);
-    recalcularPesoTotal();
+    calcularPesoGeral();
     modal.classList.add('hidden');
+    agendarAutosave();
 };
 
 function renderizarItem(q, dados) {
@@ -602,82 +813,98 @@ async function carregarImagensSeparadas() {
     return imagens;
 }
 
-document.getElementById('btn-salvar-ficha').onclick = async () => {
-    if (!usuarioAtual) return;
-    if (modoAcesso === "convidado-visualizar") return alert("Você tem permissão apenas para visualizar.");
-    if (modoAcesso === "convidado-pendente" || modoAcesso === "convidado-recusado") return alert("Sem permissão para salvar.");
+async function salvarFicha(opcoes = {}) {
+    if (!usuarioAtual || !fichaAtualId) return;
+    if (modoAcesso === "convidado-visualizar" || modoAcesso === "convidado-expirado") return;
+    if (salvandoEmProgresso) return;
 
-    const botaoSalvar = document.getElementById('btn-salvar-ficha');
-    const textoOriginal = botaoSalvar.innerText;
-    botaoSalvar.disabled = true;
-    botaoSalvar.innerText = "SALVANDO...";
+    const dadosFicha = {
+        nome: document.getElementById('nome').value,
+        idade: document.getElementById('idade').value,
+        altura: document.getElementById('altura').value,
+        sexo: document.getElementById('sexo').value,
+        etnia: document.getElementById('etnia').value,
+        corPele: document.getElementById('cor-pele').value,
+        nivel: document.getElementById('nivel').value,
+        exp: document.getElementById('exp').value,
+        forca: forca.value,
+        destreza: destreza.value,
+        forcaAcao: forcaAcao.value,
+        destrezaAcao: destrezaAcao.value,
+        constituicao: document.getElementById('constituicao').value,
+        inteligencia: document.getElementById('inteligencia').value,
+        percepcao: document.getElementById('percepcao').value,
+        vontade: document.getElementById('vontade').value,
+        carisma: document.getElementById('carisma').value,
+        esquiva: document.getElementById('esquiva').value,
+        movimentacao: document.getElementById('movimentacao').value,
+        diario: document.getElementById('diario').value,
+        talentos: Array.from(document.querySelectorAll('#talentos input')).map(input => input.value),
+        pesoPersonagem: pesoPersonagemInput ? pesoPersonagemInput.value : '',
+        fotoPersonagem: "",
+        fotoPersonagemNome: "",
+        fotoPersonagemDesc: "",
+        itensMochila: [],
+        itensEquipamento: []
+    };
+
+    const imagensAtivas = {};
+
+    const fotoContainer = document.getElementById('foto-personagem');
+    const imagemRetrato = fotoContainer.querySelector('img');
+    if (imagemRetrato) {
+        const foto = imagemRetrato.getAttribute('src');
+        imagensAtivas.personagem = foto;
+        dadosFicha.fotoPersonagem = fotoContainer.innerHTML.replace(foto, "__IMAGEM_PERSONAGEM__");
+        dadosFicha.fotoPersonagemNome = fotoContainer.getAttribute('data-nome-foto') || '';
+        dadosFicha.fotoPersonagemDesc = fotoContainer.getAttribute('data-desc-foto') || '';
+    } else {
+        dadosFicha.fotoPersonagem = "";
+    }
+
+    const itensMochila = document.querySelectorAll('#inventario .item-adicionado');
+    for (const el of itensMochila) {
+        const dados = JSON.parse(el.dataset.itemData);
+        const imagemId = `mochila_${el.id}`;
+        if (dados.img) imagensAtivas[imagemId] = dados.img;
+        dadosFicha.itensMochila.push({
+            dados: { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" },
+            imagemId, posicao: el.id
+        });
+    }
+
+    const todosSlots = Array.from(document.querySelectorAll('.slot-vazio'));
+    const itensEquipamento = document.querySelectorAll('.slot-vazio.item-adicionado');
+    for (const el of itensEquipamento) {
+        if (el.id === 'foto-personagem') continue;
+        const dados = JSON.parse(el.dataset.itemData);
+        const indice = todosSlots.indexOf(el);
+        const imagemId = `equipamento_${indice}`;
+        if (dados.img) imagensAtivas[imagemId] = dados.img;
+        dadosFicha.itensEquipamento.push({
+            dados: { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" },
+            imagemId, posicao: el.getAttribute('data-original')
+        });
+    }
+
+    if (modoAcesso === "mestre") {
+        dadosFicha.tipo = fichaAtualTipo;
+        dadosFicha.proprietarioUid = fichaAtualProprietarioUid;
+        dadosFicha.criadoPor = fichaAtualCriadoPor || usuarioAtual.uid;
+    }
+
+    const assinatura = JSON.stringify(dadosFicha);
+    if (assinatura === ultimoEstadoSalvo) return;
+
+    salvandoEmProgresso = true;
+    if (!opcoes.silencioso) {
+        const btn = document.getElementById('btn-salvar-ficha');
+        if (btn) { btn.disabled = true; btn.innerText = "SALVANDO..."; }
+    } else {
+        mostrarIndicador('Salvando...', 'bg-yellow-700');
+    }
 
     try {
-        const dadosFicha = {
-            nome: document.getElementById('nome').value,
-            idade: document.getElementById('idade').value,
-            nivel: document.getElementById('nivel').value,
-            exp: document.getElementById('exp').value,
-            forca: forca.value,
-            destreza: destreza.value,
-            forcaAcao: forcaAcao.value,
-            destrezaAcao: destrezaAcao.value,
-            constituicao: document.getElementById('constituicao').value,
-            inteligencia: document.getElementById('inteligencia').value,
-            percepcao: document.getElementById('percepcao').value,
-            vontade: document.getElementById('vontade').value,
-            carisma: document.getElementById('carisma').value,
-            esquiva: document.getElementById('esquiva').value,
-            movimentacao: document.getElementById('movimentacao').value,
-            diario: document.getElementById('diario').value,
-            talentos: Array.from(document.querySelectorAll('#talentos input')).map(input => input.value),
-            fotoPersonagem: "",
-            itensMochila: [],
-            itensEquipamento: []
-        };
-
-        const imagensAtivas = {};
-
-        const fotoContainer = document.getElementById('foto-personagem');
-        const imagemRetrato = fotoContainer.querySelector('img');
-        if (imagemRetrato) {
-            const foto = imagemRetrato.getAttribute('src');
-            imagensAtivas.personagem = foto;
-            dadosFicha.fotoPersonagem = fotoContainer.innerHTML.replace(foto, "__IMAGEM_PERSONAGEM__");
-        } else {
-            dadosFicha.fotoPersonagem = fotoContainer.innerHTML;
-        }
-
-        const itensMochila = document.querySelectorAll('#inventario .item-adicionado');
-        for (const el of itensMochila) {
-            const dados = JSON.parse(el.dataset.itemData);
-            const imagemId = `mochila_${el.id}`;
-            if (dados.img) imagensAtivas[imagemId] = dados.img;
-            dadosFicha.itensMochila.push({
-                dados: { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" },
-                imagemId, posicao: el.id
-            });
-        }
-
-        const todosSlots = Array.from(document.querySelectorAll('.slot-vazio'));
-        const itensEquipamento = document.querySelectorAll('.slot-vazio.item-adicionado');
-        for (const el of itensEquipamento) {
-            const dados = JSON.parse(el.dataset.itemData);
-            const indice = todosSlots.indexOf(el);
-            const imagemId = `equipamento_${indice}`;
-            if (dados.img) imagensAtivas[imagemId] = dados.img;
-            dadosFicha.itensEquipamento.push({
-                dados: { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" },
-                imagemId, posicao: el.getAttribute('data-original')
-            });
-        }
-
-        if (modoAcesso === "mestre") {
-            dadosFicha.tipo = fichaAtualTipo;
-            dadosFicha.proprietarioUid = fichaAtualProprietarioUid;
-            dadosFicha.criadoPor = fichaAtualCriadoPor || usuarioAtual.uid;
-        }
-
         await setDoc(doc(db, "fichas", fichaAtualId), dadosFicha, { merge: true });
 
         for (const [idImagem, imagem] of Object.entries(imagensAtivas)) {
@@ -689,15 +916,23 @@ document.getElementById('btn-salvar-ficha').onclick = async () => {
             if (!imagensAtivas[documento.id]) await deleteDoc(documento.ref);
         }
 
-        alert("Ficha salva com sucesso!");
+        ultimoEstadoSalvo = assinatura;
+        if (!opcoes.silencioso && !opcoes.semAlerta) alert("Ficha salva com sucesso!");
+        if (opcoes.silencioso) mostrarIndicador('Salvo ✓', 'bg-green-700');
     } catch (e) {
         console.error("Falha ao salvar ficha:", e);
-        alert(`Erro ao salvar ficha (${e.code || "desconhecido"}): ${e.message}`);
+        if (opcoes.silencioso) mostrarIndicador('Erro ao salvar', 'bg-red-800');
+        else alert(`Erro ao salvar ficha (${e.code || "desconhecido"}): ${e.message}`);
     } finally {
-        botaoSalvar.disabled = false;
-        botaoSalvar.innerText = textoOriginal;
+        salvandoEmProgresso = false;
+        if (!opcoes.silencioso) {
+            const btn = document.getElementById('btn-salvar-ficha');
+            if (btn) { btn.disabled = false; btn.innerText = "SALVAR FICHA"; }
+        }
     }
-};
+}
+
+document.getElementById('btn-salvar-ficha').onclick = () => salvarFicha({ silencioso: false });
 
 async function carregarFicha() {
     if (!usuarioAtual || !fichaAtualId) return;
@@ -724,7 +959,7 @@ async function carregarFicha() {
         return;
     }
 
-    fichaAtualTipo = d.tipo || (fichaAtualId === usuarioAtual.uid ? "jogador" : "jogador");
+    fichaAtualTipo = d.tipo || "jogador";
     fichaAtualProprietarioUid = d.proprietarioUid || (fichaAtualTipo === "jogador" ? fichaAtualId : null);
     fichaAtualCriadoPor = d.criadoPor || fichaAtualProprietarioUid || usuarioAtual.uid;
 
@@ -732,6 +967,10 @@ async function carregarFicha() {
 
     document.getElementById('nome').value = d.nome || '';
     document.getElementById('idade').value = d.idade || '';
+    document.getElementById('altura').value = d.altura || '';
+    document.getElementById('sexo').value = d.sexo || '';
+    document.getElementById('etnia').value = d.etnia || '';
+    document.getElementById('cor-pele').value = d.corPele || '';
     document.getElementById('nivel').value = d.nivel || '';
     document.getElementById('exp').value = d.exp || '';
     forca.value = d.forca || '';
@@ -745,6 +984,7 @@ async function carregarFicha() {
     document.getElementById('esquiva').value = d.esquiva || '';
     document.getElementById('movimentacao').value = d.movimentacao || 6;
     document.getElementById('diario').value = d.diario || '';
+    if (pesoPersonagemInput) pesoPersonagemInput.value = d.pesoPersonagem || '';
 
     const camposTalentos = document.querySelectorAll('#talentos input');
     camposTalentos.forEach((input, indice) => { input.value = (d.talentos || [])[indice] || ''; });
@@ -755,6 +995,8 @@ async function carregarFicha() {
             fotoHTML = fotoHTML.replace("__IMAGEM_PERSONAGEM__", imagensSeparadas.personagem);
         }
         document.getElementById('foto-personagem').innerHTML = fotoHTML;
+        document.getElementById('foto-personagem').setAttribute('data-nome-foto', d.fotoPersonagemNome || '');
+        document.getElementById('foto-personagem').setAttribute('data-desc-foto', d.fotoPersonagemDesc || '');
     }
 
     document.querySelectorAll('.item-adicionado').forEach(el => {
@@ -788,7 +1030,12 @@ async function carregarFicha() {
         });
     }
 
-    recalcularPesoTotal();
+    calcularPesoGeral();
+    ultimoEstadoSalvo = JSON.stringify({
+        nome: d.nome || '', idade: d.idade || '', altura: d.altura || '',
+        sexo: d.sexo || '', etnia: d.etnia || '', corPele: d.corPele || '',
+        nivel: d.nivel || '', exp: d.exp || ''
+    });
 }
 
 async function registrarContaJogador(user) {
@@ -870,7 +1117,27 @@ async function obterImagemRetrato(idFicha, ficha) {
     return match ? match[1] : '';
 }
 
-function criarCardFicha(idFicha, ficha, modoMestre = false) {
+async function obterExpiracaoAcesso(fichaId, uid) {
+    try {
+        const snap = await getDoc(doc(db, 'fichas', fichaId, 'acessos', uid));
+        if (snap.exists()) {
+            const d = snap.data();
+            return d.expiraEm?.toDate ? d.expiraEm.toDate() : new Date(d.expiraEm);
+        }
+    } catch (e) {}
+    return null;
+}
+
+function formatarRestante(dataExpiracao) {
+    if (!dataExpiracao) return '';
+    const restante = dataExpiracao.getTime() - Date.now();
+    if (restante <= 0) return 'EXPIRADO';
+    const h = Math.floor(restante / 3600000);
+    const m = Math.floor((restante % 3600000) / 60000);
+    return `${h}h ${String(m).padStart(2,'0')}min`;
+}
+
+async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     const card = document.createElement('article');
     card.className = 'bg-[#211b17] text-[#e6d5b8] rounded-lg overflow-hidden border-2 border-[#7a4e32] shadow-xl flex flex-col';
     const retrato = document.createElement('div');
@@ -897,6 +1164,24 @@ function criarCardFicha(idFicha, ficha, modoMestre = false) {
             uidDono.textContent = `UID DO JOGADOR: ${ficha.proprietarioUid}`;
             conteudo.append(uidDono);
         }
+        // Lista convidados com contagem
+        try {
+            const acessosSnap = await getDocs(collection(db, 'fichas', idFicha, 'acessos'));
+            if (!acessosSnap.empty) {
+                const tituloAcesso = document.createElement('p');
+                tituloAcesso.className = 'text-xs font-bold text-[#f3dfc1] mt-2';
+                tituloAcesso.textContent = 'CONVIDADOS COM ACESSO:';
+                conteudo.append(tituloAcesso);
+                acessosSnap.forEach(a => {
+                    const d = a.data();
+                    const exp = d.expiraEm?.toDate ? d.expiraEm.toDate() : new Date(d.expiraEm);
+                    const linha = document.createElement('p');
+                    linha.className = 'text-xs text-[#e6d5b8] break-all';
+                    linha.textContent = `${d.permissao} • ${formatarRestante(exp)} • UID ${a.id.slice(0,8)}…`;
+                    conteudo.append(linha);
+                });
+            }
+        } catch (e) {}
     }
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
@@ -927,7 +1212,9 @@ async function carregarDashboardJogador() {
         vinculadas.forEach(d => encontrados.set(d.id, d.data()));
         lista.innerHTML = '';
         if (!encontrados.size) { lista.innerHTML = '<p class="text-[#111] col-span-full text-center py-10">Nenhum personagem encontrado nesta conta.</p>'; return; }
-        [...encontrados.entries()].sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '', 'pt-BR')).forEach(([id, ficha]) => lista.appendChild(criarCardFicha(id, ficha)));
+        for (const [id, ficha] of [...encontrados.entries()].sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '', 'pt-BR'))) {
+            lista.appendChild(await criarCardFicha(id, ficha));
+        }
     } catch (e) {
         console.error('Erro ao carregar painel do jogador:', e);
         lista.innerHTML = `<p class="text-red-800 col-span-full">Não foi possível listar seus personagens (${e.code || 'erro'}): ${e.message}</p>`;
@@ -946,7 +1233,9 @@ async function carregarDashboardMestre() {
         document.getElementById('contador-fichas').textContent = `Fichas: ${docs.length}`;
         document.getElementById('contador-pdms').textContent = `PDMs: ${pdms}`;
         if (!docs.length) { lista.innerHTML = '<p class="text-[#111] col-span-full text-center py-10">Nenhuma ficha cadastrada.</p>'; return; }
-        docs.forEach(d => lista.appendChild(criarCardFicha(d.id, d.data(), true)));
+        for (const d of docs) {
+            lista.appendChild(await criarCardFicha(d.id, d.data(), true));
+        }
         await carregarSolicitacoesPendentes();
     } catch (e) {
         console.error('Erro ao carregar painel do mestre:', e);
@@ -957,6 +1246,13 @@ async function carregarDashboardMestre() {
 async function atualizarPainelMestre() { return carregarDashboardMestre(); }
 
 function voltarAoPainel() {
+    if (autosaveHabilitado) {
+        salvarFicha({ silencioso: true, semAlerta: true }).finally(() => {
+            const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
+            window.location.href = url.toString();
+        });
+        return;
+    }
     const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
     window.location.href = url.toString();
 }
@@ -1019,18 +1315,21 @@ async function carregarSolicitacoesPendentes() {
 
 async function aprovarSolicitacao(fichaId, uidConvidado, permissao) {
     try {
+        const expiraEm = new Date(Date.now() + DURACAO_ACESSO_MS);
         await setDoc(doc(db, 'fichas', fichaId, 'acessos', uidConvidado), {
             permissao: permissao,
             aprovadoEm: new Date().toISOString(),
-            aprovadoPor: usuarioAtual.uid
+            aprovadoPor: usuarioAtual.uid,
+            expiraEm: expiraEm.toISOString()
         });
         await setDoc(doc(db, 'fichas', fichaId, 'solicitacoes', uidConvidado), {
             status: 'aprovado',
             permissao: permissao,
             respondidoEm: new Date().toISOString()
         }, { merge: true });
-        alert(`Acesso aprovado como ${permissao}.`);
+        alert(`Acesso aprovado como ${permissao} por 12 horas.`);
         carregarSolicitacoesPendentes();
+        carregarDashboardMestre();
     } catch (e) {
         console.error("Erro ao aprovar:", e);
         alert(`Erro ao aprovar (${e.code || 'erro'}): ${e.message}`);
@@ -1060,7 +1359,7 @@ async function criarPDM() {
     if (nome === null) return;
     try {
         const novaFicha = doc(collection(db, 'fichas'));
-        await setDoc(novaFicha, { tipo: 'pdm', proprietarioUid: null, proprietarioNome: '', criadoPor: usuarioAtual.uid, nome: nome.trim() || 'Novo PDM', idade: '', nivel: '1', exp: '', forca: '', destreza: '', forcaAcao: '', destrezaAcao: '', constituicao: '', inteligencia: '', percepcao: '', vontade: '', carisma: '', esquiva: '', movimentacao: '6', diario: '', talentos: [], fotoPersonagem: '', itensMochila: [], itensEquipamento: [] });
+        await setDoc(novaFicha, { tipo: 'pdm', proprietarioUid: null, proprietarioNome: '', criadoPor: usuarioAtual.uid, nome: nome.trim() || 'Novo PDM', idade: '', altura: '', sexo: '', etnia: '', corPele: '', nivel: '1', exp: '', forca: '', destreza: '', forcaAcao: '', destrezaAcao: '', constituicao: '', inteligencia: '', percepcao: '', vontade: '', carisma: '', esquiva: '', movimentacao: '6', diario: '', talentos: [], pesoPersonagem: '', fotoPersonagem: '', itensMochila: [], itensEquipamento: [] });
         await atualizarPainelMestre(); alert('PDM criado!');
     } catch (e) { console.error(e); alert(`Não foi possível criar o PDM: ${e.message}`); }
 }
@@ -1088,6 +1387,7 @@ async function duplicarFicha(idFicha, ficha) {
         const imagensOrigem = await getDocs(collection(db, 'fichas', idFicha, 'imagens'));
         const novaRef = doc(collection(db, 'fichas'));
         const copia = { ...ficha, nome: novoNome.trim() || `${ficha.nome || 'Personagem'} (Cópia)`, tipo: 'pdm', proprietarioUid: null, proprietarioNome: '', proprietarioEmail: '', criadoPor: usuarioAtual.uid };
+        delete copia.fotoPersonagem;
         await setDoc(novaRef, copia);
         const lote = writeBatch(db);
         imagensOrigem.forEach(item => lote.set(doc(db, 'fichas', novaRef.id, 'imagens', item.id), item.data()));
