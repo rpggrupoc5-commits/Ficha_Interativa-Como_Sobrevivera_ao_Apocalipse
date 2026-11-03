@@ -1,9 +1,9 @@
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import {
     getAuth,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
+    signInAnonymously,
     onAuthStateChanged,
     signOut
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -22,7 +22,6 @@ import {
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// --- CONFIGURAÇÃO DO FIREBASE ---
 const firebaseConfig = {
     apiKey: "AIzaSyAdjZy-eaJmeGlvvEMTQXDZmy5WOOKNoGg",
     authDomain: "painel-ficha-apocalipse.firebaseapp.com",
@@ -41,9 +40,11 @@ let fichaAtualId = null;
 let fichaAtualTipo = "jogador";
 let fichaAtualProprietarioUid = null;
 let fichaAtualCriadoPor = null;
+let modoAcesso = "nenhum";
+let ehConvidado = false;
+
 const emailMestre = "rpggrupoc5@gmail.com";
 
-// --- ATRIBUTOS (AÇÃO%) ---
 const forca = document.getElementById('forca');
 const destreza = document.getElementById('destreza');
 const forcaAcao = document.getElementById('forca-acao');
@@ -53,11 +54,9 @@ function calcular() {
     if (forca.value) forcaAcao.value = parseInt(forca.value) * 3;
     if (destreza.value) destrezaAcao.value = parseInt(destreza.value) * 3;
 }
-
 if (forca) forca.addEventListener('input', calcular);
 if (destreza) destreza.addEventListener('input', calcular);
 
-// --- LOGIN ---
 const telaLogin = document.getElementById('tela-login');
 const sitePrincipal = document.getElementById('site-principal');
 const mensagemErro = document.getElementById('mensagem-erro');
@@ -65,7 +64,7 @@ const mensagemErro = document.getElementById('mensagem-erro');
 document.getElementById('btn-entrar').onclick = () => {
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
-
+    mensagemErro.classList.add('hidden');
     signInWithEmailAndPassword(auth, email, senha).catch((error) => {
         console.error("Falha no login Firebase:", error);
         mensagemErro.innerText = `Erro no login (${error.code || "desconhecido"}): ${error.message}`;
@@ -76,7 +75,7 @@ document.getElementById('btn-entrar').onclick = () => {
 document.getElementById('btn-cadastrar').onclick = () => {
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
-
+    mensagemErro.classList.add('hidden');
     createUserWithEmailAndPassword(auth, email, senha).then(() => {
         alert("Conta criada! Bem-vindo.");
     }).catch((error) => {
@@ -89,30 +88,41 @@ document.getElementById('btn-cadastrar').onclick = () => {
 document.getElementById('btn-sair').onclick = () =>
     signOut(auth).then(() => window.location.reload());
 
+function parametros() {
+    return new URLSearchParams(window.location.search);
+}
+function ehConvite() {
+    return parametros().get('convite') === '1';
+}
+function fichaSolicitada() {
+    return parametros().get('ficha');
+}
+
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         usuarioAtual = user;
-        // Registra/atualiza o perfil básico da conta para que o mestre encontre o UID.
-        // Cada usuário só grava o próprio documento em usuarios/{uid}.
-        try {
-            await registrarContaJogador(user);
-        } catch (erroPerfil) {
-            console.error('Não foi possível registrar o perfil da conta:', erroPerfil);
+        const mestreLogado = (user.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
+
+        if (user.email) {
+            try {
+                await registrarContaJogador(user);
+            } catch (erroPerfil) {
+                console.error('Não foi possível registrar o perfil da conta:', erroPerfil);
+            }
         }
+
+        const fichaId = fichaSolicitada();
+        const convite = ehConvite();
+
         telaLogin.classList.add('hidden');
         sitePrincipal.classList.remove('hidden');
-        const ehMestre = (user.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
-        const parametros = new URLSearchParams(window.location.search);
-        const fichaSolicitada = parametros.get('ficha');
 
-        if (fichaSolicitada) {
-            mostrarAreaFicha();
-            fichaAtualId = fichaSolicitada;
-            carregarFicha().catch((error) => {
-                console.error('Falha ao carregar ficha:', error);
-                alert(`Erro ao carregar ficha (${error.code || 'desconhecido'}): ${error.message}`);
-            });
-        } else if (ehMestre) {
+        if (fichaId) {
+            await abrirRotaFicha(fichaId, convite);
+            return;
+        }
+
+        if (mestreLogado) {
             document.getElementById('dashboard-mestre').classList.remove('hidden');
             document.getElementById('dashboard-jogador').classList.add('hidden');
             document.getElementById('area-ficha').classList.add('hidden');
@@ -125,10 +135,202 @@ onAuthStateChanged(auth, async (user) => {
         }
     } else {
         usuarioAtual = null;
+        if (ehConvite() && fichaSolicitada()) {
+            try {
+                await signInAnonymously(auth);
+            } catch (e) {
+                console.error("Falha no login anônimo:", e);
+                alert(`Não foi possível entrar como convidado (${e.code || 'erro'}): ${e.message}. Verifique se a autenticação anônima está habilitada no Firebase.`);
+            }
+            return;
+        }
         telaLogin.classList.remove('hidden');
         sitePrincipal.classList.add('hidden');
     }
 });
+
+async function abrirRotaFicha(fichaId, veioDeConvite) {
+    mostrarAreaFicha();
+    fichaAtualId = fichaId;
+    const mestreLogado = (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
+
+    if (mestreLogado) {
+        modoAcesso = "mestre";
+        ehConvidado = false;
+        try {
+            await carregarFicha();
+            aplicarPermissoesNaTela();
+        } catch (e) {
+            alert(`Erro ao carregar ficha (${e.code || 'desconhecido'}): ${e.message}`);
+        }
+        return;
+    }
+
+    if (fichaId === usuarioAtual.uid) {
+        modoAcesso = "dono";
+        ehConvidado = false;
+        try {
+            await carregarFicha();
+            aplicarPermissoesNaTela();
+        } catch (e) {
+            alert(`Erro ao carregar ficha (${e.code || 'desconhecido'}): ${e.message}`);
+        }
+        return;
+    }
+
+    const acessoSnap = await getDoc(doc(db, 'fichas', fichaId, 'acessos', usuarioAtual.uid));
+    if (acessoSnap.exists()) {
+        const permissao = acessoSnap.data().permissao || "visualizar";
+        modoAcesso = permissao === "editar" ? "convidado-editar" : "convidado-visualizar";
+        ehConvidado = true;
+        try {
+            await carregarFicha();
+            aplicarPermissoesNaTela();
+            mostrarBannerConvidado(`Acesso aprovado como <b>${permissao === 'editar' ? 'EDITOR' : 'VISUALIZADOR'}</b>.`);
+        } catch (e) {
+            alert(`Erro ao carregar ficha (${e.code || 'desconhecido'}): ${e.message}`);
+        }
+        return;
+    }
+
+    try {
+        const donoSnap = await getDoc(doc(db, 'fichas', fichaId));
+        if (donoSnap.exists() && donoSnap.data().proprietarioUid === usuarioAtual.uid) {
+            modoAcesso = "dono";
+            ehConvidado = false;
+            await carregarFicha();
+            aplicarPermissoesNaTela();
+            return;
+        }
+    } catch (e) {}
+
+    if (veioDeConvite || ehConvidado) {
+        modoAcesso = "convidado-pendente";
+        ehConvidado = true;
+        await verificarSolicitacaoExistente(fichaId);
+    } else {
+        modoAcesso = "nenhum";
+        alert("Você não tem permissão para abrir esta ficha.");
+        window.location.href = window.location.pathname;
+    }
+}
+
+async function verificarSolicitacaoExistente(fichaId) {
+    try {
+        const solSnap = await getDoc(doc(db, 'fichas', fichaId, 'solicitacoes', usuarioAtual.uid));
+        if (solSnap.exists()) {
+            const status = solSnap.data().status;
+            if (status === 'recusado') {
+                modoAcesso = "convidado-recusado";
+                mostrarTelaSolicitacao('recusado');
+            } else {
+                mostrarTelaSolicitacao('pendente');
+            }
+        } else {
+            mostrarTelaSolicitacao('sem-solicitacao');
+        }
+    } catch (e) {
+        console.warn("Não foi possível verificar solicitação:", e);
+        mostrarTelaSolicitacao('sem-solicitacao');
+    }
+}
+
+function mostrarTelaSolicitacao(estado) {
+    const area = document.getElementById('area-ficha');
+    let painel = document.getElementById('painel-solicitacao');
+
+    if (!painel) {
+        painel = document.createElement('div');
+        painel.id = 'painel-solicitacao';
+        painel.className = 'fixed inset-0 bg-black/90 z-40 flex justify-center items-center p-4';
+        area.appendChild(painel);
+    }
+    painel.classList.remove('hidden');
+
+    if (estado === 'sem-solicitacao') {
+        painel.innerHTML = `
+            <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
+                <h2 class="fonte-titulo text-3xl text-[#111] text-center">ACESSO À FICHA</h2>
+                <p class="text-[#111] text-center font-bold">Você está abrindo esta ficha como <b>convidado</b>. É necessário solicitar autorização ao mestre.</p>
+                <button id="btn-solicitar-acesso" class="w-full bg-[#a81c1c] text-white p-3 rounded font-bold hover:brightness-125">SOLICITAR ACESSO</button>
+                <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">VOLTAR</button>
+            </div>
+        `;
+        document.getElementById('btn-solicitar-acesso').onclick = solicitarAcesso;
+        document.getElementById('btn-voltar-login').onclick = () => { window.location.href = window.location.pathname; };
+    } else if (estado === 'pendente') {
+        painel.innerHTML = `
+            <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
+                <h2 class="fonte-titulo text-3xl text-[#111] text-center">AGUARDANDO APROVAÇÃO</h2>
+                <p class="text-[#111] text-center font-bold">Sua solicitação foi enviada ao mestre. Aguarde a aprovação para acessar a ficha.</p>
+                <button id="btn-verificar" class="w-full bg-[#a81c1c] text-white p-3 rounded font-bold hover:brightness-125">VERIFICAR NOVAMENTE</button>
+                <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">SAIR</button>
+            </div>
+        `;
+        document.getElementById('btn-verificar').onclick = () => window.location.reload();
+        document.getElementById('btn-voltar-login').onclick = () => signOut(auth).then(() => window.location.reload());
+    } else if (estado === 'recusado') {
+        painel.innerHTML = `
+            <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
+                <h2 class="fonte-titulo text-3xl text-[#111] text-center">ACESSO RECUSADO</h2>
+                <p class="text-[#111] text-center font-bold">O mestre recusou sua solicitação de acesso a esta ficha.</p>
+                <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">SAIR</button>
+            </div>
+        `;
+        document.getElementById('btn-voltar-login').onclick = () => signOut(auth).then(() => window.location.reload());
+    }
+}
+
+async function solicitarAcesso() {
+    if (!usuarioAtual || !fichaAtualId) return;
+    const btn = document.getElementById('btn-solicitar-acesso');
+    if (btn) { btn.disabled = true; btn.innerText = "ENVIANDO..."; }
+    try {
+        await setDoc(doc(db, 'fichas', fichaAtualId, 'solicitacoes', usuarioAtual.uid), {
+            uidConvidado: usuarioAtual.uid,
+            fichaId: fichaAtualId,
+            status: 'pendente',
+            criadoEm: new Date().toISOString()
+        });
+        mostrarTelaSolicitacao('pendente');
+    } catch (e) {
+        console.error("Erro ao solicitar acesso:", e);
+        alert(`Não foi possível enviar a solicitação (${e.code || 'erro'}): ${e.message}`);
+        if (btn) { btn.disabled = false; btn.innerText = "SOLICITAR ACESSO"; }
+    }
+}
+
+function aplicarPermissoesNaTela() {
+    const btnSalvar = document.getElementById('btn-salvar-ficha');
+    const inputsEditaveis = document.querySelectorAll('#area-ficha input, #area-ficha textarea');
+    const slots = document.querySelectorAll('#area-ficha .slot-vazio, #area-ficha .foto-personagem');
+
+    if (modoAcesso === "convidado-visualizar") {
+        if (btnSalvar) btnSalvar.classList.add('hidden');
+        inputsEditaveis.forEach(el => {
+            el.disabled = true;
+            el.classList.add('opacity-80', 'cursor-not-allowed');
+        });
+        slots.forEach(el => { el.onclick = null; el.style.pointerEvents = 'none'; });
+        document.getElementById('btn-voltar-painel').classList.add('hidden');
+    } else if (modoAcesso === "convidado-editar") {
+        document.getElementById('btn-voltar-painel').classList.add('hidden');
+    } else if (modoAcesso === "mestre" || modoAcesso === "dono") {
+        document.getElementById('btn-voltar-painel').classList.remove('hidden');
+    }
+}
+
+function mostrarBannerConvidado(html) {
+    let banner = document.getElementById('banner-convidado');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'banner-convidado';
+        banner.className = 'max-w-[1500px] mx-auto mt-4 px-3';
+        const area = document.getElementById('area-ficha');
+        area.insertBefore(banner, area.firstChild);
+    }
+    banner.innerHTML = `<div class="painel-papel p-3 text-[#111] font-bold text-center rounded">${html}</div>`;
+}
 
 function mostrarAreaFicha() {
     document.getElementById('dashboard-jogador').classList.add('hidden');
@@ -136,121 +338,67 @@ function mostrarAreaFicha() {
     document.getElementById('area-ficha').classList.remove('hidden');
 }
 
-// ======================================================
-// COMPRESSÃO DAS IMAGENS
-// ======================================================
-
 function comprimirImagem(dataUrl) {
     return new Promise((resolve, reject) => {
         const imagem = new Image();
-
         imagem.onload = () => {
             const limite = 1000;
-            let largura = imagem.width;
-            let altura = imagem.height;
-
+            let largura = imagem.width, altura = imagem.height;
             if (largura > limite || altura > limite) {
                 const proporcao = Math.min(limite / largura, limite / altura);
                 largura = Math.round(largura * proporcao);
                 altura = Math.round(altura * proporcao);
             }
-
             const canvas = document.createElement('canvas');
-            canvas.width = largura;
-            canvas.height = altura;
-
+            canvas.width = largura; canvas.height = altura;
             const contexto = canvas.getContext('2d');
             contexto.drawImage(imagem, 0, 0, largura, altura);
-
-            const comprimida = canvas.toDataURL('image/webp', 0.78);
-
-            resolve(comprimida);
+            resolve(canvas.toDataURL('image/webp', 0.78));
         };
-
         imagem.onerror = () => reject(new Error("Não foi possível processar esta imagem."));
         imagem.src = dataUrl;
     });
 }
 
-// --- SELEÇÃO DE IMAGENS ---
 window.abrirSeletor = function(callback) {
     const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-
+    input.type = 'file'; input.accept = 'image/*';
     input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (!file.type.startsWith('image/')) {
-            alert("Selecione um arquivo de imagem.");
-            return;
-        }
-
-        try {
-            const reader = new FileReader();
-
-            reader.onload = async (event) => {
-                try {
-                    const imagemComprimida = await comprimirImagem(event.target.result);
-                    callback(imagemComprimida);
-                } catch (erro) {
-                    console.error(erro);
-                    alert("Não foi possível preparar a imagem.");
-                }
-            };
-
-            reader.readAsDataURL(file);
-        } catch (erro) {
-            console.error(erro);
-            alert("Erro ao abrir a imagem.");
-        }
+        const file = e.target.files[0]; if (!file) return;
+        if (!file.type.startsWith('image/')) { alert("Selecione um arquivo de imagem."); return; }
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const imagemComprimida = await comprimirImagem(event.target.result);
+                callback(imagemComprimida);
+            } catch (erro) { console.error(erro); alert("Não foi possível preparar a imagem."); }
+        };
+        reader.readAsDataURL(file);
     };
-
     input.click();
 };
 
 window.uploadFoto = function(elemento) {
+    if (modoAcesso === "convidado-visualizar") return;
     window.abrirSeletor((imgBase64) => {
         elemento.innerHTML = `
             <img src="${imgBase64}" style="width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;top:0;left:0;z-index:1;pointer-events:none;">
         `;
-
         elemento.onclick = null;
-
         const btn = document.createElement('div');
         btn.innerHTML = 'X';
         btn.className = 'absolute top-2 right-2 bg-red-800 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer z-20 text-sm font-bold shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none';
-
         btn.onclick = (e) => {
             e.stopPropagation();
-
             elemento.innerHTML = '<i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span>FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao">PROPORÇÃO IDEAL: 9x16</div>';
             elemento.onclick = () => window.uploadFoto(elemento);
         };
-
         elemento.appendChild(btn);
-
         let timer;
-
-        elemento.onmouseenter = () => {
-            clearTimeout(timer);
-            btn.classList.remove('opacity-0');
-            btn.classList.add('opacity-100');
-        };
-
-        elemento.onmouseleave = () => {
-            timer = setTimeout(() => {
-                btn.classList.add('opacity-0');
-                btn.classList.remove('opacity-100');
-            }, 1500);
-        };
+        elemento.onmouseenter = () => { clearTimeout(timer); btn.classList.remove('opacity-0'); btn.classList.add('opacity-100'); };
+        elemento.onmouseleave = () => { timer = setTimeout(() => { btn.classList.add('opacity-0'); btn.classList.remove('opacity-100'); }, 1500); };
     });
 };
-
-// ======================================================
-// INVENTÁRIO E EQUIPAMENTOS
-// ======================================================
 
 const gridInv = document.getElementById('inventario');
 const espacosEl = document.getElementById('espacos');
@@ -261,59 +409,34 @@ let imagemAtualBase64 = null;
 
 function recalcularPesoTotal() {
     let pesoTotal = 0;
-
     document.querySelectorAll('.item-adicionado').forEach(item => {
         const qtd = parseFloat(item.dataset.qtd) || 1;
         const pesoStr = (item.dataset.peso || "0").toString().replace(',', '.');
         pesoTotal += qtd * (parseFloat(pesoStr) || 0);
     });
-
     if (pesoEl) pesoEl.innerText = pesoTotal.toFixed(2);
-    if (espacosEl) {
-        espacosEl.innerText = document.querySelectorAll('#inventario .item-adicionado').length;
-    }
+    if (espacosEl) espacosEl.innerText = document.querySelectorAll('#inventario .item-adicionado').length;
 }
 
 const modalHTML = `
     <div id="modal-item" class="fixed inset-0 bg-black/80 z-50 flex justify-center items-center hidden">
         <div class="painel-papel p-6 rounded-lg w-[400px] flex flex-col gap-3 relative">
             <h3 class="fonte-titulo text-2xl text-[#111] border-b border-black/30 pb-2 mb-2">DADOS DO ITEM</h3>
-
             <div class="flex gap-4">
                 <div id="modal-preview" class="w-24 h-24 rounded flex flex-col justify-center items-center relative overflow-hidden text-black/30 border-2 border-dashed border-[#3a2e27] bg-black/10">
                     <i class="fa-solid fa-camera text-2xl mb-1"></i>
                     <span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>
                 </div>
-
                 <div class="flex-1 flex flex-col gap-2">
-                    <label class="flex flex-col text-sm font-bold text-[#111]">
-                        Nome do Item:
-                        <input type="text" id="modal-nome" class="input-campo p-2">
-                    </label>
-
-                    <button id="btn-upload" class="bg-[#3a2e27] text-white p-2 rounded font-bold hover:bg-[#a81c1c] transition text-sm">
-                        <i class="fa-solid fa-camera"></i> Escolher Imagem
-                    </button>
+                    <label class="flex flex-col text-sm font-bold text-[#111]">Nome do Item:<input type="text" id="modal-nome" class="input-campo p-2"></label>
+                    <button id="btn-upload" class="bg-[#3a2e27] text-white p-2 rounded font-bold hover:bg-[#a81c1c] transition text-sm"><i class="fa-solid fa-camera"></i> Escolher Imagem</button>
                 </div>
             </div>
-
             <div class="flex gap-2">
-                <label class="flex flex-col text-sm font-bold text-[#111] flex-1">
-                    Quantidade:
-                    <input type="number" id="modal-qtd" value="1" class="input-campo p-2">
-                </label>
-
-                <label class="flex flex-col text-sm font-bold text-[#111] flex-1">
-                    Peso Unit. (kg):
-                    <input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5">
-                </label>
+                <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Quantidade:<input type="number" id="modal-qtd" value="1" class="input-campo p-2"></label>
+                <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg):<input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
             </div>
-
-            <label class="flex flex-col text-sm font-bold text-[#111]">
-                Descrição:
-                <textarea id="modal-desc" class="input-campo p-2 resize-none h-16"></textarea>
-            </label>
-
+            <label class="flex flex-col text-sm font-bold text-[#111]">Descrição:<textarea id="modal-desc" class="input-campo p-2 resize-none h-16"></textarea></label>
             <div class="flex justify-between mt-2 gap-2">
                 <button id="btn-excluir" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700 hidden">Excluir</button>
                 <button id="btn-cancelar" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700">Cancelar</button>
@@ -322,7 +445,6 @@ const modalHTML = `
         </div>
     </div>
 `;
-
 document.body.insertAdjacentHTML('beforeend', modalHTML);
 
 const modal = document.getElementById('modal-item');
@@ -342,78 +464,57 @@ function atualizarPreviewModal() {
             <img src="${imagemAtualBase64}" style="width:100%;height:100%;object-fit:contain;padding:4px;">
             <button id="btn-remover-img-modal" class="absolute top-1 right-1 bg-red-800 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer z-20 text-[10px] font-bold">X</button>
         `;
-
         modalPreview.classList.remove('border-dashed');
         modalPreview.classList.add('border-solid');
-
         document.getElementById('btn-remover-img-modal').onclick = (e) => {
-            e.preventDefault();
-            imagemAtualBase64 = null;
-            atualizarPreviewModal();
+            e.preventDefault(); imagemAtualBase64 = null; atualizarPreviewModal();
         };
     } else {
-        modalPreview.innerHTML = `
-            <i class="fa-solid fa-camera text-2xl mb-1"></i>
-            <span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>
-        `;
-
+        modalPreview.innerHTML = `<i class="fa-solid fa-camera text-2xl mb-1"></i><span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>`;
         modalPreview.classList.add('border-dashed');
         modalPreview.classList.remove('border-solid');
     }
 }
 
 function abrirModal(q, dados = null) {
+    if (modoAcesso === "convidado-visualizar") return;
     quadradoAtual = q;
-
     if (dados && dados.nome) {
         inputNome.value = dados.nome;
         inputQtd.value = dados.qtd;
         inputPeso.value = dados.peso;
         inputDesc.value = dados.desc || "";
-
         imagemAtualBase64 = dados.img || null;
         btnExcluir.classList.remove('hidden');
-
         document.querySelector('#modal-item h3').innerText = "EDITAR ITEM";
         btnSalvarItem.innerText = "SALVAR";
     } else {
-        inputNome.value = "";
-        inputQtd.value = 1;
-        inputPeso.value = "";
-        inputDesc.value = "";
-
+        inputNome.value = ""; inputQtd.value = 1; inputPeso.value = ""; inputDesc.value = "";
         imagemAtualBase64 = null;
         btnExcluir.classList.add('hidden');
-
         document.querySelector('#modal-item h3').innerText = "NOVO ITEM";
         btnSalvarItem.innerText = "ADICIONAR";
     }
-
     atualizarPreviewModal();
     modal.classList.remove('hidden');
 }
 
 btnCancelar.onclick = () => modal.classList.add('hidden');
-
 btnUpload.onclick = () => {
-    window.abrirSeletor((img) => {
-        imagemAtualBase64 = img;
-        atualizarPreviewModal();
-    });
+    window.abrirSeletor((img) => { imagemAtualBase64 = img; atualizarPreviewModal(); });
 };
 
 btnExcluir.onclick = () => {
     if (quadradoAtual.id.startsWith('inv-')) {
         quadradoAtual.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
     } else {
-        quadradoAtual.innerHTML = quadradoAtual.getAttribute('data-original') + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
+        const original = quadradoAtual.getAttribute('data-original') || '';
+        quadradoAtual.innerHTML = original + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
     }
-
     quadradoAtual.classList.remove('item-adicionado');
     quadradoAtual.removeAttribute('data-itemData');
     quadradoAtual.removeAttribute('data-peso');
     quadradoAtual.removeAttribute('data-qtd');
-
     recalcularPesoTotal();
     modal.classList.add('hidden');
 };
@@ -422,20 +523,11 @@ btnSalvarItem.onclick = () => {
     const nome = inputNome.value;
     const pesoString = inputPeso.value.replace(',', '.');
     const qtd = parseInt(inputQtd.value) || 0;
-
     if (!imagemAtualBase64) return alert("Escolha uma imagem.");
     if (!nome.trim()) return alert("Digite o nome.");
     if (qtd <= 0) return alert("Quantidade > 0.");
     if (inputPeso.value.trim() === "") return alert("Digite o peso.");
-
-    const dados = {
-        img: imagemAtualBase64,
-        nome,
-        qtd,
-        peso: pesoString,
-        desc: inputDesc.value
-    };
-
+    const dados = { img: imagemAtualBase64, nome, qtd, peso: pesoString, desc: inputDesc.value };
     renderizarItem(quadradoAtual, dados);
     recalcularPesoTotal();
     modal.classList.add('hidden');
@@ -443,10 +535,7 @@ btnSalvarItem.onclick = () => {
 
 function renderizarItem(q, dados) {
     const isEquipamento = !q.id.startsWith('inv-');
-    const classeTexto = isEquipamento
-        ? 'opacity-0 group-hover:opacity-100 transition-opacity'
-        : 'opacity-100';
-
+    const classeTexto = isEquipamento ? 'opacity-0 group-hover:opacity-100 transition-opacity' : 'opacity-100';
     q.innerHTML = `
         ${dados.img ? `<img src="${dados.img}" style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;padding:4px;z-index:1;">` : ''}
         <div class="text-[10px] font-bold bg-black/40 text-white px-1 rounded leading-tight w-full absolute bottom-0 left-0 z-10 text-center ${classeTexto}">
@@ -459,7 +548,6 @@ function renderizarItem(q, dados) {
             ${dados.desc ? `<span class="italic text-gray-300 truncate w-full text-center">"${dados.desc}"</span>` : ''}
         </div>
     `;
-
     q.classList.add('item-adicionado');
     q.dataset.itemData = JSON.stringify(dados);
     q.dataset.peso = dados.peso;
@@ -469,114 +557,71 @@ function renderizarItem(q, dados) {
 if (gridInv) {
     for (let i = 0; i < 16; i++) {
         const q = document.createElement('div');
-
         q.id = `inv-${i}`;
         q.className = 'slot-vazio rounded aspect-square flex flex-col justify-center items-center relative text-center p-1 overflow-hidden group';
         q.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
-
         q.onclick = () => {
-            if (q.classList.contains('item-adicionado')) {
-                abrirModal(q, JSON.parse(q.dataset.itemData));
-            } else {
-                abrirModal(q);
-            }
+            if (q.classList.contains('item-adicionado')) abrirModal(q, JSON.parse(q.dataset.itemData));
+            else abrirModal(q);
         };
-
         gridInv.appendChild(q);
     }
 }
 
 const slotsEquipamento = document.querySelectorAll('.slot-vazio:not(#inventario .slot-vazio)');
-
 slotsEquipamento.forEach(slot => {
     if (!slot.classList.contains('foto-personagem')) {
         slot.setAttribute('data-original', slot.innerHTML.split('<span')[0]);
         slot.removeAttribute('onclick');
-
         slot.onclick = () => {
-            if (slot.classList.contains('item-adicionado')) {
-                abrirModal(slot, JSON.parse(slot.dataset.itemData));
-            } else {
-                abrirModal(slot);
-            }
+            if (slot.classList.contains('item-adicionado')) abrirModal(slot, JSON.parse(slot.dataset.itemData));
+            else abrirModal(slot);
         };
     }
 });
 
-// --- TALENTOS ---
 const listaT = document.getElementById('talentos');
-
 if (listaT) {
     for (let i = 1; i <= 20; i++) {
         const l = document.createElement('div');
-
         l.className = 'flex items-center gap-2 border-b border-black/20 pb-1';
-        l.innerHTML = `
-            <span class="font-bold w-5 text-right text-[#111] text-sm">${i}.</span>
-            <input type="text" class="bg-transparent border-none outline-none font-semibold text-[#111] text-base w-full">
-        `;
-
+        l.innerHTML = `<span class="font-bold w-5 text-right text-[#111] text-sm">${i}.</span><input type="text" class="bg-transparent border-none outline-none font-semibold text-[#111] text-base w-full">`;
         listaT.appendChild(l);
     }
 }
 
-// ======================================================
-// IMAGENS SEPARADAS EM DOCUMENTOS DO FIRESTORE
-// ======================================================
-
-function imagemEhBase64(valor) {
-    return typeof valor === 'string' && valor.startsWith('data:image/');
-}
-
 async function salvarImagemSeparada(idImagem, dadosImagem) {
     if (!dadosImagem) return;
-
-    await setDoc(
-        doc(db, "fichas", fichaAtualId, "imagens", idImagem),
-        { imagem: dadosImagem }
-    );
+    await setDoc(doc(db, "fichas", fichaAtualId, "imagens", idImagem), { imagem: dadosImagem });
 }
 
 async function carregarImagensSeparadas() {
-    const snapshot = await getDocs(
-        collection(db, "fichas", fichaAtualId, "imagens")
-    );
-
+    const snapshot = await getDocs(collection(db, "fichas", fichaAtualId, "imagens"));
     const imagens = {};
-
-    snapshot.forEach(documento => {
-        imagens[documento.id] = documento.data().imagem || "";
-    });
-
+    snapshot.forEach(documento => { imagens[documento.id] = documento.data().imagem || ""; });
     return imagens;
 }
 
-// ======================================================
-// SALVAR FICHA
-// ======================================================
-
 document.getElementById('btn-salvar-ficha').onclick = async () => {
     if (!usuarioAtual) return;
+    if (modoAcesso === "convidado-visualizar") return alert("Você tem permissão apenas para visualizar.");
+    if (modoAcesso === "convidado-pendente" || modoAcesso === "convidado-recusado") return alert("Sem permissão para salvar.");
 
     const botaoSalvar = document.getElementById('btn-salvar-ficha');
     const textoOriginal = botaoSalvar.innerText;
-
     botaoSalvar.disabled = true;
     botaoSalvar.innerText = "SALVANDO...";
 
     try {
-        const ehMestreSalvando = (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
         const dadosFicha = {
             nome: document.getElementById('nome').value,
             idade: document.getElementById('idade').value,
             nivel: document.getElementById('nivel').value,
             exp: document.getElementById('exp').value,
-
             forca: forca.value,
             destreza: destreza.value,
             forcaAcao: forcaAcao.value,
             destrezaAcao: destrezaAcao.value,
-
             constituicao: document.getElementById('constituicao').value,
             inteligencia: document.getElementById('inteligencia').value,
             percepcao: document.getElementById('percepcao').value,
@@ -586,7 +631,6 @@ document.getElementById('btn-salvar-ficha').onclick = async () => {
             movimentacao: document.getElementById('movimentacao').value,
             diario: document.getElementById('diario').value,
             talentos: Array.from(document.querySelectorAll('#talentos input')).map(input => input.value),
-
             fotoPersonagem: "",
             itensMochila: [],
             itensEquipamento: []
@@ -594,140 +638,75 @@ document.getElementById('btn-salvar-ficha').onclick = async () => {
 
         const imagensAtivas = {};
 
-        // FOTO DO PERSONAGEM
         const fotoContainer = document.getElementById('foto-personagem');
         const imagemRetrato = fotoContainer.querySelector('img');
-
         if (imagemRetrato) {
             const foto = imagemRetrato.getAttribute('src');
-
-            if (imagemEhBase64(foto)) {
-                imagensAtivas.personagem = foto;
-            } else {
-                imagensAtivas.personagem = foto;
-            }
-
-            dadosFicha.fotoPersonagem = fotoContainer.innerHTML.replace(
-                foto,
-                "__IMAGEM_PERSONAGEM__"
-            );
+            imagensAtivas.personagem = foto;
+            dadosFicha.fotoPersonagem = fotoContainer.innerHTML.replace(foto, "__IMAGEM_PERSONAGEM__");
         } else {
             dadosFicha.fotoPersonagem = fotoContainer.innerHTML;
         }
 
-        // ITENS DA MOCHILA
         const itensMochila = document.querySelectorAll('#inventario .item-adicionado');
-
         for (const el of itensMochila) {
             const dados = JSON.parse(el.dataset.itemData);
             const imagemId = `mochila_${el.id}`;
-
-            if (dados.img) {
-                imagensAtivas[imagemId] = dados.img;
-            }
-
+            if (dados.img) imagensAtivas[imagemId] = dados.img;
             dadosFicha.itensMochila.push({
-                dados: {
-                    nome: dados.nome,
-                    qtd: dados.qtd,
-                    peso: dados.peso,
-                    desc: dados.desc || "",
-                    img: ""
-                },
-                imagemId,
-                posicao: el.id
+                dados: { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" },
+                imagemId, posicao: el.id
             });
         }
 
-        // ITENS DOS EQUIPAMENTOS
         const todosSlots = Array.from(document.querySelectorAll('.slot-vazio'));
         const itensEquipamento = document.querySelectorAll('.slot-vazio.item-adicionado');
-
         for (const el of itensEquipamento) {
             const dados = JSON.parse(el.dataset.itemData);
             const indice = todosSlots.indexOf(el);
             const imagemId = `equipamento_${indice}`;
-
-            if (dados.img) {
-                imagensAtivas[imagemId] = dados.img;
-            }
-
+            if (dados.img) imagensAtivas[imagemId] = dados.img;
             dadosFicha.itensEquipamento.push({
-                dados: {
-                    nome: dados.nome,
-                    qtd: dados.qtd,
-                    peso: dados.peso,
-                    desc: dados.desc || "",
-                    img: ""
-                },
-                imagemId,
-                posicao: el.getAttribute('data-original')
+                dados: { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" },
+                imagemId, posicao: el.getAttribute('data-original')
             });
         }
 
-        // Garante que o documento principal exista antes de gravar imagens na subcoleção.
-        // Isso é necessário na primeira gravação de uma ficha nova.
-        if (ehMestreSalvando) {
+        if (modoAcesso === "mestre") {
             dadosFicha.tipo = fichaAtualTipo;
             dadosFicha.proprietarioUid = fichaAtualProprietarioUid;
             dadosFicha.criadoPor = fichaAtualCriadoPor || usuarioAtual.uid;
         }
+
         await setDoc(doc(db, "fichas", fichaAtualId), dadosFicha, { merge: true });
 
-        // SALVA CADA IMAGEM EM SEU PRÓPRIO DOCUMENTO
         for (const [idImagem, imagem] of Object.entries(imagensAtivas)) {
             await salvarImagemSeparada(idImagem, imagem);
         }
 
-        // REMOVE IMAGENS ANTIGAS QUE NÃO ESTÃO MAIS SENDO USADAS
-        const imagensAntigas = await getDocs(
-            collection(db, "fichas", fichaAtualId, "imagens")
-        );
-
+        const imagensAntigas = await getDocs(collection(db, "fichas", fichaAtualId, "imagens"));
         for (const documento of imagensAntigas.docs) {
-            if (!imagensAtivas[documento.id]) {
-                await deleteDoc(documento.ref);
-            }
+            if (!imagensAtivas[documento.id]) await deleteDoc(documento.ref);
         }
 
-        // SALVA OS DADOS PRINCIPAIS DA FICHA
-        // O jogador atualiza somente os campos permitidos pelas regras.
-        // O merge preserva proprietarioUid, tipo e criadoPor. O mestre mantém metadados administrativos.
         alert("Ficha salva com sucesso!");
-
     } catch (e) {
         console.error("Falha ao salvar ficha:", e);
-
-        alert(
-            `Erro ao salvar ficha (${e.code || "desconhecido"}): ${e.message}`
-        );
-
+        alert(`Erro ao salvar ficha (${e.code || "desconhecido"}): ${e.message}`);
     } finally {
         botaoSalvar.disabled = false;
         botaoSalvar.innerText = textoOriginal;
     }
 };
 
-// ======================================================
-// CARREGAR FICHA
-// ======================================================
-
 async function carregarFicha() {
     if (!usuarioAtual || !fichaAtualId) return;
-
     let docSnap = await getDoc(doc(db, "fichas", fichaAtualId));
-    const ehMestre = (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
+    const mestreLogado = (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
 
     if (!docSnap.exists() && fichaAtualId === usuarioAtual.uid) {
-        const vinculadas = await getDocs(query(
-            collection(db, 'fichas'),
-            where('proprietarioUid', '==', usuarioAtual.uid),
-            limit(1)
-        ));
-        if (!vinculadas.empty) {
-            docSnap = vinculadas.docs[0];
-            fichaAtualId = docSnap.id;
-        }
+        const vinculadas = await getDocs(query(collection(db, 'fichas'), where('proprietarioUid', '==', usuarioAtual.uid), limit(1)));
+        if (!vinculadas.empty) { docSnap = vinculadas.docs[0]; fichaAtualId = docSnap.id; }
     }
 
     if (!docSnap.exists()) {
@@ -739,27 +718,25 @@ async function carregarFicha() {
     }
 
     const d = docSnap.data();
-    if (!ehMestre && fichaAtualId !== usuarioAtual.uid && d.proprietarioUid !== usuarioAtual.uid) {
+    if (!mestreLogado && fichaAtualId !== usuarioAtual.uid && d.proprietarioUid !== usuarioAtual.uid && modoAcesso !== "convidado-editar" && modoAcesso !== "convidado-visualizar") {
         alert('Você não tem permissão para abrir esta ficha.');
         window.location.href = window.location.pathname;
         return;
     }
+
     fichaAtualTipo = d.tipo || (fichaAtualId === usuarioAtual.uid ? "jogador" : "jogador");
     fichaAtualProprietarioUid = d.proprietarioUid || (fichaAtualTipo === "jogador" ? fichaAtualId : null);
     fichaAtualCriadoPor = d.criadoPor || fichaAtualProprietarioUid || usuarioAtual.uid;
 
-    // BUSCA AS IMAGENS SEPARADAS
     const imagensSeparadas = await carregarImagensSeparadas();
 
     document.getElementById('nome').value = d.nome || '';
     document.getElementById('idade').value = d.idade || '';
     document.getElementById('nivel').value = d.nivel || '';
     document.getElementById('exp').value = d.exp || '';
-
     forca.value = d.forca || '';
     destreza.value = d.destreza || '';
     calcular();
-
     document.getElementById('constituicao').value = d.constituicao || '';
     document.getElementById('inteligencia').value = d.inteligencia || '';
     document.getElementById('percepcao').value = d.percepcao || '';
@@ -772,21 +749,14 @@ async function carregarFicha() {
     const camposTalentos = document.querySelectorAll('#talentos input');
     camposTalentos.forEach((input, indice) => { input.value = (d.talentos || [])[indice] || ''; });
 
-    // FOTO DO PERSONAGEM
     if (d.fotoPersonagem && d.fotoPersonagem.includes('img')) {
         let fotoHTML = d.fotoPersonagem;
-
         if (imagensSeparadas.personagem) {
-            fotoHTML = fotoHTML.replace(
-                "__IMAGEM_PERSONAGEM__",
-                imagensSeparadas.personagem
-            );
+            fotoHTML = fotoHTML.replace("__IMAGEM_PERSONAGEM__", imagensSeparadas.personagem);
         }
-
         document.getElementById('foto-personagem').innerHTML = fotoHTML;
     }
 
-    // LIMPA OS ITENS VISUAIS ANTES DE RECARREGAR
     document.querySelectorAll('.item-adicionado').forEach(el => {
         el.classList.remove('item-adicionado');
         el.removeAttribute('data-itemData');
@@ -794,46 +764,25 @@ async function carregarFicha() {
         el.removeAttribute('data-qtd');
     });
 
-    // CARREGA ITENS DA MOCHILA
     if (d.itensMochila) {
         d.itensMochila.forEach(item => {
             const el = document.getElementById(item.posicao);
-
             if (el) {
                 const dados = { ...item.dados };
-
-                if (item.imagemId && imagensSeparadas[item.imagemId]) {
-                    dados.img = imagensSeparadas[item.imagemId];
-                }
-
-                // Compatibilidade com fichas antigas
-                if (!dados.img && item.dados.img) {
-                    dados.img = item.dados.img;
-                }
-
+                if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId];
+                if (!dados.img && item.dados.img) dados.img = item.dados.img;
                 renderizarItem(el, dados);
             }
         });
     }
 
-    // CARREGA EQUIPAMENTOS
     if (d.itensEquipamento) {
         d.itensEquipamento.forEach(item => {
-            const el = Array.from(document.querySelectorAll('.slot-vazio'))
-                .find(e => e.getAttribute('data-original') === item.posicao);
-
+            const el = Array.from(document.querySelectorAll('.slot-vazio')).find(e => e.getAttribute('data-original') === item.posicao);
             if (el) {
                 const dados = { ...item.dados };
-
-                if (item.imagemId && imagensSeparadas[item.imagemId]) {
-                    dados.img = imagensSeparadas[item.imagemId];
-                }
-
-                // Compatibilidade com fichas antigas
-                if (!dados.img && item.dados.img) {
-                    dados.img = item.dados.img;
-                }
-
+                if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId];
+                if (!dados.img && item.dados.img) dados.img = item.dados.img;
                 renderizarItem(el, dados);
             }
         });
@@ -842,30 +791,19 @@ async function carregarFicha() {
     recalcularPesoTotal();
 }
 
-// ======================================================
-// CADASTRO E LISTAGEM DAS CONTAS DE JOGADORES
-// ======================================================
-
 async function registrarContaJogador(user) {
-    if (!user || !user.uid) return;
+    if (!user || !user.uid || !user.email) return;
     const email = (user.email || '').trim().toLowerCase();
-    if (email === emailMestre.toLowerCase()) return; // O mestre não entra na lista de jogadores.
+    if (email === emailMestre.toLowerCase()) return;
     const nome = (user.displayName || (email ? email.split('@')[0] : 'Jogador')).trim();
     await setDoc(doc(db, 'usuarios', user.uid), {
-        uid: user.uid,
-        email,
-        nome,
-        atualizadoEm: new Date().toISOString()
+        uid: user.uid, email, nome, atualizadoEm: new Date().toISOString()
     }, { merge: true });
 }
 
 async function copiarTexto(valor) {
-    try {
-        await navigator.clipboard.writeText(String(valor));
-        alert('UID copiado!');
-    } catch (erro) {
-        window.prompt('Copie o UID abaixo:', String(valor));
-    }
+    try { await navigator.clipboard.writeText(String(valor)); alert('UID copiado!'); }
+    catch (erro) { window.prompt('Copie o UID abaixo:', String(valor)); }
 }
 
 async function carregarContasJogadores() {
@@ -882,7 +820,7 @@ async function carregarContasJogadores() {
         if (contador) contador.textContent = `Contas: ${contas.length}`;
         lista.innerHTML = '';
         if (!contas.length) {
-            lista.innerHTML = '<p class="text-[#111]">Nenhuma conta registrada ainda. Peça aos jogadores para entrarem uma vez no painel atualizado.</p>';
+            lista.innerHTML = '<p class="text-[#111]">Nenhuma conta registrada ainda.</p>';
             return;
         }
         contas.forEach(conta => {
@@ -890,15 +828,9 @@ async function carregarContasJogadores() {
             linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 rounded border border-[#7a4e32] bg-white/70 p-3';
             const dados = document.createElement('div');
             dados.className = 'min-w-0';
-            const nome = document.createElement('p');
-            nome.className = 'font-bold text-[#211b17]';
-            nome.textContent = conta.nome || 'Jogador';
-            const email = document.createElement('p');
-            email.className = 'text-sm text-[#3a2e27] break-all';
-            email.textContent = conta.email || 'E-mail não informado';
-            const uid = document.createElement('p');
-            uid.className = 'uid-conta break-all mt-2';
-            uid.textContent = `UID: ${conta.uid || conta.id}`;
+            const nome = document.createElement('p'); nome.className = 'font-bold text-[#211b17]'; nome.textContent = conta.nome || 'Jogador';
+            const email = document.createElement('p'); email.className = 'text-sm text-[#3a2e27] break-all'; email.textContent = conta.email || 'E-mail não informado';
+            const uid = document.createElement('p'); uid.className = 'uid-conta break-all mt-2'; uid.textContent = `UID: ${conta.uid || conta.id}`;
             dados.append(nome, email, uid);
             const botao = criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => copiarTexto(conta.uid || conta.id));
             linha.append(dados, botao);
@@ -906,17 +838,13 @@ async function carregarContasJogadores() {
         });
     } catch (erro) {
         console.error('Erro ao carregar contas de jogadores:', erro);
-        lista.innerHTML = `<p class="text-red-800">Não foi possível carregar as contas (${erro.code || 'erro'}): ${erro.message}. Confira se as regras da coleção usuarios foram publicadas.</p>`;
+        lista.innerHTML = `<p class="text-red-800">Não foi possível carregar as contas (${erro.code || 'erro'}): ${erro.message}.</p>`;
         if (contador) contador.textContent = 'Contas: erro';
     }
 }
 
 const btnAtualizarContas = document.getElementById('btn-atualizar-contas');
 if (btnAtualizarContas) btnAtualizarContas.addEventListener('click', carregarContasJogadores);
-
-// ======================================================
-// PAINÉIS DE PERSONAGENS E DO MESTRE
-// ======================================================
 
 function abrirFichaEmNovaAba(idFicha) {
     const url = new URL(window.location.href);
@@ -926,8 +854,7 @@ function abrirFichaEmNovaAba(idFicha) {
 
 function criarBotaoPainel(texto, classe, acao) {
     const botao = document.createElement('button');
-    botao.type = 'button';
-    botao.textContent = texto;
+    botao.type = 'button'; botao.textContent = texto;
     botao.className = `px-4 py-3 rounded text-sm md:text-base font-bold text-white tracking-wide shadow-md hover:brightness-110 active:scale-[.98] transition ${classe}`;
     botao.addEventListener('click', acao);
     return botao;
@@ -937,7 +864,7 @@ async function obterImagemRetrato(idFicha, ficha) {
     try {
         const imagem = await getDoc(doc(db, 'fichas', idFicha, 'imagens', 'personagem'));
         if (imagem.exists() && imagem.data().imagem) return imagem.data().imagem;
-    } catch (e) { console.warn('Não foi possível carregar o retrato do card:', idFicha, e); }
+    } catch (e) { console.warn('Não foi possível carregar o retrato:', idFicha, e); }
     const html = ficha.fotoPersonagem || '';
     const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
     return match ? match[1] : '';
@@ -959,6 +886,7 @@ function criarCardFicha(idFicha, ficha, modoMestre = false) {
     const detalhes = document.createElement('p'); detalhes.className = 'text-sm text-[#d2b48c]';
     detalhes.textContent = `${tipo} • Nível ${ficha.nivel || '1'} • EXP ${ficha.exp || '0'}`;
     conteudo.append(nome, detalhes);
+
     if (modoMestre) {
         const dono = document.createElement('p'); dono.className = 'text-xs text-white/60 break-all';
         dono.textContent = ficha.proprietarioNome || ficha.proprietarioEmail || (ficha.proprietarioUid ? 'Jogador vinculado' : (ficha.tipo === 'pdm' ? 'Sem jogador vinculado' : `Ficha antiga • ${idFicha.slice(0, 8)}`));
@@ -970,16 +898,22 @@ function criarCardFicha(idFicha, ficha, modoMestre = false) {
             conteudo.append(uidDono);
         }
     }
+
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
     acoes.append(criarBotaoPainel(modoMestre ? 'ABRIR / EDITAR' : 'ABRIR FICHA', 'bg-[#a81c1c] hover:brightness-125', () => abrirFichaEmNovaAba(idFicha)));
-    if (modoMestre && ficha.proprietarioUid) acoes.append(criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => copiarTexto(ficha.proprietarioUid)));
+
     if (modoMestre) {
+        acoes.append(criarBotaoPainel('GERAR LINK', 'bg-purple-800', () => gerarLinkConvite(idFicha)));
+        if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => copiarTexto(ficha.proprietarioUid)));
         acoes.append(criarBotaoPainel('DUPLICAR', 'bg-blue-800', () => duplicarFicha(idFicha, ficha)));
         acoes.append(criarBotaoPainel('VINCULAR', 'bg-green-800', () => vincularJogador(idFicha, ficha)));
         if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('DESVINCULAR', 'bg-gray-700', () => desvincularJogador(idFicha, ficha)));
         acoes.append(criarBotaoPainel('EXCLUIR', 'bg-red-900', () => excluirFicha(idFicha, ficha)));
     }
-    conteudo.append(acoes); card.append(retrato, conteudo); return card;
+
+    conteudo.append(acoes);
+    card.append(retrato, conteudo);
+    return card;
 }
 
 async function carregarDashboardJogador() {
@@ -987,10 +921,8 @@ async function carregarDashboardJogador() {
     lista.innerHTML = '<p class="text-[#111]">Carregando seus personagens...</p>';
     try {
         const encontrados = new Map();
-        // Ficha legada cujo ID é o UID: leitura direta, sem alterar o documento.
         const propria = await getDoc(doc(db, 'fichas', usuarioAtual.uid));
         if (propria.exists()) encontrados.set(propria.id, propria.data());
-        // Fichas adicionais vinculadas ao mesmo jogador.
         const vinculadas = await getDocs(query(collection(db, 'fichas'), where('proprietarioUid', '==', usuarioAtual.uid)));
         vinculadas.forEach(d => encontrados.set(d.id, d.data()));
         lista.innerHTML = '';
@@ -1015,6 +947,7 @@ async function carregarDashboardMestre() {
         document.getElementById('contador-pdms').textContent = `PDMs: ${pdms}`;
         if (!docs.length) { lista.innerHTML = '<p class="text-[#111] col-span-full text-center py-10">Nenhuma ficha cadastrada.</p>'; return; }
         docs.forEach(d => lista.appendChild(criarCardFicha(d.id, d.data(), true)));
+        await carregarSolicitacoesPendentes();
     } catch (e) {
         console.error('Erro ao carregar painel do mestre:', e);
         lista.innerHTML = `<p class="text-red-800 col-span-full">Erro ao carregar fichas (${e.code || 'erro'}): ${e.message}</p>`;
@@ -1024,7 +957,8 @@ async function carregarDashboardMestre() {
 async function atualizarPainelMestre() { return carregarDashboardMestre(); }
 
 function voltarAoPainel() {
-    const url = new URL(window.location.href); url.searchParams.delete('ficha'); window.location.href = url.toString();
+    const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
+    window.location.href = url.toString();
 }
 
 document.getElementById('btn-voltar-painel').onclick = voltarAoPainel;
@@ -1032,9 +966,93 @@ document.getElementById('btn-sair-jogador').onclick = () => signOut(auth).then((
 document.getElementById('btn-sair-mestre').onclick = () => signOut(auth).then(() => window.location.reload());
 document.getElementById('btn-criar-pdm-dashboard').onclick = criarPDM;
 
-// ======================================================
-// ADMINISTRAÇÃO DE FICHAS PELO MESTRE
-// ======================================================
+function gerarLinkConvite(idFicha) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('ficha', idFicha);
+    url.searchParams.set('convite', '1');
+    const link = url.toString();
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(link).then(() => alert(`Link de convite copiado:\n\n${link}`)).catch(() => window.prompt('Copie o link:', link));
+    } else {
+        window.prompt('Copie o link:', link);
+    }
+}
+
+async function carregarSolicitacoesPendentes() {
+    const container = document.getElementById('solicitacoes-mestre');
+    if (!container) return;
+    container.innerHTML = '<p class="text-[#111]">Carregando solicitações...</p>';
+    try {
+        const fichasSnap = await getDocs(collection(db, 'fichas'));
+        const todas = [];
+        for (const fichaDoc of fichasSnap.docs) {
+            const solSnap = await getDocs(collection(db, 'fichas', fichaDoc.id, 'solicitacoes'));
+            solSnap.forEach(s => {
+                const data = s.data();
+                if (data.status === 'pendente') {
+                    todas.push({ fichaId: fichaDoc.id, fichaNome: fichaDoc.data().nome || 'Sem nome', uidConvidado: s.id, ...data });
+                }
+            });
+        }
+        container.innerHTML = '';
+        if (!todas.length) { container.innerHTML = '<p class="text-[#111]">Nenhuma solicitação pendente.</p>'; return; }
+        todas.forEach(sol => {
+            const linha = document.createElement('div');
+            linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 rounded border border-[#7a4e32] bg-white/70 p-3';
+            const dados = document.createElement('div');
+            dados.className = 'min-w-0';
+            const nome = document.createElement('p'); nome.className = 'font-bold text-[#211b17]'; nome.textContent = `Ficha: ${sol.fichaNome}`;
+            const uid = document.createElement('p'); uid.className = 'uid-conta break-all mt-1'; uid.textContent = `Convidado UID: ${sol.uidConvidado}`;
+            dados.append(nome, uid);
+            const acoes = document.createElement('div'); acoes.className = 'flex flex-wrap gap-2';
+            acoes.append(criarBotaoPainel('APROVAR (EDITAR)', 'bg-green-800', () => aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'editar')));
+            acoes.append(criarBotaoPainel('APROVAR (VER)', 'bg-blue-800', () => aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'visualizar')));
+            acoes.append(criarBotaoPainel('RECUSAR', 'bg-red-900', () => recusarSolicitacao(sol.fichaId, sol.uidConvidado)));
+            linha.append(dados, acoes);
+            container.appendChild(linha);
+        });
+    } catch (e) {
+        console.error('Erro ao carregar solicitações:', e);
+        container.innerHTML = `<p class="text-red-800">Erro ao carregar solicitações (${e.code || 'erro'}): ${e.message}</p>`;
+    }
+}
+
+async function aprovarSolicitacao(fichaId, uidConvidado, permissao) {
+    try {
+        await setDoc(doc(db, 'fichas', fichaId, 'acessos', uidConvidado), {
+            permissao: permissao,
+            aprovadoEm: new Date().toISOString(),
+            aprovadoPor: usuarioAtual.uid
+        });
+        await setDoc(doc(db, 'fichas', fichaId, 'solicitacoes', uidConvidado), {
+            status: 'aprovado',
+            permissao: permissao,
+            respondidoEm: new Date().toISOString()
+        }, { merge: true });
+        alert(`Acesso aprovado como ${permissao}.`);
+        carregarSolicitacoesPendentes();
+    } catch (e) {
+        console.error("Erro ao aprovar:", e);
+        alert(`Erro ao aprovar (${e.code || 'erro'}): ${e.message}`);
+    }
+}
+
+async function recusarSolicitacao(fichaId, uidConvidado) {
+    try {
+        await setDoc(doc(db, 'fichas', fichaId, 'solicitacoes', uidConvidado), {
+            status: 'recusado',
+            respondidoEm: new Date().toISOString()
+        }, { merge: true });
+        alert('Solicitação recusada.');
+        carregarSolicitacoesPendentes();
+    } catch (e) {
+        console.error("Erro ao recusar:", e);
+        alert(`Erro ao recusar (${e.code || 'erro'}): ${e.message}`);
+    }
+}
+
+const btnAtualizarSolicitacoes = document.getElementById('btn-atualizar-solicitacoes');
+if (btnAtualizarSolicitacoes) btnAtualizarSolicitacoes.addEventListener('click', carregarSolicitacoesPendentes);
 
 async function criarPDM() {
     if (!usuarioAtual || (usuarioAtual.email || '').trim().toLowerCase() !== emailMestre.toLowerCase()) return;
@@ -1049,27 +1067,51 @@ async function criarPDM() {
 
 async function excluirFicha(idFicha, ficha) {
     if (!confirm(`Tem certeza de que deseja excluir ${ficha.nome || 'esta ficha'}? Esta ação não pode ser desfeita.`)) return;
-    try { const imagens = await getDocs(collection(db, 'fichas', idFicha, 'imagens')); const lote = writeBatch(db); imagens.forEach(item => lote.delete(item.ref)); lote.delete(doc(db, 'fichas', idFicha)); await lote.commit(); await atualizarPainelMestre(); alert('Ficha e imagens excluídas.'); }
-    catch (e) { console.error(e); alert(`Erro ao excluir ficha: ${e.message}`); }
+    try {
+        const imagens = await getDocs(collection(db, 'fichas', idFicha, 'imagens'));
+        const acessos = await getDocs(collection(db, 'fichas', idFicha, 'acessos'));
+        const solicitacoes = await getDocs(collection(db, 'fichas', idFicha, 'solicitacoes'));
+        const lote = writeBatch(db);
+        imagens.forEach(item => lote.delete(item.ref));
+        acessos.forEach(item => lote.delete(item.ref));
+        solicitacoes.forEach(item => lote.delete(item.ref));
+        lote.delete(doc(db, 'fichas', idFicha));
+        await lote.commit();
+        await atualizarPainelMestre();
+        alert('Ficha, imagens, acessos e solicitações excluídos.');
+    } catch (e) { console.error(e); alert(`Erro ao excluir ficha: ${e.message}`); }
 }
 
 async function duplicarFicha(idFicha, ficha) {
     const novoNome = prompt('Nome da cópia:', `${ficha.nome || 'Personagem'} (Cópia)`); if (novoNome === null) return;
-    try { const imagensOrigem = await getDocs(collection(db, 'fichas', idFicha, 'imagens')); const novaRef = doc(collection(db, 'fichas')); const copia = { ...ficha, nome: novoNome.trim() || `${ficha.nome || 'Personagem'} (Cópia)`, tipo: 'pdm', proprietarioUid: null, proprietarioNome: '', proprietarioEmail: '', criadoPor: usuarioAtual.uid }; await setDoc(novaRef, copia); const lote = writeBatch(db); imagensOrigem.forEach(item => lote.set(doc(db, 'fichas', novaRef.id, 'imagens', item.id), item.data())); if (!imagensOrigem.empty) await lote.commit(); await atualizarPainelMestre(); alert('Cópia criada como PDM independente.'); }
-    catch (e) { console.error(e); alert(`Erro ao duplicar ficha: ${e.message}`); }
+    try {
+        const imagensOrigem = await getDocs(collection(db, 'fichas', idFicha, 'imagens'));
+        const novaRef = doc(collection(db, 'fichas'));
+        const copia = { ...ficha, nome: novoNome.trim() || `${ficha.nome || 'Personagem'} (Cópia)`, tipo: 'pdm', proprietarioUid: null, proprietarioNome: '', proprietarioEmail: '', criadoPor: usuarioAtual.uid };
+        await setDoc(novaRef, copia);
+        const lote = writeBatch(db);
+        imagensOrigem.forEach(item => lote.set(doc(db, 'fichas', novaRef.id, 'imagens', item.id), item.data()));
+        if (!imagensOrigem.empty) await lote.commit();
+        await atualizarPainelMestre(); alert('Cópia criada como PDM independente.');
+    } catch (e) { console.error(e); alert(`Erro ao duplicar ficha: ${e.message}`); }
 }
 
 async function vincularJogador(idFicha, ficha) {
-    const uid = prompt('UID da conta Firebase do jogador:', ficha.proprietarioUid || ''); if (uid === null) return; const uidLimpo = uid.trim();
+    const uid = prompt('UID da conta Firebase do jogador:', ficha.proprietarioUid || ''); if (uid === null) return;
+    const uidLimpo = uid.trim();
     if (!uidLimpo || uidLimpo.length < 10) return alert('Informe o UID completo da conta Firebase.');
     const nomeJogador = prompt('Nome do jogador (opcional):', ficha.proprietarioNome || ''); if (nomeJogador === null) return;
-    try { await setDoc(doc(db, 'fichas', idFicha), { proprietarioUid: uidLimpo, proprietarioNome: nomeJogador.trim(), tipo: 'jogador' }, { merge: true }); await atualizarPainelMestre(); alert('Jogador vinculado.'); }
-    catch (e) { console.error(e); alert(`Erro ao vincular jogador: ${e.message}`); }
+    try {
+        await setDoc(doc(db, 'fichas', idFicha), { proprietarioUid: uidLimpo, proprietarioNome: nomeJogador.trim(), tipo: 'jogador' }, { merge: true });
+        await atualizarPainelMestre(); alert('Jogador vinculado.');
+    } catch (e) { console.error(e); alert(`Erro ao vincular jogador: ${e.message}`); }
 }
 
 async function desvincularJogador(idFicha, ficha) {
     if (!ficha.proprietarioUid) return alert('Esta ficha não possui jogador vinculado.');
     if (!confirm(`Desvincular o jogador desta ficha (${ficha.nome || 'Sem nome'})?`)) return;
-    try { await setDoc(doc(db, 'fichas', idFicha), { proprietarioUid: null, proprietarioNome: '', proprietarioEmail: '', tipo: 'pdm' }, { merge: true }); await atualizarPainelMestre(); alert('Jogador desvinculado. A ficha agora é um PDM.'); }
-    catch (e) { console.error(e); alert(`Erro ao desvincular: ${e.message}`); }
+    try {
+        await setDoc(doc(db, 'fichas', idFicha), { proprietarioUid: null, proprietarioNome: '', proprietarioEmail: '', tipo: 'pdm' }, { merge: true });
+        await atualizarPainelMestre(); alert('Jogador desvinculado. A ficha agora é um PDM.');
+    } catch (e) { console.error(e); alert(`Erro ao desvincular: ${e.message}`); }
 }
