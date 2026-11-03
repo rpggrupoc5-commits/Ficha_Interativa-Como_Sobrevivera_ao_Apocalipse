@@ -227,7 +227,6 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
     }
 }
 
-// Monitora se o mestre removeu o acesso (a cada 5s)
 function monitorarRevogacao(fichaId) {
     if (intervalMonitorRevogacao) clearInterval(intervalMonitorRevogacao);
     intervalMonitorRevogacao = setInterval(async () => {
@@ -1008,7 +1007,7 @@ async function carregarContasJogadores() {
     const lista = document.getElementById('lista-contas-jogadores');
     const contador = document.getElementById('contador-contas');
     if (!lista) return;
-    lista.innerHTML = '<p class="text-[#111]">Buscando contas registradas...</p>';
+    lista.innerHTML = '<p class="text-[#111] text-lg">Buscando contas registradas...</p>';
     try {
         const snapshot = await getDocs(collection(db, 'usuarios'));
         const contas = snapshot.docs
@@ -1018,7 +1017,7 @@ async function carregarContasJogadores() {
         if (contador) contador.textContent = `Contas: ${contas.length}`;
         lista.innerHTML = '';
         if (!contas.length) {
-            lista.innerHTML = '<p class="text-[#111]">Nenhuma conta registrada ainda.</p>';
+            lista.innerHTML = '<p class="text-[#111] text-lg font-bold">Nenhuma conta registrada ainda.</p>';
             return;
         }
         contas.forEach(conta => {
@@ -1026,7 +1025,7 @@ async function carregarContasJogadores() {
             linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 rounded border border-[#7a4e32] bg-white/70 p-3';
             const dados = document.createElement('div');
             dados.className = 'min-w-0';
-            const nome = document.createElement('p'); nome.className = 'font-bold text-[#211b17]'; nome.textContent = conta.nome || 'Jogador';
+            const nome = document.createElement('p'); nome.className = 'font-bold text-[#211b17] text-lg'; nome.textContent = conta.nome || 'Jogador';
             const email = document.createElement('p'); email.className = 'text-sm text-[#3a2e27] break-all'; email.textContent = conta.email || 'E-mail não informado';
             const uid = document.createElement('p'); uid.className = 'uid-conta break-all mt-2'; uid.textContent = `UID: ${conta.uid || conta.id}`;
             dados.append(nome, email, uid);
@@ -1036,7 +1035,7 @@ async function carregarContasJogadores() {
         });
     } catch (erro) {
         console.error('Erro ao carregar contas de jogadores:', erro);
-        lista.innerHTML = `<p class="text-red-800">Não foi possível carregar as contas (${erro.code || 'erro'}): ${erro.message}.</p>`;
+        lista.innerHTML = `<p class="text-red-800 font-bold text-lg">Não foi possível carregar as contas (${erro.code || 'erro'}): ${erro.message}.</p>`;
         if (contador) contador.textContent = 'Contas: erro';
     }
 }
@@ -1145,7 +1144,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
 
 async function carregarDashboardJogador() {
     const lista = document.getElementById('cards-jogador');
-    lista.innerHTML = '<p class="text-[#111]">Carregando seus personagens...</p>';
+    lista.innerHTML = '<p class="text-[#111] text-lg">Carregando seus personagens...</p>';
     try {
         const encontrados = new Map();
         const propria = await getDoc(doc(db, 'fichas', usuarioAtual.uid));
@@ -1153,19 +1152,19 @@ async function carregarDashboardJogador() {
         const vinculadas = await getDocs(query(collection(db, 'fichas'), where('proprietarioUid', '==', usuarioAtual.uid)));
         vinculadas.forEach(d => encontrados.set(d.id, d.data()));
         lista.innerHTML = '';
-        if (!encontrados.size) { lista.innerHTML = '<p class="text-[#111] col-span-full text-center py-10">Nenhum personagem encontrado nesta conta.</p>'; return; }
+        if (!encontrados.size) { lista.innerHTML = '<p class="text-[#111] text-lg col-span-full text-center py-10">Nenhum personagem encontrado nesta conta.</p>'; return; }
         for (const [id, ficha] of [...encontrados.entries()].sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '', 'pt-BR'))) {
             lista.appendChild(await criarCardFicha(id, ficha));
         }
     } catch (e) {
         console.error('Erro ao carregar painel do jogador:', e);
-        lista.innerHTML = `<p class="text-red-800 col-span-full">Não foi possível listar seus personagens (${e.code || 'erro'}): ${e.message}</p>`;
+        lista.innerHTML = `<p class="text-red-800 col-span-full font-bold text-lg">Não foi possível listar seus personagens (${e.code || 'erro'}): ${e.message}</p>`;
     }
 }
 
 async function carregarDashboardMestre() {
     const lista = document.getElementById('cards-mestre');
-    lista.innerHTML = '<p class="text-[#111]">Carregando todas as fichas...</p>';
+    lista.innerHTML = '<p class="text-[#111] text-lg">Carregando todas as fichas...</p>';
     try {
         const snapshot = await getDocs(collection(db, 'fichas'));
         await carregarContasJogadores();
@@ -1174,14 +1173,14 @@ async function carregarDashboardMestre() {
         const pdms = docs.filter(d => d.data().tipo === 'pdm').length;
         document.getElementById('contador-fichas').textContent = `Fichas: ${docs.length}`;
         document.getElementById('contador-pdms').textContent = `PDMs: ${pdms}`;
-        if (!docs.length) { lista.innerHTML = '<p class="text-[#111] col-span-full text-center py-10">Nenhuma ficha cadastrada.</p>'; return; }
+        if (!docs.length) { lista.innerHTML = '<p class="text-[#111] col-span-full text-center py-10 font-bold text-lg">Nenhuma ficha cadastrada.</p>'; return; }
         for (const d of docs) {
             lista.appendChild(await criarCardFicha(d.id, d.data(), true));
         }
         await carregarSolicitacoesPendentes();
     } catch (e) {
         console.error('Erro ao carregar painel do mestre:', e);
-        lista.innerHTML = `<p class="text-red-800 col-span-full">Erro ao carregar fichas (${e.code || 'erro'}): ${e.message}</p>`;
+        lista.innerHTML = `<p class="text-red-800 col-span-full font-bold text-lg">Erro ao carregar fichas (${e.code || 'erro'}): ${e.message}</p>`;
     }
 }
 
@@ -1219,39 +1218,70 @@ function gerarLinkConvite(idFicha) {
 async function carregarSolicitacoesPendentes() {
     const container = document.getElementById('solicitacoes-mestre');
     if (!container) return;
-    container.innerHTML = '<p class="text-[#111] text-lg">Carregando solicitações...</p>';
+    
+    container.innerHTML = '<p class="text-[#111] text-lg">Buscando solicitações...</p>';
+    
     try {
         const fichasSnap = await getDocs(collection(db, 'fichas'));
         const todas = [];
+        
         for (const fichaDoc of fichasSnap.docs) {
-            const solSnap = await getDocs(collection(db, 'fichas', fichaDoc.id, 'solicitacoes'));
-            solSnap.forEach(s => {
-                const data = s.data();
-                if (data.status === 'pendente') {
-                    todas.push({ fichaId: fichaDoc.id, fichaNome: fichaDoc.data().nome || 'Sem nome', uidConvidado: s.id, ...data });
-                }
-            });
+            try {
+                const solSnap = await getDocs(collection(db, 'fichas', fichaDoc.id, 'solicitacoes'));
+                solSnap.forEach(s => {
+                    const data = s.data();
+                    if (data.status === 'pendente') {
+                        todas.push({ 
+                            fichaId: fichaDoc.id, 
+                            fichaNome: fichaDoc.data().nome || 'Sem nome', 
+                            uidConvidado: s.id, 
+                            ...data 
+                        });
+                    }
+                });
+            } catch (errFicha) {
+                console.warn("Erro ao ler solicitações da ficha " + fichaDoc.id, errFicha);
+            }
         }
+        
         container.innerHTML = '';
-        if (!todas.length) { container.innerHTML = '<p class="text-[#111] text-lg">Nenhuma solicitação pendente.</p>'; return; }
+        
+        if (todas.length === 0) { 
+            container.innerHTML = '<p class="text-[#111] text-lg font-bold">Nenhuma solicitação pendente no momento.</p>'; 
+            return; 
+        }
+        
         todas.forEach(sol => {
             const linha = document.createElement('div');
             linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 rounded border-2 border-[#7a4e32] bg-white/90 p-4';
+            
             const dados = document.createElement('div');
             dados.className = 'min-w-0';
-            const nome = document.createElement('p'); nome.className = 'font-bold text-[#211b17] text-lg'; nome.textContent = `Ficha: ${sol.fichaNome}`;
-            const uid = document.createElement('p'); uid.className = 'text-[#211b17] font-bold mt-1 break-all text-base'; uid.textContent = `UID do Convidado: ${sol.uidConvidado}`;
+            
+            const nome = document.createElement('p'); 
+            nome.className = 'font-bold text-[#211b17] text-lg'; 
+            nome.textContent = `Ficha: ${sol.fichaNome}`;
+            
+            const uid = document.createElement('p'); 
+            uid.className = 'text-[#211b17] font-bold mt-1 break-all text-base'; 
+            uid.textContent = `UID do Convidado: ${sol.uidConvidado}`;
+            
             dados.append(nome, uid);
-            const acoes = document.createElement('div'); acoes.className = 'flex flex-wrap gap-2';
+            
+            const acoes = document.createElement('div'); 
+            acoes.className = 'flex flex-wrap gap-2 mt-2 md:mt-0';
+            
             acoes.append(criarBotaoPainel('APROVAR (EDITAR)', 'bg-green-800 text-base', () => aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'editar')));
             acoes.append(criarBotaoPainel('APROVAR (VER)', 'bg-blue-800 text-base', () => aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'visualizar')));
             acoes.append(criarBotaoPainel('RECUSAR', 'bg-red-900 text-base', () => recusarSolicitacao(sol.fichaId, sol.uidConvidado)));
+            
             linha.append(dados, acoes);
             container.appendChild(linha);
         });
+        
     } catch (e) {
         console.error('Erro ao carregar solicitações:', e);
-        container.innerHTML = `<p class="text-red-800 font-bold text-lg">Erro ao carregar solicitações (${e.code || 'erro'}): ${e.message}</p>`;
+        container.innerHTML = `<p class="text-red-800 font-bold text-lg">Erro ao buscar solicitações (${e.code || 'erro'}): ${e.message}</p>`;
     }
 }
 
