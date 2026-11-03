@@ -49,8 +49,45 @@ let autosaveHabilitado = false;
 let salvandoEmProgresso = false;
 let ultimoEstadoSalvo = "";
 let intervalMonitorRevogacao = null;
+let tempoUltimoSomTecla = 0;
 
 const emailMestre = "rpggrupoc5@gmail.com";
+
+// ==========================================
+// GERENCIADOR DE ÁUDIO
+// ==========================================
+const audioAbertura = new Audio('abertura.mp3');
+const audioTecla = new Audio('tecla.mp3');
+const audioClique = new Audio('clique.mp3');
+const audioSalvar = new Audio('salvar.mp3');
+const audioNavegar = new Audio('navegar.mp3');
+
+audioAbertura.volume = 1.0; 
+audioTecla.volume = 0.4; 
+audioClique.volume = 0.7;
+audioSalvar.volume = 0.8;
+audioNavegar.volume = 0.6;
+
+function tocarSom(audio, pausarAnterior = true) {
+    if (!audio) return;
+    try {
+        if (pausarAnterior) {
+            audio.currentTime = 0;
+        }
+        audio.play().catch(e => { /* Ignora erro de bloqueio */ });
+    } catch (e) {}
+}
+
+function tocarSomTecla() {
+    const agora = Date.now();
+    // Limita a 50ms entre sons para não dar eco/sobreposição
+    if (agora - tempoUltimoSomTecla > 50) {
+        tocarSom(audioTecla, true);
+        tempoUltimoSomTecla = agora;
+    }
+}
+
+// ==========================================
 
 const forca = document.getElementById('forca');
 const destreza = document.getElementById('destreza');
@@ -69,9 +106,13 @@ const sitePrincipal = document.getElementById('site-principal');
 const mensagemErro = document.getElementById('mensagem-erro');
 
 document.getElementById('btn-entrar').onclick = () => {
+    // Toca o áudio de abertura assim que o usuário clica para entrar
+    tocarSom(audioAbertura);
+    
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
     mensagemErro.classList.add('hidden');
+    
     signInWithEmailAndPassword(auth, email, senha).catch((error) => {
         console.error("Falha no login Firebase:", error);
         mensagemErro.innerText = `Erro no login (${error.code || "desconhecido"}): ${error.message}`;
@@ -80,6 +121,7 @@ document.getElementById('btn-entrar').onclick = () => {
 };
 
 document.getElementById('btn-cadastrar').onclick = () => {
+    tocarSom(audioClique);
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
     mensagemErro.classList.add('hidden');
@@ -92,8 +134,10 @@ document.getElementById('btn-cadastrar').onclick = () => {
     });
 };
 
-document.getElementById('btn-sair').onclick = () =>
+document.getElementById('btn-sair').onclick = () => {
+    tocarSom(audioNavegar);
     signOut(auth).then(() => window.location.reload());
+};
 
 function parametros() {
     return new URLSearchParams(window.location.search);
@@ -286,8 +330,8 @@ function mostrarTelaSolicitacao(estado) {
                 <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">VOLTAR</button>
             </div>
         `;
-        document.getElementById('btn-solicitar-acesso').onclick = solicitarAcesso;
-        document.getElementById('btn-voltar-login').onclick = () => { window.location.href = window.location.pathname; };
+        document.getElementById('btn-solicitar-acesso').onclick = () => { tocarSom(audioClique); solicitarAcesso(); };
+        document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioNavegar); window.location.href = window.location.pathname; };
     } else if (estado === 'pendente') {
         painel.innerHTML = `
             <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
@@ -297,8 +341,8 @@ function mostrarTelaSolicitacao(estado) {
                 <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">SAIR</button>
             </div>
         `;
-        document.getElementById('btn-verificar').onclick = () => window.location.reload();
-        document.getElementById('btn-voltar-login').onclick = () => signOut(auth).then(() => window.location.reload());
+        document.getElementById('btn-verificar').onclick = () => { tocarSom(audioClique); window.location.reload(); };
+        document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioNavegar); signOut(auth).then(() => window.location.reload()); };
     } else if (estado === 'recusado') {
         painel.innerHTML = `
             <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
@@ -307,7 +351,7 @@ function mostrarTelaSolicitacao(estado) {
                 <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">SAIR</button>
             </div>
         `;
-        document.getElementById('btn-voltar-login').onclick = () => signOut(auth).then(() => window.location.reload());
+        document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioNavegar); signOut(auth).then(() => window.location.reload()); };
     }
 }
 
@@ -383,7 +427,10 @@ function configurarAutosave() {
         document.body.appendChild(indicador);
     }
     document.querySelectorAll('#area-ficha input, #area-ficha textarea').forEach(el => {
-        el.addEventListener('input', agendarAutosave);
+        el.addEventListener('input', () => {
+            tocarSomTecla();
+            agendarAutosave();
+        });
         el.addEventListener('change', agendarAutosave);
     });
     document.querySelectorAll('#area-ficha .slot-vazio, #area-ficha .foto-personagem').forEach(el => {
@@ -462,6 +509,7 @@ window.uploadFoto = function(elemento) {
 };
 
 function abrirModalFoto(elemento) {
+    tocarSom(audioClique);
     const imgAtual = elemento.querySelector('img');
     const dadosAtuais = imgAtual ? { img: imgAtual.getAttribute('src') } : {};
     quadradoFotoAtual = elemento;
@@ -596,17 +644,16 @@ const btnCancelarFoto = document.getElementById('btn-cancelar-foto');
 const btnSalvarFoto = document.getElementById('btn-salvar-foto');
 const btnUploadFoto = document.getElementById('btn-upload-foto');
 
-// CORREÇÃO DA FOTO: Garante que o clique abra o modal e não o seletor de arquivos direto
 const fotoContainer = document.getElementById('foto-personagem');
 if (fotoContainer) {
     fotoContainer.onclick = null; 
     fotoContainer.addEventListener('click', (e) => {
-        if (e.target.closest('#btn-remover-img-modal')) return; // Ignora clique no botão de X
+        if (e.target.closest('#btn-remover-img-modal')) return;
         window.uploadFoto(fotoContainer);
     });
 }
 
-btnCancelarFoto.onclick = () => modalFoto.classList.add('hidden');
+btnCancelarFoto.onclick = () => { tocarSom(audioClique); modalFoto.classList.add('hidden'); };
 btnUploadFoto.onclick = () => {
     window.abrirSeletor((img) => { imagemFotoBase64 = img; atualizarPreviewFoto(); });
 };
@@ -621,6 +668,7 @@ btnExcluirFoto.onclick = () => {
 btnSalvarFoto.onclick = () => {
     if (!quadradoFotoAtual) return;
     if (!imagemFotoBase64) return alert("Escolha uma imagem.");
+    tocarSom(audioClique);
     quadradoFotoAtual.innerHTML = `<img src="${imagemFotoBase64}" style="width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;top:0;left:0;z-index:1;pointer-events:none;">`;
     quadradoFotoAtual.setAttribute('data-nome-foto', inputFotoNome.value || '');
     quadradoFotoAtual.setAttribute('data-desc-foto', inputFotoDesc.value || '');
@@ -648,6 +696,7 @@ function atualizarPreviewModal() {
 
 function abrirModal(q, dados = null) {
     if (modoAcesso === "convidado-visualizar") return;
+    tocarSom(audioClique);
     quadradoAtual = q;
     if (dados && dados.nome) {
         inputNome.value = dados.nome;
@@ -669,12 +718,13 @@ function abrirModal(q, dados = null) {
     modal.classList.remove('hidden');
 }
 
-btnCancelar.onclick = () => modal.classList.add('hidden');
+btnCancelar.onclick = () => { tocarSom(audioClique); modal.classList.add('hidden'); };
 btnUpload.onclick = () => {
     window.abrirSeletor((img) => { imagemAtualBase64 = img; atualizarPreviewModal(); });
 };
 
 btnExcluir.onclick = () => {
+    tocarSom(audioClique);
     if (quadradoAtual.id.startsWith('inv-')) {
         quadradoAtual.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
     } else {
@@ -698,6 +748,8 @@ btnSalvarItem.onclick = () => {
     if (!nome.trim()) return alert("Digite o nome.");
     if (qtd <= 0) return alert("Quantidade > 0.");
     if (inputPeso.value.trim() === "") return alert("Digite o peso.");
+    
+    tocarSom(audioClique);
     const dados = { img: imagemAtualBase64, nome, qtd, peso: pesoString, desc: inputDesc.value };
     renderizarItem(quadradoAtual, dados);
     calcularPesoGeral();
@@ -879,7 +931,10 @@ async function salvarFicha(opcoes = {}) {
 
         ultimoEstadoSalvo = assinatura;
         if (!opcoes.silencioso && !opcoes.semAlerta) alert("Ficha salva com sucesso!");
-        if (opcoes.silencioso) mostrarIndicador('Salvo ✓', 'bg-green-700');
+        if (opcoes.silencioso) {
+            mostrarIndicador('Salvo ✓', 'bg-green-700');
+            tocarSom(audioSalvar); // Toca o som quando o autosave salva
+        }
     } catch (e) {
         console.error("Falha ao salvar ficha:", e);
         if (opcoes.silencioso) mostrarIndicador('Erro ao salvar', 'bg-red-800');
@@ -893,7 +948,7 @@ async function salvarFicha(opcoes = {}) {
     }
 }
 
-document.getElementById('btn-salvar-ficha').onclick = () => salvarFicha({ silencioso: false });
+document.getElementById('btn-salvar-ficha').onclick = () => { tocarSom(audioClique); salvarFicha({ silencioso: false }); };
 
 async function carregarFicha() {
     if (!usuarioAtual || !fichaAtualId) return;
@@ -1040,7 +1095,7 @@ async function carregarContasJogadores() {
             const email = document.createElement('p'); email.className = 'text-sm text-[#3a2e27] break-all'; email.textContent = conta.email || 'E-mail não informado';
             const uid = document.createElement('p'); uid.className = 'uid-conta break-all mt-2'; uid.textContent = `UID: ${conta.uid || conta.id}`;
             dados.append(nome, email, uid);
-            const botao = criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => copiarTexto(conta.uid || conta.id));
+            const botao = criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => { tocarSom(audioClique); copiarTexto(conta.uid || conta.id); });
             linha.append(dados, botao);
             lista.appendChild(linha);
         });
@@ -1052,9 +1107,10 @@ async function carregarContasJogadores() {
 }
 
 const btnAtualizarContas = document.getElementById('btn-atualizar-contas');
-if (btnAtualizarContas) btnAtualizarContas.addEventListener('click', carregarContasJogadores);
+if (btnAtualizarContas) btnAtualizarContas.addEventListener('click', () => { tocarSom(audioClique); carregarContasJogadores(); });
 
 function abrirFichaEmNovaAba(idFicha) {
+    tocarSom(audioClique);
     const url = new URL(window.location.href);
     url.searchParams.set('ficha', idFicha);
     window.open(url.toString(), '_blank', 'noopener');
@@ -1127,7 +1183,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
                     const btnRevogar = document.createElement('button');
                     btnRevogar.className = 'bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition';
                     btnRevogar.textContent = 'REVOGAR';
-                    btnRevogar.onclick = () => revogarAcesso(idFicha, a.id);
+                    btnRevogar.onclick = () => { tocarSom(audioClique); revogarAcesso(idFicha, a.id); };
                     
                     linha.append(txtPermissao, btnRevogar);
                     conteudo.append(linha);
@@ -1140,12 +1196,12 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     acoes.append(criarBotaoPainel(modoMestre ? 'ABRIR / EDITAR' : 'ABRIR FICHA', 'bg-[#a81c1c] hover:brightness-125', () => abrirFichaEmNovaAba(idFicha)));
 
     if (modoMestre) {
-        acoes.append(criarBotaoPainel('CONVIDAR POR LINK', 'bg-purple-800', () => gerarLinkConvite(idFicha)));
-        if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => copiarTexto(ficha.proprietarioUid)));
-        acoes.append(criarBotaoPainel('DUPLICAR', 'bg-blue-800', () => duplicarFicha(idFicha, ficha)));
-        acoes.append(criarBotaoPainel('VINCULAR OUTRO JOGADOR', 'bg-green-800', () => vincularJogador(idFicha, ficha)));
-        if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('DESVINCULAR', 'bg-gray-700', () => desvincularJogador(idFicha, ficha)));
-        acoes.append(criarBotaoPainel('EXCLUIR', 'bg-red-900', () => excluirFicha(idFicha, ficha)));
+        acoes.append(criarBotaoPainel('CONVIDAR POR LINK', 'bg-purple-800', () => { tocarSom(audioClique); gerarLinkConvite(idFicha); }));
+        if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => { tocarSom(audioClique); copiarTexto(ficha.proprietarioUid); }));
+        acoes.append(criarBotaoPainel('DUPLICAR', 'bg-blue-800', () => { tocarSom(audioClique); duplicarFicha(idFicha, ficha); }));
+        acoes.append(criarBotaoPainel('VINCULAR OUTRO JOGADOR', 'bg-green-800', () => { tocarSom(audioClique); vincularJogador(idFicha, ficha); }));
+        if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('DESVINCULAR', 'bg-gray-700', () => { tocarSom(audioClique); desvincularJogador(idFicha, ficha); }));
+        acoes.append(criarBotaoPainel('EXCLUIR', 'bg-red-900', () => { tocarSom(audioClique); excluirFicha(idFicha, ficha); }));
     }
 
     conteudo.append(acoes);
@@ -1198,6 +1254,7 @@ async function carregarDashboardMestre() {
 async function atualizarPainelMestre() { return carregarDashboardMestre(); }
 
 function voltarAoPainel() {
+    tocarSom(audioNavegar);
     if (autosaveHabilitado) {
         salvarFicha({ silencioso: true, semAlerta: true }).finally(() => {
             const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
@@ -1210,9 +1267,9 @@ function voltarAoPainel() {
 }
 
 document.getElementById('btn-voltar-painel').onclick = voltarAoPainel;
-document.getElementById('btn-sair-jogador').onclick = () => signOut(auth).then(() => window.location.reload());
-document.getElementById('btn-sair-mestre').onclick = () => signOut(auth).then(() => window.location.reload());
-document.getElementById('btn-criar-pdm-dashboard').onclick = criarPDM;
+document.getElementById('btn-sair-jogador').onclick = () => { tocarSom(audioNavegar); signOut(auth).then(() => window.location.reload()); };
+document.getElementById('btn-sair-mestre').onclick = () => { tocarSom(audioNavegar); signOut(auth).then(() => window.location.reload()); };
+document.getElementById('btn-criar-pdm-dashboard').onclick = () => { tocarSom(audioClique); criarPDM(); };
 
 function gerarLinkConvite(idFicha) {
     const url = new URL(window.location.href);
@@ -1282,9 +1339,9 @@ async function carregarSolicitacoesPendentes() {
             const acoes = document.createElement('div'); 
             acoes.className = 'flex flex-wrap gap-2 mt-2 md:mt-0';
             
-            acoes.append(criarBotaoPainel('APROVAR (EDITAR)', 'bg-green-800 text-base', () => aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'editar')));
-            acoes.append(criarBotaoPainel('APROVAR (VER)', 'bg-blue-800 text-base', () => aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'visualizar')));
-            acoes.append(criarBotaoPainel('RECUSAR', 'bg-red-900 text-base', () => recusarSolicitacao(sol.fichaId, sol.uidConvidado)));
+            acoes.append(criarBotaoPainel('APROVAR (EDITAR)', 'bg-green-800 text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'editar'); }));
+            acoes.append(criarBotaoPainel('APROVAR (VER)', 'bg-blue-800 text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'visualizar'); }));
+            acoes.append(criarBotaoPainel('RECUSAR', 'bg-red-900 text-base', () => { tocarSom(audioClique); recusarSolicitacao(sol.fichaId, sol.uidConvidado); }));
             
             linha.append(dados, acoes);
             container.appendChild(linha);
@@ -1348,7 +1405,7 @@ async function recusarSolicitacao(fichaId, uidConvidado) {
 }
 
 const btnAtualizarSolicitacoes = document.getElementById('btn-atualizar-solicitacoes');
-if (btnAtualizarSolicitacoes) btnAtualizarSolicitacoes.addEventListener('click', carregarSolicitacoesPendentes);
+if (btnAtualizarSolicitacoes) btnAtualizarSolicitacoes.addEventListener('click', () => { tocarSom(audioClique); carregarSolicitacoesPendentes(); });
 
 async function criarPDM() {
     if (!usuarioAtual || (usuarioAtual.email || '').trim().toLowerCase() !== emailMestre.toLowerCase()) return;
