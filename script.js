@@ -54,7 +54,7 @@ let tempoUltimoSomTecla = 0;
 const emailMestre = "rpggrupoc5@gmail.com";
 
 // ==========================================
-// GERENCIADOR DE ÁUDIO (8 SONS SEPARADOS)
+// GERENCIADOR DE ÁUDIO
 // ==========================================
 const audioAbertura = new Audio('abertura.mp3');
 const audioTecla = new Audio('tecla.mp3');
@@ -65,6 +65,7 @@ const audioEntrarFicha = new Audio('entrar_ficha.mp3');
 const audioSairFicha = new Audio('sair_ficha.mp3');
 const audioEntrarPainel = new Audio('entrar_painel.mp3');
 const audioSairPainel = new Audio('sair_painel.mp3');
+const audioCancelarItem = new Audio('cancelar_item.mp3'); // NOVO SOM
 
 audioAbertura.volume = 1.0; 
 audioTecla.volume = 0.4; 
@@ -75,6 +76,7 @@ audioEntrarFicha.volume = 0.8;
 audioSairFicha.volume = 0.8;
 audioEntrarPainel.volume = 0.8;
 audioSairPainel.volume = 0.8;
+audioCancelarItem.volume = 0.8;
 
 function tocarSom(audio, pausarAnterior = true) {
     if (!audio) return;
@@ -113,8 +115,7 @@ const sitePrincipal = document.getElementById('site-principal');
 const mensagemErro = document.getElementById('mensagem-erro');
 
 document.getElementById('btn-entrar').onclick = () => {
-    tocarSom(audioAbertura); // Vinheta de abertura
-    
+    tocarSom(audioAbertura);
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
     mensagemErro.classList.add('hidden');
@@ -183,13 +184,13 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('dashboard-mestre').classList.remove('hidden');
             document.getElementById('dashboard-jogador').classList.add('hidden');
             document.getElementById('area-ficha').classList.add('hidden');
-            tocarSom(audioEntrarPainel); // Som ao entrar no painel
+            tocarSom(audioEntrarPainel);
             carregarDashboardMestre();
         } else {
             document.getElementById('dashboard-jogador').classList.remove('hidden');
             document.getElementById('dashboard-mestre').classList.add('hidden');
             document.getElementById('area-ficha').classList.add('hidden');
-            tocarSom(audioEntrarPainel); // Som ao entrar no painel
+            tocarSom(audioEntrarPainel);
             carregarDashboardJogador();
         }
     } else {
@@ -209,7 +210,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 async function abrirRotaFicha(fichaId, veioDeConvite) {
-    tocarSom(audioEntrarFicha); // Som ao entrar na ficha
+    tocarSom(audioEntrarFicha);
     mostrarAreaFicha();
     fichaAtualId = fichaId;
     const mestreLogado = (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
@@ -435,13 +436,16 @@ function configurarAutosave() {
         indicador.style.opacity = '0';
         document.body.appendChild(indicador);
     }
-    document.querySelectorAll('#area-ficha input, #area-ficha textarea').forEach(el => {
+    
+    // Adiciona o som de tecla em todos os inputs e textareas da ficha, INCLUSIVE os do modal
+    document.querySelectorAll('#area-ficha input, #area-ficha textarea, #modal-item input, #modal-item textarea, #modal-foto input, #modal-foto textarea').forEach(el => {
         el.addEventListener('input', () => {
             tocarSomTecla();
             agendarAutosave();
         });
         el.addEventListener('change', agendarAutosave);
     });
+
     document.querySelectorAll('#area-ficha .slot-vazio, #area-ficha .foto-personagem').forEach(el => {
         el.addEventListener('click', agendarAutosave);
     });
@@ -662,13 +666,13 @@ if (fotoContainer) {
     });
 }
 
-btnCancelarFoto.onclick = () => { tocarSom(audioClique); modalFoto.classList.add('hidden'); };
+btnCancelarFoto.onclick = () => { tocarSom(audioCancelarItem); modalFoto.classList.add('hidden'); };
 btnUploadFoto.onclick = () => {
     window.abrirSeletor((img) => { imagemFotoBase64 = img; atualizarPreviewFoto(); });
 };
 btnExcluirFoto.onclick = () => {
     if (!quadradoFotoAtual) return;
-    tocarSom(audioSairPainel); // Som de exclusão/cancelamento
+    tocarSom(audioSairPainel);
     quadradoFotoAtual.innerHTML = '<i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span>FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao">PROPORÇÃO IDEAL: 9x16</div>';
     quadradoFotoAtual.removeAttribute('data-nome-foto');
     quadradoFotoAtual.removeAttribute('data-desc-foto');
@@ -728,7 +732,7 @@ function abrirModal(q, dados = null) {
     modal.classList.remove('hidden');
 }
 
-btnCancelar.onclick = () => { tocarSom(audioClique); modal.classList.add('hidden'); };
+btnCancelar.onclick = () => { tocarSom(audioCancelarItem); modal.classList.add('hidden'); };
 btnUpload.onclick = () => {
     window.abrirSeletor((img) => { imagemAtualBase64 = img; atualizarPreviewModal(); });
 };
@@ -759,7 +763,7 @@ btnSalvarItem.onclick = () => {
     if (qtd <= 0) return alert("Quantidade > 0.");
     if (inputPeso.value.trim() === "") return alert("Digite o peso.");
     
-    tocarSom(audioClique);
+    tocarSom(audioEntrarPainel); // SOM AO ADICIONAR (Conforme solicitado)
     const dados = { img: imagemAtualBase64, nome, qtd, peso: pesoString, desc: inputDesc.value };
     renderizarItem(quadradoAtual, dados);
     calcularPesoGeral();
@@ -923,7 +927,7 @@ async function salvarFicha(opcoes = {}) {
     if (!opcoes.silencioso) {
         const btn = document.getElementById('btn-salvar-ficha');
         if (btn) { btn.disabled = true; btn.innerText = "SALVANDO..."; }
-        tocarSom(audioSalvarManual); // SOM DE SALVAR MANUAL
+        tocarSom(audioSalvarManual);
     } else {
         mostrarIndicador('Salvando...', 'bg-yellow-700');
     }
@@ -944,7 +948,7 @@ async function salvarFicha(opcoes = {}) {
         if (!opcoes.silencioso && !opcoes.semAlerta) alert("Ficha salva com sucesso!");
         if (opcoes.silencioso) {
             mostrarIndicador('Salvo ✓', 'bg-green-700');
-            tocarSom(audioSalvarAuto); // SOM DE AUTOSAVE
+            tocarSom(audioSalvarAuto);
         }
     } catch (e) {
         console.error("Falha ao salvar ficha:", e);
