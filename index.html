@@ -98,7 +98,7 @@
                     <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
                         <div>
                             <h2 class="fonte-titulo text-2xl text-[#111]">SOLICITAÇÕES DE ACESSO PENDENTES</h2>
-                            <p class="text-sm text-[#3a2e27]">Convidados que pediram acesso a alguma ficha. Aprove como EDITAR ou VISUALIZAR.</p>
+                            <p class="text-sm text-[#3a2e27]">Convidados que pediram acesso a alguma ficha. Aprove como EDITAR ou VISUALIZAR (12h de acesso).</p>
                         </div>
                         <button id="btn-atualizar-solicitacoes" class="px-3 py-2 rounded bg-[#3a2e27] text-white font-bold text-sm">ATUALIZAR</button>
                     </div>
@@ -115,7 +115,7 @@
             <span class="fonte-titulo text-2xl border-2 border-[#7a4e32] px-4 py-1">MINHA FICHA</span>
             <div class="flex gap-2">
                 <button id="btn-voltar-painel" class="fonte-titulo text-xl px-4 py-1 rounded bg-[#3a2e27] text-white hover:bg-[#7a4e32] transition">PAINEL</button>
-                <button id="btn-salvar-ficha" class="fonte-titulo text-xl px-4 py-1 rounded bg-[#a81c1c] text-white hover:brightness-125 transition">SALVAR FICHA</button>
+                <button id="btn-salvar-ficha" class="fonte-titulo text-xl px-4 py-1 rounded bg-[#a81c1c] text-white hover:brightness-125 transition hidden">SALVAR FICHA</button>
                 <button id="btn-sair" class="fonte-titulo text-xl px-4 py-1 rounded border border-gray-500 hover:bg-gray-800 transition">SAIR</button>
             </div>
         </div>
@@ -126,6 +126,10 @@
                 <div class="flex gap-3 flex-wrap">
                     <label class="flex flex-col text-xs font-bold text-[#111]">NOME: <input type="text" id="nome" class="input-campo p-1 w-32"></label>
                     <label class="flex flex-col text-xs font-bold text-[#111]">IDADE: <input type="number" id="idade" class="input-campo p-1 w-16"></label>
+                    <label class="flex flex-col text-xs font-bold text-[#111]">ALTURA: <input type="text" id="altura" class="input-campo p-1 w-20" placeholder="Ex: 1,75m"></label>
+                    <label class="flex flex-col text-xs font-bold text-[#111]">SEXO: <input type="text" id="sexo" class="input-campo p-1 w-20"></label>
+                    <label class="flex flex-col text-xs font-bold text-[#111]">ETNIA: <input type="text" id="etnia" class="input-campo p-1 w-24"></label>
+                    <label class="flex flex-col text-xs font-bold text-[#111]">COR DA PELE: <input type="text" id="cor-pele" class="input-campo p-1 w-24"></label>
                     <label class="flex flex-col text-xs font-bold text-[#111]">NÍVEL: <input type="number" id="nivel" class="input-campo p-1 w-16"></label>
                     <label class="flex flex-col text-xs font-bold text-[#111]">EXP: <input type="text" id="exp" class="input-campo p-1 w-16"></label>
                 </div>
@@ -143,9 +147,12 @@
                         <div class="grid grid-cols-[1fr_45px_45px] gap-2 items-center border-b border-black/10 pb-1"><span class="font-bold flex items-center gap-2 text-[#111] text-sm">VONTADE</span><input type="number" id="vontade" class="input-campo p-1 text-center w-full"><span class="text-center font-bold opacity-40">-</span></div>
                         <div class="grid grid-cols-[1fr_45px_45px] gap-2 items-center pb-1"><span class="font-bold flex items-center gap-2 text-[#111] text-sm">CARISMA</span><input type="number" id="carisma" class="input-campo p-1 text-center w-full"><span class="text-center font-bold opacity-40">-</span></div>
                     </div>
-                    <div class="bg-black/10 p-3 mt-auto flex justify-between items-center font-bold text-[#111] border-t border-black/20">
-                        <label class="flex items-center gap-2 text-sm">ESQUIVA: <input type="number" id="esquiva" class="input-campo p-1 w-12 text-center"> %</label>
-                        <label class="flex items-center gap-2 text-sm">MOV: <input type="number" id="movimentacao" value="6" class="input-campo p-1 w-12 text-center"></label>
+                    <div class="bg-black/10 p-3 mt-auto flex flex-col gap-2 font-bold text-[#111] border-t border-black/20">
+                        <div class="flex justify-between items-center">
+                            <label class="flex items-center gap-2 text-sm">ESQUIVA: <input type="number" id="esquiva" class="input-campo p-1 w-12 text-center"> %</label>
+                            <label class="flex items-center gap-2 text-sm">MOV: <input type="number" id="movimentacao" value="6" class="input-campo p-1 w-12 text-center"></label>
+                        </div>
+                        <label class="flex items-center gap-2 text-sm">PESO DO PERSONAGEM: <input type="text" id="peso-personagem" class="input-campo p-1 w-20 text-center" placeholder="kg"> kg</label>
                     </div>
                 </section>
                 <section class="painel-papel flex flex-col">
@@ -154,7 +161,7 @@
                         <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">CABEÇA<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
                         <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">COLETE<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
                         <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">FACE<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
-                        <div class="foto-personagem rounded col-start-2 row-start-1 row-span-4 text-[#111] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem" onclick="uploadFoto(this)"><i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span class="z-10">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
+                        <div class="foto-personagem rounded col-start-2 row-start-1 row-span-4 text-[#111] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span class="z-10">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
                         <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">ROUPA<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
                         <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">MÃO PRINCIPAL<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
                         <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">MÃO SECUNDÁRIA<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
@@ -165,9 +172,15 @@
                     <h3 class="titulo-painel">INVENTÁRIO DA MOCHILA</h3>
                     <div class="p-4 flex-1 flex flex-col">
                         <div class="grid grid-cols-4 gap-2 mb-4 flex-1" id="inventario"></div>
-                        <div class="flex justify-between font-bold bg-[#3a2e27] text-[#e6d5b8] p-2 rounded text-sm items-center">
-                            <span><i class="fa-solid fa-briefcase"></i> ESPAÇOS: <span id="espacos">0</span>/16</span>
-                            <span>PESO: <span id="peso-total">0</span> kg</span>
+                        <div class="flex flex-col gap-1 font-bold bg-[#3a2e27] text-[#e6d5b8] p-2 rounded text-sm">
+                            <div class="flex justify-between items-center">
+                                <span><i class="fa-solid fa-briefcase"></i> ESPAÇOS: <span id="espacos">0</span>/16</span>
+                                <span>PESO ITENS: <span id="peso-total">0</span> kg</span>
+                            </div>
+                            <div class="flex justify-between items-center border-t border-white/20 pt-1">
+                                <span>PESO PERSONAGEM+EQUIP: <span id="peso-total-personagem">0</span> kg</span>
+                                <span>PESO TOTAL: <span id="peso-total-geral">0</span> kg</span>
+                            </div>
                         </div>
                     </div>
                 </section>
