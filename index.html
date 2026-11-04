@@ -28,25 +28,25 @@
             overflow-x: hidden;
         }
 
-        /* Filtro para escurecer o gif e destacar os painéis de papel */
+        /* Filtro para escurecer o gif */
         body::before {
             content: "";
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: rgba(10, 8, 6, 0.30);
+            background-color: rgba(10, 8, 6, 0.20);
             z-index: -1;
         }
 
         /* Fontes */
         .fonte-titulo { font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
-        .fonte-papel { font-family: 'Special Elite', monospace; } /* Fonte de máquina de escrever */
+        .fonte-papel { font-family: 'Special Elite', monospace; }
 
         /* Painéis de Papel Envelhecido */
         .painel-papel { 
             background-image: url('papel.jpg');
             background-size: cover;
             background-position: center;
-            color: #1a110a; /* Cor da tinta escura */
+            color: #1a110a; 
             border: 2px solid #3a2517; 
             border-radius: 4px; 
             box-shadow: inset 0 0 40px rgba(0,0,0,0.6), 5px 10px 25px rgba(0,0,0,0.9);
@@ -54,7 +54,6 @@
             overflow: hidden;
         }
 
-        /* Remover a textura da borda para ficar só o papel no meio */
         .painel-papel::after {
             content: "";
             position: absolute;
@@ -63,7 +62,7 @@
             pointer-events: none;
         }
 
-        /* Títulos dos painéis (Tarjas pretas) */
+        /* Títulos dos painéis */
         .titulo-painel { 
             font-family: 'Bebas Neue', sans-serif; 
             font-size: 1.8rem; 
@@ -76,7 +75,7 @@
             z-index: 10;
         }
 
-        /* Inputs parecendo linhas de papel */
+        /* Inputs */
         .input-campo { 
             background: rgba(255, 255, 255, 0.1); 
             border: none;
@@ -88,13 +87,14 @@
             padding: 4px;
             outline: none;
             transition: background 0.3s;
+            width: 100%;
         }
         .input-campo:focus {
             background: rgba(255, 255, 255, 0.3);
             border-bottom: 2px solid var(--sangue);
         }
 
-        /* Slots (Equipamentos e Mochila) */
+        /* Slots */
         .slot-vazio { 
             background: rgba(0,0,0,0.05); 
             border: 2px solid #4a3322; 
@@ -128,16 +128,10 @@
             text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
             transition: transform 0.1s, filter 0.2s;
         }
-        button:hover {
-            filter: brightness(1.2);
-            transform: scale(1.02);
-        }
-        button:active {
-            transform: scale(0.98);
-        }
+        button:hover { filter: brightness(1.2); transform: scale(1.02); }
+        button:active { transform: scale(0.98); }
         button:focus-visible { outline: 3px solid #d2b48c; outline-offset: 2px; }
 
-        /* Efeito de metal nos botões */
         .btn-metal {
             background: linear-gradient(180deg, #3a2e27 0%, #1f1814 100%);
             border: 1px solid #5c3a21;
@@ -160,32 +154,70 @@
             margin-right: 10px;
             box-shadow: inset 0 0 5px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.5);
             border: 1px solid #4a3322;
+            flex-shrink: 0;
         }
 
         .equip-grid { min-height: 450px; }
         
-        @media (max-width: 767px) {
-            #area-ficha > div:first-child { margin-left: 8px; margin-right: 8px; flex-wrap: wrap; gap: 10px; }
-            #area-ficha > div:first-child > span { font-size: 1.15rem; }
-            #area-ficha > div:first-child > div { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
-            #area-ficha > div:first-child > div button { min-height: 44px; padding: 9px 5px; font-size: .95rem; }
-            .equip-grid { height: auto !important; min-height: 0; grid-template-columns: repeat(2, minmax(0,1fr)) !important; grid-template-rows: auto !important; gap: 10px !important; }
-            .equip-grid > .foto-personagem { grid-column: 1 / -1 !important; grid-row: 1 !important; height: min(112vw, 430px) !important; min-height: 300px; }
-            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; }
-            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; }
-            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 1; grid-row: 3; }
-            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 2; grid-row: 3; }
-            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1; grid-row: 4; }
-            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 2; grid-row: 4; }
-            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 1; grid-row: 5; }
-            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 2; grid-row: 5; }
-            .equip-grid > .slot-vazio { min-height: 112px; font-size: .9rem !important; padding: 8px; }
-            .equip-grid > .slot-vazio span { font-size: 1.5rem; }
-            .texto-proporcao { font-size: 11px; padding: 3px 8px; }
+        /* RESPONSIVIDADE CORRIGIDA PARA CELULAR */
+        @media (max-width: 1024px) {
+            /* Topo da ficha - Transforma a linha em grade para não cortar */
+            header .flex-wrap {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+                width: 100%;
+            }
+            header h1, header .border-4 {
+                margin-bottom: 10px;
+            }
+            
+            /* Grade de Equipamentos no Celular */
+            .equip-grid { 
+                height: auto !important; 
+                min-height: 0; 
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important; 
+                grid-template-rows: auto !important; 
+                gap: 10px !important; 
+            }
+            
+            /* Coloca a foto no topo ocupando as 3 colunas */
+            .equip-grid > .foto-personagem { 
+                grid-column: 1 / -1 !important; 
+                grid-row: 1 !important; 
+                height: 300px !important; 
+            }
+            
+            /* Reposiciona os itens na ordem correta no celular */
+            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } /* CABEÇA */
+            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; } /* COLETE */
+            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 3; grid-row: 2; } /* FACE */
+            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 3; } /* ROUPA */
+            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 2; grid-row: 3; } /* MÃO PRINCIPAL */
+            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 3; grid-row: 3; } /* MÃO SECUNDÁRIA */
+            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 1 / -1; grid-row: 4; } /* BOTAS (ocupa as 3 colunas) */
+            
+            .equip-grid > .slot-vazio { min-height: 100px; font-size: .8rem !important; padding: 5px; }
         }
-        @media (max-width: 380px) {
-            #area-ficha > div:first-child > div { grid-template-columns: 1fr; }
-            .equip-grid > .foto-personagem { height: 320px !important; }
+
+        @media (max-width: 640px) {
+            /* No celular pequeno, o topo vira 2 colunas */
+            header .flex-wrap {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            /* Equipamento vira 2 colunas */
+            .equip-grid { 
+                grid-template-columns: repeat(2, 1fr) !important; 
+            }
+            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } 
+            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; } 
+            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 1; grid-row: 3; } 
+            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 2; grid-row: 3; } 
+            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1; grid-row: 4; } 
+            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 2; grid-row: 4; } 
+            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 1 / -1; grid-row: 5; } 
         }
         
         /* Scrollbar Customizada */
@@ -196,8 +228,8 @@
     </style>
 </head>
 <body>
-    <div id="tela-login" class="fixed inset-0 bg-black/90 z-50 flex justify-center items-center">
-        <div class="painel-papel p-8 rounded-lg w-[400px] flex flex-col gap-4 relative">
+    <div id="tela-login" class="fixed inset-0 bg-black/90 z-50 flex justify-center items-center p-4">
+        <div class="painel-papel p-6 md:p-8 rounded-lg w-full max-w-[400px] flex flex-col gap-4 relative">
             <h2 class="fonte-titulo text-5xl text-center text-[#1a110a] mb-4 border-b-2 border-[#3a2517] pb-2">ACESSO</h2>
             <div id="campos-login" class="fonte-papel">
                 <label class="flex flex-col text-sm font-bold text-[#1a110a] mb-2">E-mail: <input type="email" id="login-email" class="input-campo p-2 mt-1"></label>
@@ -211,28 +243,28 @@
 
     <div id="site-principal" class="hidden">
         <section id="dashboard-jogador" class="hidden max-w-[1500px] mx-auto px-3 py-8">
-            <div class="painel-papel p-6 md:p-8">
-                <div class="flex flex-wrap justify-between items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
+            <div class="painel-papel p-4 md:p-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
                     <div>
-                        <h1 class="fonte-titulo text-5xl text-[#1a110a]">PAINEL DE PERSONAGENS</h1>
+                        <h1 class="fonte-titulo text-4xl md:text-5xl text-[#1a110a]">PAINEL DE PERSONAGENS</h1>
                         <p class="text-[#3a2517] text-lg font-bold fonte-papel">Escolha um sobrevivente para abrir sua ficha.</p>
                     </div>
-                    <button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-metal text-white">SAIR</button>
+                    <button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-metal text-white w-full md:w-auto">SAIR</button>
                 </div>
                 <div id="cards-jogador" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando personagens...</p></div>
             </div>
         </section>
 
         <section id="dashboard-mestre" class="hidden max-w-[1500px] mx-auto px-3 py-8">
-            <div class="painel-papel p-6 md:p-8">
-                <div class="flex flex-wrap justify-between items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
+            <div class="painel-papel p-4 md:p-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
                     <div>
-                        <h1 class="fonte-titulo text-5xl text-[#1a110a]">CENTRAL DO MESTRE</h1>
+                        <h1 class="fonte-titulo text-4xl md:text-5xl text-[#1a110a]">CENTRAL DO MESTRE</h1>
                         <p class="text-[#3a2517] text-lg font-bold fonte-papel">Administração de personagens e PDMs.</p>
                     </div>
-                    <div class="flex gap-2">
-                        <button id="btn-criar-pdm-dashboard" class="fonte-titulo text-xl px-4 py-2 rounded btn-perigo text-white">+ CRIAR PDM</button>
-                        <button id="btn-sair-mestre" class="fonte-titulo text-xl px-4 py-2 rounded btn-metal text-white">SAIR</button>
+                    <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                        <button id="btn-criar-pdm-dashboard" class="fonte-titulo text-xl px-4 py-2 rounded btn-perigo text-white w-full md:w-auto">+ CRIAR PDM</button>
+                        <button id="btn-sair-mestre" class="fonte-titulo text-xl px-4 py-2 rounded btn-metal text-white w-full md:w-auto">SAIR</button>
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-4 mb-6 text-[#1a110a] font-bold text-lg font-papel">
@@ -240,24 +272,24 @@
                     <span id="contador-pdms" class="bg-black/10 px-3 py-1 rounded border border-[#3a2517]">PDMs: —</span>
                     <span id="contador-contas" class="bg-black/10 px-3 py-1 rounded border border-[#3a2517]">Contas: —</span>
                 </div>
-                <section class="mb-8 rounded-lg border-2 border-[#3a2517] bg-black/5 p-4">
-                    <div class="flex flex-wrap justify-between items-center gap-2 mb-3 border-b border-[#3a2517] pb-2">
+                <section class="mb-8 rounded-lg border-2 border-[#3a2517] bg-black/5 p-3 md:p-4">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-3 border-b border-[#3a2517] pb-2">
                         <div>
                             <h2 class="fonte-titulo text-3xl text-[#1a110a]">CONTAS DE JOGADORES</h2>
                             <p class="text-base text-[#3a2517] font-bold fonte-papel">UIDs registrados automaticamente. Use COPIAR UID para vincular uma ficha.</p>
                         </div>
-                        <button id="btn-atualizar-contas" class="px-4 py-2 rounded btn-metal text-white font-bold text-base">ATUALIZAR CONTAS</button>
+                        <button id="btn-atualizar-contas" class="px-4 py-2 rounded btn-metal text-white font-bold text-base w-full md:w-auto">ATUALIZAR CONTAS</button>
                     </div>
                     <div id="lista-contas-jogadores" class="flex flex-col gap-2"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando contas...</p></div>
                 </section>
 
-                <section class="mb-8 rounded-lg border-2 border-[#8a1313] bg-red-900/10 p-4 shadow-[inset_0_0_20px_rgba(138,19,19,0.3)]">
-                    <div class="flex flex-wrap justify-between items-center gap-2 mb-3 border-b border-[#8a1313] pb-2">
+                <section class="mb-8 rounded-lg border-2 border-[#8a1313] bg-red-900/10 p-3 md:p-4 shadow-[inset_0_0_20px_rgba(138,19,19,0.3)]">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-3 border-b border-[#8a1313] pb-2">
                         <div>
                             <h2 class="fonte-titulo text-3xl text-[#8a1313]">SOLICITAÇÕES DE ACESSO PENDENTES</h2>
                             <p class="text-base text-[#3a2517] font-bold fonte-papel">Convidados que pediram acesso. Aprove ou recuse.</p>
                         </div>
-                        <button id="btn-atualizar-solicitacoes" class="px-4 py-2 rounded btn-metal text-white font-bold text-base">ATUALIZAR</button>
+                        <button id="btn-atualizar-solicitacoes" class="px-4 py-2 rounded btn-metal text-white font-bold text-base w-full md:w-auto">ATUALIZAR</button>
                     </div>
                     <div id="solicitacoes-mestre" class="flex flex-col gap-2"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando solicitações...</p></div>
                 </section>
@@ -268,78 +300,78 @@
         </section>
 
         <div id="area-ficha" class="hidden">
-            <div class="max-w-[1500px] mx-auto mb-4 flex justify-between items-center bg-[#1f1814] border-b-4 border-[#5c3a21] p-2 mt-4 shadow-lg">
+            <div class="max-w-[1500px] mx-auto mb-4 flex flex-col md:flex-row justify-between items-center bg-[#1f1814] border-b-4 border-[#5c3a21] p-2 mt-4 shadow-lg gap-2">
                 <span class="fonte-titulo text-3xl text-[#d8c3a5] px-4 drop-shadow-md">MINHA FICHA</span>
-                <div class="flex gap-2">
-                    <button id="btn-voltar-painel" class="fonte-titulo text-xl px-4 py-1 rounded btn-metal text-white">PAINEL</button>
-                    <button id="btn-salvar-ficha" class="fonte-titulo text-xl px-4 py-1 rounded btn-perigo text-white hidden">SALVAR FICHA</button>
-                    <button id="btn-sair" class="fonte-titulo text-xl px-4 py-1 rounded btn-metal text-white">SAIR</button>
+                <div class="flex gap-2 w-full md:w-auto justify-center">
+                    <button id="btn-voltar-painel" class="fonte-titulo text-lg md:text-xl px-3 md:px-4 py-1 rounded btn-metal text-white flex-1 md:flex-none">PAINEL</button>
+                    <button id="btn-salvar-ficha" class="fonte-titulo text-lg md:text-xl px-3 md:px-4 py-1 rounded btn-perigo text-white hidden flex-1 md:flex-none">SALVAR FICHA</button>
+                    <button id="btn-sair" class="fonte-titulo text-lg md:text-xl px-3 md:px-4 py-1 rounded btn-metal text-white flex-1 md:flex-none">SAIR</button>
                 </div>
             </div>
             
             <main class="max-w-[1500px] mx-auto flex flex-col gap-4 px-2 relative z-10">
                 <header class="painel-papel p-4 flex flex-col xl:flex-row justify-between items-start xl:items-center flex-wrap gap-4 border-b-4 border-[#3a2517]">
-                    <div class="flex items-center gap-4">
-                        <h1 class="fonte-titulo text-4xl leading-none text-[#8a1313] drop-shadow-sm">COMO SOBREVIVER AO<br><span class="text-5xl">APOCALIPSE</span></h1>
-                        <div class="fonte-titulo text-4xl border-4 border-[#1a110a] px-6 py-1 text-[#1a110a] bg-black/5">FICHA DO SOBREVIVENTE</div>
+                    <div class="flex flex-col xl:flex-row items-center gap-4 w-full xl:w-auto">
+                        <h1 class="fonte-titulo text-4xl leading-none text-[#8a1313] drop-shadow-sm text-center xl:text-left">COMO SOBREVIVER AO<br><span class="text-5xl">APOCALIPSE</span></h1>
+                        <div class="fonte-titulo text-2xl md:text-4xl border-4 border-[#1a110a] px-4 md:px-6 py-1 text-[#1a110a] bg-black/5 w-full xl:w-auto text-center">FICHA DO SOBREVIVENTE</div>
                     </div>
-                    <div class="flex gap-3 flex-wrap items-center fonte-papel font-bold text-[#1a110a]">
-                        <label class="flex flex-col text-xs">NOME: <input type="text" id="nome" class="input-campo w-32 mt-1"></label>
-                        <label class="flex flex-col text-xs">IDADE: <input type="number" id="idade" class="input-campo w-16 mt-1"></label>
-                        <label class="flex flex-col text-xs">ALTURA: <input type="text" id="altura" class="input-campo w-20 mt-1" placeholder="Ex: 1,75m"></label>
-                        <label class="flex flex-col text-xs">SEXO: <input type="text" id="sexo" class="input-campo w-20 mt-1"></label>
-                        <label class="flex flex-col text-xs">ETNIA: <input type="text" id="etnia" class="input-campo w-24 mt-1"></label>
-                        <label class="flex flex-col text-xs">PELE: <input type="text" id="cor-pele" class="input-campo w-24 mt-1"></label>
-                        <label class="flex flex-col text-xs">PESO: <input type="text" id="peso-personagem" class="input-campo w-16 text-center mt-1" placeholder="kg"></label>
-                        <label class="flex flex-col text-xs">NÍVEL: <input type="number" id="nivel" class="input-campo w-16 mt-1"></label>
-                        <label class="flex flex-col text-xs">EXP: <input type="text" id="exp" class="input-campo w-16 mt-1"></label>
+                    <div class="flex flex-wrap gap-3 items-center fonte-papel font-bold text-[#1a110a] w-full xl:w-auto">
+                        <label class="flex flex-col text-xs flex-1 min-w-[120px]">NOME: <input type="text" id="nome" class="input-campo mt-1"></label>
+                        <label class="flex flex-col text-xs flex-1 min-w-[60px]">IDADE: <input type="number" id="idade" class="input-campo mt-1"></label>
+                        <label class="flex flex-col text-xs flex-1 min-w-[80px]">ALTURA: <input type="text" id="altura" class="input-campo mt-1" placeholder="Ex: 1,75m"></label>
+                        <label class="flex flex-col text-xs flex-1 min-w-[80px]">SEXO: <input type="text" id="sexo" class="input-campo mt-1"></label>
+                        <label class="flex flex-col text-xs flex-1 min-w-[80px]">ETNIA: <input type="text" id="etnia" class="input-campo mt-1"></label>
+                        <label class="flex flex-col text-xs flex-1 min-w-[80px]">PELE: <input type="text" id="cor-pele" class="input-campo mt-1"></label>
+                        <label class="flex flex-col text-xs flex-1 min-w-[60px]">PESO: <input type="text" id="peso-personagem" class="input-campo text-center mt-1" placeholder="kg"></label>
+                        <label class="flex flex-col text-xs flex-1 min-w-[60px]">NÍVEL: <input type="number" id="nivel" class="input-campo mt-1"></label>
+                        <label class="flex flex-col text-xs flex-1 min-w-[60px]">EXP: <input type="text" id="exp" class="input-campo mt-1"></label>
                     </div>
                 </header>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1.1fr] gap-4">
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">ATRIBUTOS</h3>
-                        <div class="p-4 flex-1 flex flex-col gap-2 fonte-papel font-bold text-[#1a110a]">
-                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 text-center text-sm mb-1 border-b-2 border-[#3a2517] pb-1"><span></span><span>Base</span><span>AÇÃO%</span></div>
+                        <div class="p-3 md:p-4 flex-1 flex flex-col gap-2 fonte-papel font-bold text-[#1a110a]">
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 text-center text-xs md:text-sm mb-1 border-b-2 border-[#3a2517] pb-1"><span></span><span>Base</span><span>AÇÃO%</span></div>
                             
-                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
-                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-hand-fist"></i></div> FORÇA</span>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-hand-fist"></i></div> FORÇA</span>
                                 <input type="number" id="forca" class="input-campo text-center w-full"><input type="number" id="forca-acao" class="input-campo text-center bg-black/10 w-full" readonly>
                             </div>
-                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
-                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-crosshairs"></i></div> DESTREZA</span>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-crosshairs"></i></div> DESTREZA</span>
                                 <input type="number" id="destreza" class="input-campo text-center w-full"><input type="number" id="destreza-acao" class="input-campo text-center bg-black/10 w-full" readonly>
                             </div>
-                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
-                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-heart-pulse"></i></div> CONSTITUIÇÃO</span>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-heart-pulse"></i></div> CONSTITUIÇÃO</span>
                                 <input type="number" id="constituicao" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
                             </div>
-                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
-                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-brain"></i></div> INTELIGÊNCIA</span>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-brain"></i></div> INTELIGÊNCIA</span>
                                 <input type="number" id="inteligencia" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
                             </div>
-                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
-                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-eye"></i></div> PERCEPÇÃO</span>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-eye"></i></div> PERCEPÇÃO</span>
                                 <input type="number" id="percepcao" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
                             </div>
-                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
-                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-shield-halved"></i></div> VONTADE</span>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-shield-halved"></i></div> VONTADE</span>
                                 <input type="number" id="vontade" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
                             </div>
-                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center pb-1">
-                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-users"></i></div> CARISMA</span>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-users"></i></div> CARISMA</span>
                                 <input type="number" id="carisma" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
                             </div>
                         </div>
-                        <div class="bg-black/10 p-3 mt-auto flex justify-between items-center font-bold text-[#1a110a] border-t-2 border-[#3a2517] fonte-papel">
-                            <label class="flex items-center gap-2 text-sm"><i class="fa-solid fa-person-running text-lg"></i> ESQUIVA: <input type="number" id="esquiva" class="input-campo w-16 text-center"> %</label>
-                            <label class="flex items-center gap-2 text-sm"><i class="fa-solid fa-shoe-prints text-lg"></i> MOV: <input type="number" id="movimentacao" value="6" class="input-campo w-12 text-center"></label>
+                        <div class="bg-black/10 p-3 mt-auto flex flex-col md:flex-row justify-between items-center font-bold text-[#1a110a] border-t-2 border-[#3a2517] fonte-papel gap-2">
+                            <label class="flex items-center gap-2 text-sm w-full md:w-auto justify-between md:justify-start"><span><i class="fa-solid fa-person-running text-lg"></i> ESQUIVA:</span> <div class="flex items-center"><input type="number" id="esquiva" class="input-campo w-16 text-center"> %</div></label>
+                            <label class="flex items-center gap-2 text-sm w-full md:w-auto justify-between md:justify-start"><span><i class="fa-solid fa-shoe-prints text-lg"></i> MOV:</span> <input type="number" id="movimentacao" value="6" class="input-campo w-16 md:w-12 text-center"></label>
                         </div>
                     </section>
                     
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">EQUIPAMENTO</h3>
-                        <div class="equip-grid p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
+                        <div class="equip-grid p-3 md:p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-mask-face text-2xl mb-1 opacity-50"></i>FACE</div>
@@ -355,15 +387,15 @@
                     
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">INVENTÁRIO DA MOCHILA</h3>
-                        <div class="p-4 flex-1 flex flex-col">
+                        <div class="p-3 md:p-4 flex-1 flex flex-col">
                             <div class="grid grid-cols-4 gap-2 mb-4 flex-1" id="inventario"></div>
-                            <div class="flex flex-col gap-1 font-bold bg-[#1f1814] text-[#d8c3a5] p-2 rounded text-sm font-papel border-2 border-[#5c3a21]">
-                                <div class="flex justify-between items-center">
+                            <div class="flex flex-col gap-1 font-bold bg-[#1f1814] text-[#d8c3a5] p-2 rounded text-xs md:text-sm font-papel border-2 border-[#5c3a21]">
+                                <div class="flex flex-col md:flex-row justify-between items-center gap-1 md:gap-0">
                                     <span><i class="fa-solid fa-briefcase text-lg mr-1"></i> ESPAÇOS: <span id="espacos">0</span>/16</span>
                                     <span>PESO ITENS: <span id="peso-total">0</span> kg</span>
                                 </div>
-                                <div class="flex justify-between items-center border-t border-[#5c3a21] pt-1 mt-1">
-                                    <span>PESO PERSONAGEM+EQUIP: <span id="peso-total-personagem">0</span> kg</span>
+                                <div class="flex flex-col md:flex-row justify-between items-center border-t border-[#5c3a21] pt-1 mt-1 gap-1 md:gap-0">
+                                    <span>PESO PERS+EQUIP: <span id="peso-total-personagem">0</span> kg</span>
                                     <span class="text-[#c42929]">PESO TOTAL: <span id="peso-total-geral">0</span> kg</span>
                                 </div>
                             </div>
@@ -372,8 +404,8 @@
                 </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4">
-                    <section class="painel-papel flex flex-col"><h3 class="titulo-painel">TALENTOS</h3><div class="p-4 flex-1"><div class="grid grid-cols-2 gap-x-8 gap-y-1 fonte-papel font-bold" id="talentos"></div></div></section>
-                    <section class="painel-papel flex flex-col"><h3 class="titulo-painel">DIÁRIO</h3><div class="p-4 flex-1"><textarea id="diario" class="input-campo w-full h-full resize-none p-2 fonte-papel text-lg border-2 border-[#3a2517]/50" placeholder="Registre sua jornada..."></textarea></div></section>
+                    <section class="painel-papel flex flex-col"><h3 class="titulo-painel">TALENTOS</h3><div class="p-3 md:p-4 flex-1"><div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 fonte-papel font-bold" id="talentos"></div></div></section>
+                    <section class="painel-papel flex flex-col"><h3 class="titulo-painel">DIÁRIO</h3><div class="p-3 md:p-4 flex-1"><textarea id="diario" class="input-campo w-full h-full resize-none p-2 fonte-papel text-lg border-2 border-[#3a2517]/50" placeholder="Registre sua jornada..."></textarea></div></section>
                 </div>
             </main>
         </div>
