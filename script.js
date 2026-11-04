@@ -65,7 +65,7 @@ const audioEntrarFicha = new Audio('entrar_ficha.mp3');
 const audioSairFicha = new Audio('sair_ficha.mp3');
 const audioEntrarPainel = new Audio('entrar_painel.mp3');
 const audioSairPainel = new Audio('sair_painel.mp3');
-const audioCancelarItem = new Audio('cancelar_item.mp3'); // NOVO SOM
+const audioCancelarItem = new Audio('cancelar_item.mp3');
 
 audioAbertura.volume = 1.0; 
 audioTecla.volume = 0.4; 
@@ -96,6 +96,81 @@ function tocarSomTecla() {
     }
 }
 
+// ==========================================
+// COMPRESSÃO DE IMAGEM (COM SUPORTE A GIF ANIMADO)
+// ==========================================
+function comprimirImagem(file) {
+    return new Promise((resolve, reject) => {
+        // Verifica se é GIF
+        if (file.type === 'image/gif') {
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const gifData = event.target.result;
+                    // Usa a biblioteca gifsicle para comprimir mantendo a animação
+                    // -O2: otimização média (bom equilíbrio)
+                    // --lossy=30: perda de qualidade controlada para reduzir tamanho
+                    const result = await gifsicle.run({
+                        input: [{ file: gifData, name: "input.gif" }],
+                        command: ["-O2", "--lossy=30", "-o", "/out/output.gif"]
+                    });
+                    // Converte o resultado para DataURL
+                    const blob = new Blob([result[0].file], { type: 'image/gif' });
+                    const readerOut = new FileReader();
+                    readerOut.onload = () => resolve(readerOut.result);
+                    readerOut.readAsDataURL(blob);
+                } catch (err) {
+                    console.error("Erro ao comprimir GIF:", err);
+                    // Fallback: se falhar, envia o original (pode dar erro se for >1MB)
+                    const readerFallback = new FileReader();
+                    readerFallback.onload = (e) => resolve(e.target.result);
+                    readerFallback.readAsDataURL(file);
+                }
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // Lógica original para imagens estáticas (JPG/PNG/WebP)
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const imagem = new Image();
+                imagem.onload = () => {
+                    const limite = 1000;
+                    let largura = imagem.width, altura = imagem.height;
+                    if (largura > limite || altura > limite) {
+                        const proporcao = Math.min(limite / largura, limite / altura);
+                        largura = Math.round(largura * proporcao);
+                        altura = Math.round(altura * proporcao);
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = largura; canvas.height = altura;
+                    const contexto = canvas.getContext('2d');
+                    contexto.drawImage(imagem, 0, 0, largura, altura);
+                    resolve(canvas.toDataURL('image/webp', 0.78));
+                };
+                imagem.onerror = () => reject(new Error("Não foi possível processar esta imagem."));
+                imagem.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+window.abrirSeletor = function(callback) {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*';
+    input.onchange = async (e) => {
+        const file = e.target.files[0]; if (!file) return;
+        if (!file.type.startsWith('image/')) { alert("Selecione um arquivo de imagem."); return; }
+        try {
+            const imagemComprimida = await comprimirImagem(file);
+            callback(imagemComprimida);
+        } catch (erro) { console.error(erro); alert("Não foi possível preparar a imagem."); }
+    };
+    input.click();
+};
+
+// ==========================================
+// RESTO DO CÓDIGO (MANTIDO E AJUSTADO)
 // ==========================================
 
 const forca = document.getElementById('forca');
@@ -437,7 +512,6 @@ function configurarAutosave() {
         document.body.appendChild(indicador);
     }
     
-    // Adiciona o som de tecla em todos os inputs e textareas da ficha, INCLUSIVE os do modal
     document.querySelectorAll('#area-ficha input, #area-ficha textarea, #modal-item input, #modal-item textarea, #modal-foto input, #modal-foto textarea').forEach(el => {
         el.addEventListener('input', () => {
             tocarSomTecla();
@@ -475,46 +549,6 @@ function mostrarIndicador(texto, cor) {
         setTimeout(() => { ind.style.opacity = '0'; }, 3000);
     }
 }
-
-function comprimirImagem(dataUrl) {
-    return new Promise((resolve, reject) => {
-        const imagem = new Image();
-        imagem.onload = () => {
-            const limite = 1000;
-            let largura = imagem.width, altura = imagem.height;
-            if (largura > limite || altura > limite) {
-                const proporcao = Math.min(limite / largura, limite / altura);
-                largura = Math.round(largura * proporcao);
-                altura = Math.round(altura * proporcao);
-            }
-            const canvas = document.createElement('canvas');
-            canvas.width = largura; canvas.height = altura;
-            const contexto = canvas.getContext('2d');
-            contexto.drawImage(imagem, 0, 0, largura, altura);
-            resolve(canvas.toDataURL('image/webp', 0.78));
-        };
-        imagem.onerror = () => reject(new Error("Não foi possível processar esta imagem."));
-        imagem.src = dataUrl;
-    });
-}
-
-window.abrirSeletor = function(callback) {
-    const input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*';
-    input.onchange = async (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        if (!file.type.startsWith('image/')) { alert("Selecione um arquivo de imagem."); return; }
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            try {
-                const imagemComprimida = await comprimirImagem(event.target.result);
-                callback(imagemComprimida);
-            } catch (erro) { console.error(erro); alert("Não foi possível preparar a imagem."); }
-        };
-        reader.readAsDataURL(file);
-    };
-    input.click();
-};
 
 window.uploadFoto = function(elemento) {
     if (modoAcesso === "convidado-visualizar") return;
@@ -763,7 +797,7 @@ btnSalvarItem.onclick = () => {
     if (qtd <= 0) return alert("Quantidade > 0.");
     if (inputPeso.value.trim() === "") return alert("Digite o peso.");
     
-    tocarSom(audioEntrarPainel); // SOM AO ADICIONAR (Conforme solicitado)
+    tocarSom(audioEntrarPainel);
     const dados = { img: imagemAtualBase64, nome, qtd, peso: pesoString, desc: inputDesc.value };
     renderizarItem(quadradoAtual, dados);
     calcularPesoGeral();
@@ -1160,23 +1194,30 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     });
     const conteudo = document.createElement('div');
     conteudo.className = 'p-4 flex flex-col gap-2 flex-1';
-    const nome = document.createElement('h3'); nome.className = 'fonte-titulo text-2xl'; nome.textContent = ficha.nome || 'Personagem sem nome';
-    const tipo = ficha.tipo === 'pdm' ? 'PDM' : 'PERSONAGEM';
-    const detalhes = document.createElement('p'); detalhes.className = 'text-sm text-[#d2b48c]';
-    detalhes.textContent = `${tipo} • Nível ${ficha.nivel || '1'} • EXP ${ficha.exp || '0'}`;
-    conteudo.append(nome, detalhes);
-
+    
     if (modoMestre) {
-        const dono = document.createElement('p'); dono.className = 'text-sm text-white/80 break-all mt-1 font-bold';
-        dono.textContent = ficha.proprietarioNome || ficha.proprietarioEmail || (ficha.proprietarioUid ? 'Jogador vinculado' : (ficha.tipo === 'pdm' ? 'Sem jogador vinculado' : `Ficha antiga • ${idFicha.slice(0, 8)}`));
-        conteudo.append(dono);
+        // NOVO LAYOUT DO CARD DO MESTRE
+        const nome = document.createElement('h3'); 
+        nome.className = 'fonte-titulo text-3xl text-[#d8c3a5]'; 
+        nome.textContent = ficha.nome || 'Personagem sem nome';
         
-        if (ficha.proprietarioUid) {
-            const uidDono = document.createElement('p');
-            uidDono.className = 'uid-ficha break-all mt-2';
-            uidDono.textContent = `UID DO JOGADOR: ${ficha.proprietarioUid}`;
-            conteudo.append(uidDono);
-        }
+        const nivelExp = document.createElement('p'); 
+        nivelExp.className = 'text-base font-bold text-[#d2b48c]'; 
+        nivelExp.textContent = `NÍVEL: ${ficha.nivel || '1'} | EXP: ${ficha.exp || '0'}`;
+        
+        const jogador = document.createElement('p'); 
+        jogador.className = 'text-lg font-bold text-[#f3dfc1] mt-2';
+        jogador.textContent = `Jogador: ${ficha.proprietarioNome || 'NÃO VINCULADO'}`;
+        
+        const dono = document.createElement('p'); 
+        dono.className = 'text-base font-bold text-[#f3dfc1]';
+        dono.textContent = `Dono: ${ficha.proprietarioEmail || (ficha.tipo === 'pdm' ? 'NÃO VINCULADO' : 'CONVIDADO')}`;
+        
+        const uid = document.createElement('p'); 
+        uid.className = 'text-base font-bold text-[#f3dfc1] break-all';
+        uid.textContent = `UID: ${ficha.proprietarioUid || 'N/A'}`;
+        
+        conteudo.append(nome, nivelExp, jogador, dono, uid);
         
         try {
             const acessosSnap = await getDocs(collection(db, 'fichas', idFicha, 'acessos'));
@@ -1205,6 +1246,13 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
                 }
             }
         } catch (e) {}
+    } else {
+        // Layout do jogador (mantido)
+        const nome = document.createElement('h3'); nome.className = 'fonte-titulo text-2xl'; nome.textContent = ficha.nome || 'Personagem sem nome';
+        const tipo = ficha.tipo === 'pdm' ? 'PDM' : 'PERSONAGEM';
+        const detalhes = document.createElement('p'); detalhes.className = 'text-sm text-[#d2b48c]';
+        detalhes.textContent = `${tipo} • Nível ${ficha.nivel || '1'} • EXP ${ficha.exp || '0'}`;
+        conteudo.append(nome, detalhes);
     }
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
@@ -1272,13 +1320,22 @@ function voltarAoPainel() {
     tocarSom(audioSairFicha);
     if (autosaveHabilitado) {
         salvarFicha({ silencioso: true, semAlerta: true }).finally(() => {
-            const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
-            window.location.href = url.toString();
+            // Tenta fechar a aba. Se foi aberta via window.open, funciona.
+            window.close();
+            // Fallback: se o navegador bloquear o close (ex: aba aberta manualmente),
+            // redireciona de volta para o painel na mesma aba.
+            setTimeout(() => {
+                const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
+                window.location.href = url.toString();
+            }, 100);
         });
         return;
     }
-    const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
-    window.location.href = url.toString();
+    window.close();
+    setTimeout(() => {
+        const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
+        window.location.href = url.toString();
+    }, 100);
 }
 
 document.getElementById('btn-voltar-painel').onclick = voltarAoPainel;
