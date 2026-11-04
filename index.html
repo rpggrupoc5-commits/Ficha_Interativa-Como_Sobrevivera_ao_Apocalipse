@@ -15,12 +15,12 @@
             --texto-claro: #d8c3a5; 
         }
 
-        /* Fundo da Mesa */
+        /* Fundo animado do Apocalipse */
         body { 
             font-family: 'Barlow Condensed', sans-serif; 
             color: var(--texto-claro); 
             padding-bottom: 40px; 
-            background-image: url('mesa.jpg'); 
+            background-image: url('fundo.gif'); 
             background-size: cover; 
             background-position: center; 
             background-attachment: fixed;
@@ -28,12 +28,12 @@
             overflow-x: hidden;
         }
 
-        /* Filtro para escurecer um pouco a mesa e destacar os painéis */
+        /* Filtro para escurecer o gif e destacar os painéis de papel */
         body::before {
             content: "";
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: rgba(10, 8, 6, 0.4);
+            background-color: rgba(10, 8, 6, 0.70);
             z-index: -1;
         }
 
