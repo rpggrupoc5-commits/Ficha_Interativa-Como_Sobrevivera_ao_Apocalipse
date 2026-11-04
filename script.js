@@ -5,7 +5,9 @@ import {
     createUserWithEmailAndPassword,
     signInAnonymously,
     onAuthStateChanged,
-    signOut
+    signOut,
+    sendPasswordResetEmail,
+    deleteUser
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 import {
@@ -81,10 +83,8 @@ audioCancelarItem.volume = 0.8;
 function tocarSom(audio, pausarAnterior = true) {
     if (!audio) return;
     try {
-        if (pausarAnterior) {
-            audio.currentTime = 0;
-        }
-        audio.play().catch(e => { /* Ignora bloqueio do navegador */ });
+        if (pausarAnterior) audio.currentTime = 0;
+        audio.play().catch(e => {});
     } catch (e) {}
 }
 
@@ -97,31 +97,25 @@ function tocarSomTecla() {
 }
 
 // ==========================================
-// COMPRESSÃO DE IMAGEM (COM SUPORTE A GIF ANIMADO)
+// COMPRESSÃO DE IMAGEM (COM SUPORTE A GIF)
 // ==========================================
 function comprimirImagem(file) {
     return new Promise((resolve, reject) => {
-        // Verifica se é GIF
         if (file.type === 'image/gif') {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
                     const gifData = event.target.result;
-                    // Usa a biblioteca gifsicle para comprimir mantendo a animação
-                    // -O2: otimização média (bom equilíbrio)
-                    // --lossy=30: perda de qualidade controlada para reduzir tamanho
                     const result = await gifsicle.run({
                         input: [{ file: gifData, name: "input.gif" }],
                         command: ["-O2", "--lossy=30", "-o", "/out/output.gif"]
                     });
-                    // Converte o resultado para DataURL
                     const blob = new Blob([result[0].file], { type: 'image/gif' });
                     const readerOut = new FileReader();
                     readerOut.onload = () => resolve(readerOut.result);
                     readerOut.readAsDataURL(blob);
                 } catch (err) {
                     console.error("Erro ao comprimir GIF:", err);
-                    // Fallback: se falhar, envia o original (pode dar erro se for >1MB)
                     const readerFallback = new FileReader();
                     readerFallback.onload = (e) => resolve(e.target.result);
                     readerFallback.readAsDataURL(file);
@@ -129,7 +123,6 @@ function comprimirImagem(file) {
             };
             reader.readAsDataURL(file);
         } else {
-            // Lógica original para imagens estáticas (JPG/PNG/WebP)
             const reader = new FileReader();
             reader.onload = (event) => {
                 const imagem = new Image();
@@ -170,7 +163,7 @@ window.abrirSeletor = function(callback) {
 };
 
 // ==========================================
-// RESTO DO CÓDIGO (MANTIDO E AJUSTADO)
+// LÓGICA DE LOGIN E SEGURANÇA
 // ==========================================
 
 const forca = document.getElementById('forca');
@@ -188,6 +181,29 @@ if (destreza) destreza.addEventListener('input', calcular);
 const telaLogin = document.getElementById('tela-login');
 const sitePrincipal = document.getElementById('site-principal');
 const mensagemErro = document.getElementById('mensagem-erro');
+
+// Olho mágico para ver a senha
+document.getElementById('toggle-senha').onclick = () => {
+    const inputSenha = document.getElementById('login-senha');
+    const icone = document.querySelector('#toggle-senha i');
+    if (inputSenha.type === 'password') {
+        inputSenha.type = 'text';
+        icone.classList.remove('fa-eye');
+        icone.classList.add('fa-eye-slash');
+    } else {
+        inputSenha.type = 'password';
+        icone.classList.remove('fa-eye-slash');
+        icone.classList.add('fa-eye');
+    }
+};
+
+document.getElementById('btn-esqueci-senha').onclick = () => {
+    const email = document.getElementById('login-email').value.trim();
+    if (!email) return alert("Digite seu e-mail no campo acima para recuperar a senha.");
+    sendPasswordResetEmail(auth, email)
+        .then(() => alert(`E-mail de recuperação enviado para ${email}. Verifique sua caixa de entrada e spam.`))
+        .catch((error) => alert(`Erro ao enviar e-mail: ${error.message}`));
+};
 
 document.getElementById('btn-entrar').onclick = () => {
     tocarSom(audioAbertura);
@@ -208,7 +224,7 @@ document.getElementById('btn-cadastrar').onclick = () => {
     const senha = document.getElementById('login-senha').value;
     mensagemErro.classList.add('hidden');
     createUserWithEmailAndPassword(auth, email, senha).then(() => {
-        alert("Conta criada! Bem-vindo.");
+        alert("Conta criada! Você já pode fazer login.");
     }).catch((error) => {
         console.error("Falha no cadastro Firebase:", error);
         mensagemErro.innerText = `Erro no cadastro (${error.code || "desconhecido"}): ${error.message}`;
@@ -1144,14 +1160,32 @@ async function carregarContasJogadores() {
             const email = document.createElement('p'); email.className = 'text-sm text-[#3a2e27] break-all'; email.textContent = conta.email || 'E-mail não informado';
             const uid = document.createElement('p'); uid.className = 'uid-conta break-all mt-2'; uid.textContent = `UID: ${conta.uid || conta.id}`;
             dados.append(nome, email, uid);
-            const botao = criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => { tocarSom(audioClique); copiarTexto(conta.uid || conta.id); });
-            linha.append(dados, botao);
+            
+            const acoes = document.createElement('div');
+            acoes.className = 'flex gap-2';
+            acoes.append(criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => { tocarSom(audioClique); copiarTexto(conta.uid || conta.id); }));
+            acoes.append(criarBotaoPainel('BANIR', 'bg-red-900', () => { tocarSom(audioClique); banirConta(conta.uid || conta.id); }));
+
+            linha.append(dados, acoes);
             lista.appendChild(linha);
         });
     } catch (erro) {
         console.error('Erro ao carregar contas de jogadores:', erro);
         lista.innerHTML = `<p class="text-red-800 font-bold text-lg">Não foi possível carregar as contas (${erro.code || 'erro'}): ${erro.message}.</p>`;
         if (contador) contador.textContent = 'Contas: erro';
+    }
+}
+
+// FUNÇÃO PARA BANIR CONTA
+async function banirConta(uid) {
+    if (!confirm("Tem certeza que deseja BANIR esta conta? O jogador perderá o acesso e o perfil será deletado do banco de dados. (Nota: a conta de login ainda existirá no Firebase Authentication por segurança).")) return;
+    try {
+        await deleteDoc(doc(db, 'usuarios', uid));
+        alert('Conta banida e removida do banco de dados.');
+        carregarContasJogadores(); // Recarrega a lista
+    } catch (e) {
+        console.error("Erro ao banir conta:", e);
+        alert(`Erro ao banir: ${e.message}`);
     }
 }
 
@@ -1196,7 +1230,6 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     conteudo.className = 'p-4 flex flex-col gap-2 flex-1';
     
     if (modoMestre) {
-        // NOVO LAYOUT DO CARD DO MESTRE
         const nome = document.createElement('h3'); 
         nome.className = 'fonte-titulo text-3xl text-[#d8c3a5]'; 
         nome.textContent = ficha.nome || 'Personagem sem nome';
@@ -1207,17 +1240,19 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
         
         const jogador = document.createElement('p'); 
         jogador.className = 'text-lg font-bold text-[#f3dfc1] mt-2';
-        jogador.textContent = `Jogador: ${ficha.proprietarioNome || 'NÃO VINCULADO'}`;
+        // Se tem dono oficial, mostra o nome do dono. Se não, mostra NÃO VINCULADO.
+        const nomeDono = ficha.proprietarioNome || 'NÃO VINCULADO';
+        jogador.textContent = `Jogador (Dono): ${nomeDono}`;
         
-        const dono = document.createElement('p'); 
-        dono.className = 'text-base font-bold text-[#f3dfc1]';
-        dono.textContent = `Dono: ${ficha.proprietarioEmail || (ficha.tipo === 'pdm' ? 'NÃO VINCULADO' : 'CONVIDADO')}`;
+        const emailDono = document.createElement('p'); 
+        emailDono.className = 'text-base font-bold text-[#f3dfc1]';
+        emailDono.textContent = `Email do Dono: ${ficha.proprietarioEmail || (ficha.tipo === 'pdm' ? 'N/A' : 'Nenhum')}`;
         
         const uid = document.createElement('p'); 
         uid.className = 'text-base font-bold text-[#f3dfc1] break-all';
-        uid.textContent = `UID: ${ficha.proprietarioUid || 'N/A'}`;
+        uid.textContent = `UID do Dono: ${ficha.proprietarioUid || 'N/A'}`;
         
-        conteudo.append(nome, nivelExp, jogador, dono, uid);
+        conteudo.append(nome, nivelExp, jogador, emailDono, uid);
         
         try {
             const acessosSnap = await getDocs(collection(db, 'fichas', idFicha, 'acessos'));
@@ -1230,24 +1265,23 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
                 for (const a of acessosSnap.docs) {
                     const d = a.data();
                     const linha = document.createElement('div');
-                    linha.className = 'flex items-center justify-between gap-2 bg-black/30 p-2 rounded mb-1';
+                    linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-2 bg-black/30 p-2 rounded mb-1';
                     
-                    const txtPermissao = document.createElement('span');
-                    txtPermissao.className = 'text-sm font-bold text-[#e6d5b8]';
-                    txtPermissao.textContent = `${d.permissao.toUpperCase()}`;
+                    const txtConvidado = document.createElement('span');
+                    txtConvidado.className = 'text-sm font-bold text-[#e6d5b8]';
+                    txtConvidado.textContent = `Convidado: ${d.permissao.toUpperCase()} (UID: ${a.id.slice(0,8)}...)`;
                     
                     const btnRevogar = document.createElement('button');
-                    btnRevogar.className = 'bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition';
+                    btnRevogar.className = 'bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition w-full md:w-auto mt-1 md:mt-0';
                     btnRevogar.textContent = 'REVOGAR';
                     btnRevogar.onclick = () => { tocarSom(audioClique); revogarAcesso(idFicha, a.id); };
                     
-                    linha.append(txtPermissao, btnRevogar);
+                    linha.append(txtConvidado, btnRevogar);
                     conteudo.append(linha);
                 }
             }
         } catch (e) {}
     } else {
-        // Layout do jogador (mantido)
         const nome = document.createElement('h3'); nome.className = 'fonte-titulo text-2xl'; nome.textContent = ficha.nome || 'Personagem sem nome';
         const tipo = ficha.tipo === 'pdm' ? 'PDM' : 'PERSONAGEM';
         const detalhes = document.createElement('p'); detalhes.className = 'text-sm text-[#d2b48c]';
@@ -1262,7 +1296,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
         acoes.append(criarBotaoPainel('CONVIDAR POR LINK', 'bg-purple-800', () => { tocarSom(audioClique); gerarLinkConvite(idFicha); }));
         if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => { tocarSom(audioClique); copiarTexto(ficha.proprietarioUid); }));
         acoes.append(criarBotaoPainel('DUPLICAR', 'bg-blue-800', () => { tocarSom(audioClique); duplicarFicha(idFicha, ficha); }));
-        acoes.append(criarBotaoPainel('VINCULAR OUTRO JOGADOR', 'bg-green-800', () => { tocarSom(audioClique); vincularJogador(idFicha, ficha); }));
+        acoes.append(criarBotaoPainel('VINCULAR JOGADOR', 'bg-green-800', () => { tocarSom(audioClique); vincularJogador(idFicha, ficha); }));
         if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('DESVINCULAR', 'bg-gray-700', () => { tocarSom(audioClique); desvincularJogador(idFicha, ficha); }));
         acoes.append(criarBotaoPainel('EXCLUIR', 'bg-red-900', () => { tocarSom(audioClique); excluirFicha(idFicha, ficha); }));
     }
@@ -1282,7 +1316,11 @@ async function carregarDashboardJogador() {
         const vinculadas = await getDocs(query(collection(db, 'fichas'), where('proprietarioUid', '==', usuarioAtual.uid)));
         vinculadas.forEach(d => encontrados.set(d.id, d.data()));
         lista.innerHTML = '';
-        if (!encontrados.size) { lista.innerHTML = '<p class="text-[#111] text-lg col-span-full text-center py-10">Nenhum personagem encontrado nesta conta.</p>'; return; }
+        if (!encontrados.size) { 
+            // MENSAGEM PARA QUEM NÃO TEM FICHA
+            lista.innerHTML = '<p class="text-[#111] text-lg font-bold col-span-full text-center py-10">Nenhum personagem encontrado nesta conta.<br><span class="text-sm font-normal">Sua conta foi criada com sucesso! Peça ao Mestre para vincular um personagem ao seu e-mail ou UID.</span></p>'; 
+            return; 
+        }
         for (const [id, ficha] of [...encontrados.entries()].sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '', 'pt-BR'))) {
             lista.appendChild(await criarCardFicha(id, ficha));
         }
@@ -1320,10 +1358,7 @@ function voltarAoPainel() {
     tocarSom(audioSairFicha);
     if (autosaveHabilitado) {
         salvarFicha({ silencioso: true, semAlerta: true }).finally(() => {
-            // Tenta fechar a aba. Se foi aberta via window.open, funciona.
             window.close();
-            // Fallback: se o navegador bloquear o close (ex: aba aberta manualmente),
-            // redireciona de volta para o painel na mesma aba.
             setTimeout(() => {
                 const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
                 window.location.href = url.toString();
