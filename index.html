@@ -6,7 +6,6 @@
     <title>Como Sobreviver ao Apocalipse</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/gifsicle-wasm-browser@1.5.0/dist/gifsicle.min.js"></script>
     <style>
         :root { 
             --bg-escuro: #0f0c0a; 
@@ -32,7 +31,7 @@
             content: "";
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: rgba(10, 8, 6, 0.20);
+            background-color: rgba(10, 8, 6, 0.60);
             z-index: -1;
         }
 
@@ -71,7 +70,6 @@
             z-index: 10;
         }
 
-        /* Inputs com fundo transparente e sem a cor branca do autofill */
         .input-campo { 
             background: rgba(255, 255, 255, 0.1); 
             border: none;
@@ -89,7 +87,6 @@
             background: rgba(255, 255, 255, 0.3);
             border-bottom: 2px solid var(--sangue);
         }
-        /* Corrige o fundo branco quando o navegador preenche automaticamente */
         input:-webkit-autofill,
         input:-webkit-autofill:hover, 
         input:-webkit-autofill:focus, 
@@ -161,7 +158,6 @@
 
         .equip-grid { min-height: 450px; }
         
-        /* RESPONSIVIDADE CORRIGIDA PARA CELULAR */
         @media (max-width: 1024px) {
             header .flex-wrap {
                 display: grid !important;
@@ -169,11 +165,8 @@
                 gap: 10px;
                 width: 100%;
             }
-            header h1, header .border-4 {
-                margin-bottom: 10px;
-            }
+            header h1, header .border-4 { margin-bottom: 10px; }
             
-            /* Grade de Equipamentos no Celular (Ordem Anatômica) */
             .equip-grid { 
                 height: auto !important; 
                 min-height: 0; 
@@ -200,17 +193,11 @@
             
             .equip-grid > .slot-vazio { min-height: 100px; font-size: .8rem !important; padding: 5px; }
             
-            /* Corrige o peso no celular */
-            #peso-personagem {
-                text-align: left !important;
-                padding-left: 8px;
-            }
+            #peso-personagem { text-align: left !important; padding-left: 8px; }
         }
 
         @media (max-width: 640px) {
-            header .flex-wrap {
-                grid-template-columns: repeat(2, 1fr);
-            }
+            header .flex-wrap { grid-template-columns: repeat(2, 1fr); }
         }
         
         ::-webkit-scrollbar { width: 10px; }
@@ -395,10 +382,10 @@
                             <div class="flex flex-col gap-1 font-bold bg-[#1f1814] text-[#d8c3a5] p-2 rounded text-xs md:text-sm font-papel border-2 border-[#5c3a21]">
                                 <div class="flex flex-col md:flex-row justify-between items-center gap-1 md:gap-0">
                                     <span><i class="fa-solid fa-briefcase text-lg mr-1"></i> ESPAÇOS: <span id="espacos">0</span>/16</span>
-                                    <span>PESO ITENS: <span id="peso-total">0</span> kg</span>
+                                    <span>PESO DOS ITENS: <span id="peso-total">0</span> kg</span>
                                 </div>
                                 <div class="flex flex-col md:flex-row justify-between items-center border-t border-[#5c3a21] pt-1 mt-1 gap-1 md:gap-0">
-                                    <span>PESO PERS+EQUIP: <span id="peso-total-personagem">0</span> kg</span>
+                                    <span>PESO DO PERSONAGEM + EQUIPAMENTO: <span id="peso-total-personagem">0</span> kg</span>
                                     <span class="text-[#c42929]">PESO TOTAL: <span id="peso-total-geral">0</span> kg</span>
                                 </div>
                             </div>
