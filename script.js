@@ -6,8 +6,7 @@ import {
     signInAnonymously,
     onAuthStateChanged,
     signOut,
-    sendPasswordResetEmail,
-    deleteUser
+    sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 import {
@@ -97,30 +96,15 @@ function tocarSomTecla() {
 }
 
 // ==========================================
-// COMPRESSÃO DE IMAGEM (COM SUPORTE A GIF)
+// COMPRESSÃO DE IMAGEM (GIF SALVO DIRETO)
 // ==========================================
 function comprimirImagem(file) {
     return new Promise((resolve, reject) => {
+        // Se for GIF, não comprime para não quebrar a animação. Salva direto.
         if (file.type === 'image/gif') {
             const reader = new FileReader();
-            reader.onload = async (event) => {
-                try {
-                    const gifData = event.target.result;
-                    const result = await gifsicle.run({
-                        input: [{ file: gifData, name: "input.gif" }],
-                        command: ["-O2", "--lossy=30", "-o", "/out/output.gif"]
-                    });
-                    const blob = new Blob([result[0].file], { type: 'image/gif' });
-                    const readerOut = new FileReader();
-                    readerOut.onload = () => resolve(readerOut.result);
-                    readerOut.readAsDataURL(blob);
-                } catch (err) {
-                    console.error("Erro ao comprimir GIF:", err);
-                    const readerFallback = new FileReader();
-                    readerFallback.onload = (e) => resolve(e.target.result);
-                    readerFallback.readAsDataURL(file);
-                }
-            };
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = () => reject(new Error("Erro ao ler o GIF"));
             reader.readAsDataURL(file);
         } else {
             const reader = new FileReader();
@@ -182,7 +166,6 @@ const telaLogin = document.getElementById('tela-login');
 const sitePrincipal = document.getElementById('site-principal');
 const mensagemErro = document.getElementById('mensagem-erro');
 
-// Olho mágico para ver a senha
 document.getElementById('toggle-senha').onclick = () => {
     const inputSenha = document.getElementById('login-senha');
     const icone = document.querySelector('#toggle-senha i');
@@ -340,7 +323,8 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
         try {
             await carregarFicha();
             aplicarPermissoesNaTela();
-            mostrarBannerConvidado(`Acesso aprovado como <b>${permissao === 'editar' ? 'EDITOR' : 'VISUALIZADOR'}</b>.`);
+            // NOVO BANNER COM O UID DO CONVIDADO
+            mostrarBannerConvidado(`Acesso como <b>${permissao === 'editar' ? 'EDITOR' : 'VISUALIZADOR'}</b>.<br><span class="text-sm">Seu UID: ${usuarioAtual.uid}</span>`);
             if (modoAcesso === "convidado-editar") configurarAutosave();
             monitorarRevogacao(fichaId);
         } catch (e) {
@@ -427,6 +411,7 @@ function mostrarTelaSolicitacao(estado) {
             <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
                 <h2 class="fonte-titulo text-3xl text-[#111] text-center">ACESSO À FICHA</h2>
                 <p class="text-[#111] text-center font-bold">Você está abrindo esta ficha como <b>convidado</b>. É necessário solicitar autorização ao mestre.</p>
+                <p class="text-[#111] text-center font-bold">Seu UID: ${usuarioAtual.uid}</p>
                 <button id="btn-solicitar-acesso" class="w-full bg-[#a81c1c] text-white p-3 rounded font-bold hover:brightness-125">SOLICITAR ACESSO</button>
                 <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">VOLTAR</button>
             </div>
@@ -438,6 +423,7 @@ function mostrarTelaSolicitacao(estado) {
             <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
                 <h2 class="fonte-titulo text-3xl text-[#111] text-center">AGUARDANDO APROVAÇÃO</h2>
                 <p class="text-[#111] text-center font-bold">Sua solicitação foi enviada ao mestre. Aguarde a aprovação para acessar a ficha.</p>
+                <p class="text-[#111] text-center font-bold">Seu UID: ${usuarioAtual.uid}</p>
                 <button id="btn-verificar" class="w-full bg-[#a81c1c] text-white p-3 rounded font-bold hover:brightness-125">VERIFICAR NOVAMENTE</button>
                 <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">SAIR</button>
             </div>
@@ -1231,7 +1217,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     
     if (modoMestre) {
         const nome = document.createElement('h3'); 
-        nome.className = 'fonte-titulo text-3xl text-[#d8c3a5]'; 
+        nome.className = 'fonte-titulo text-3xl text-[#fff]'; // Corrigido para branco puro
         nome.textContent = ficha.nome || 'Personagem sem nome';
         
         const nivelExp = document.createElement('p'); 
@@ -1239,17 +1225,17 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
         nivelExp.textContent = `NÍVEL: ${ficha.nivel || '1'} | EXP: ${ficha.exp || '0'}`;
         
         const jogador = document.createElement('p'); 
-        jogador.className = 'text-lg font-bold text-[#f3dfc1] mt-2';
+        jogador.className = 'text-lg font-bold text-[#fff] mt-2'; // Corrigido para branco puro
         // Se tem dono oficial, mostra o nome do dono. Se não, mostra NÃO VINCULADO.
         const nomeDono = ficha.proprietarioNome || 'NÃO VINCULADO';
         jogador.textContent = `Jogador (Dono): ${nomeDono}`;
         
         const emailDono = document.createElement('p'); 
-        emailDono.className = 'text-base font-bold text-[#f3dfc1]';
+        emailDono.className = 'text-base font-bold text-[#fff]';
         emailDono.textContent = `Email do Dono: ${ficha.proprietarioEmail || (ficha.tipo === 'pdm' ? 'N/A' : 'Nenhum')}`;
         
         const uid = document.createElement('p'); 
-        uid.className = 'text-base font-bold text-[#f3dfc1] break-all';
+        uid.className = 'text-base font-bold text-[#fff] break-all';
         uid.textContent = `UID do Dono: ${ficha.proprietarioUid || 'N/A'}`;
         
         conteudo.append(nome, nivelExp, jogador, emailDono, uid);
@@ -1268,15 +1254,24 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
                     linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-2 bg-black/30 p-2 rounded mb-1';
                     
                     const txtConvidado = document.createElement('span');
-                    txtConvidado.className = 'text-sm font-bold text-[#e6d5b8]';
-                    txtConvidado.textContent = `Convidado: ${d.permissao.toUpperCase()} (UID: ${a.id.slice(0,8)}...)`;
+                    txtConvidado.className = 'text-sm font-bold text-[#e6d5b8] break-all';
+                    txtConvidado.textContent = `UID: ${a.id} | Permissão: ${d.permissao.toUpperCase()}`;
                     
+                    const acoesConv = document.createElement('div');
+                    acoesConv.className = 'flex gap-1 mt-2 md:mt-0';
+                    
+                    const btnMudar = document.createElement('button');
+                    btnMudar.className = 'bg-blue-800 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-bold transition w-full md:w-auto';
+                    btnMudar.textContent = d.permissao === 'editar' ? 'MUDAR P/ VER' : 'MUDAR P/ EDITAR';
+                    btnMudar.onclick = () => { tocarSom(audioClique); mudarPermissao(idFicha, a.id, d.permissao); };
+
                     const btnRevogar = document.createElement('button');
-                    btnRevogar.className = 'bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition w-full md:w-auto mt-1 md:mt-0';
+                    btnRevogar.className = 'bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition w-full md:w-auto';
                     btnRevogar.textContent = 'REVOGAR';
                     btnRevogar.onclick = () => { tocarSom(audioClique); revogarAcesso(idFicha, a.id); };
                     
-                    linha.append(txtConvidado, btnRevogar);
+                    acoesConv.append(btnMudar, btnRevogar);
+                    linha.append(txtConvidado, acoesConv);
                     conteudo.append(linha);
                 }
             }
@@ -1317,7 +1312,6 @@ async function carregarDashboardJogador() {
         vinculadas.forEach(d => encontrados.set(d.id, d.data()));
         lista.innerHTML = '';
         if (!encontrados.size) { 
-            // MENSAGEM PARA QUEM NÃO TEM FICHA
             lista.innerHTML = '<p class="text-[#111] text-lg font-bold col-span-full text-center py-10">Nenhum personagem encontrado nesta conta.<br><span class="text-sm font-normal">Sua conta foi criada com sucesso! Peça ao Mestre para vincular um personagem ao seu e-mail ou UID.</span></p>'; 
             return; 
         }
@@ -1478,6 +1472,21 @@ async function aprovarSolicitacao(fichaId, uidConvidado, permissao) {
     } catch (e) {
         console.error("Erro ao aprovar:", e);
         alert(`Erro ao aprovar (${e.code || 'erro'}): ${e.message}`);
+    }
+}
+
+async function mudarPermissao(fichaId, uidConvidado, permissaoAtual) {
+    const novaPermissao = permissaoAtual === 'editar' ? 'visualizar' : 'editar';
+    try {
+        await setDoc(doc(db, 'fichas', fichaId, 'acessos', uidConvidado), {
+            permissao: novaPermissao,
+            atualizadoEm: new Date().toISOString()
+        }, { merge: true });
+        alert(`Permissão alterada para ${novaPermissao.toUpperCase()}.`);
+        carregarDashboardMestre();
+    } catch (e) {
+        console.error("Erro ao mudar permissão:", e);
+        alert(`Erro ao mudar permissão: ${e.message}`);
     }
 }
 
