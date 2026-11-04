@@ -5,26 +5,165 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Como Sobreviver ao Apocalipse</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
-        :root { --bg-escuro: #1a1613; --papel: #d2b48c; --metal: #3a2e27; --ferrugem: #7a4e32; --sangue: #a81c1c; --tinta: #2b1d14; --texto-claro: #e6d5b8; }
-        #fundo-animado { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-image: url('fundo.gif'); background-size: cover; background-position: center; z-index: -2; }
-        #filtro-escuro { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(26, 22, 19, 0.30); z-index: -1; }
-        body { font-family: 'Barlow Condensed', sans-serif; color: var(--texto-claro); padding-bottom: 40px; background-color: var(--bg-escuro); position: relative; }
-        .fonte-titulo { font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
-        .painel-papel { background: radial-gradient(circle at 20% 10%, rgba(255,255,255,0.3), transparent 40%), radial-gradient(circle at 80% 90%, rgba(0,0,0,0.2), transparent 50%), var(--papel); color: var(--tinta); border: 3px solid var(--metal); outline: 2px solid var(--ferrugem); outline-offset: -6px; border-radius: 4px; box-shadow: inset 0 0 30px rgba(0,0,0,0.4), 0 5px 15px rgba(0,0,0,0.8); position: relative; }
-        .titulo-painel { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; background: linear-gradient(90deg, #111, #3a2e27 80%, transparent); color: var(--texto-claro); padding: 4px 15px; border-bottom: 2px solid var(--ferrugem); margin-top: -1px; }
-        .input-campo { background: rgba(255, 255, 255, 0.25); border: 1px solid var(--metal); color: #111; font-weight: 700; border-radius: 2px; font-family: 'Barlow Condensed', sans-serif; }
-        .slot-vazio { background: rgba(0,0,0,0.05); border: 2px solid var(--metal); box-shadow: inset 0 0 10px rgba(0,0,0,0.2); border-radius: 4px; display: flex; justify-content: center; align-items: center; transition: all 0.2s; cursor: pointer; position: relative; overflow: hidden; }
+        :root { 
+            --bg-escuro: #0f0c0a; 
+            --metal: #1f1814; 
+            --ferrugem: #5c3a21; 
+            --sangue: #8a1313; 
+            --texto-claro: #d8c3a5; 
+        }
+
+        /* Fundo da Mesa */
+        body { 
+            font-family: 'Barlow Condensed', sans-serif; 
+            color: var(--texto-claro); 
+            padding-bottom: 40px; 
+            background-image: url('mesa.jpg'); 
+            background-size: cover; 
+            background-position: center; 
+            background-attachment: fixed;
+            position: relative; 
+            overflow-x: hidden;
+        }
+
+        /* Filtro para escurecer um pouco a mesa e destacar os painéis */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: rgba(10, 8, 6, 0.4);
+            z-index: -1;
+        }
+
+        /* Fontes */
+        .fonte-titulo { font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); }
+        .fonte-papel { font-family: 'Special Elite', monospace; } /* Fonte de máquina de escrever */
+
+        /* Painéis de Papel Envelhecido */
+        .painel-papel { 
+            background-image: url('papel.jpg');
+            background-size: cover;
+            background-position: center;
+            color: #1a110a; /* Cor da tinta escura */
+            border: 2px solid #3a2517; 
+            border-radius: 4px; 
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.6), 5px 10px 25px rgba(0,0,0,0.9);
+            position: relative; 
+            overflow: hidden;
+        }
+
+        /* Remover a textura da borda para ficar só o papel no meio */
+        .painel-papel::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            box-shadow: inset 0 0 30px rgba(80, 40, 10, 0.5);
+            pointer-events: none;
+        }
+
+        /* Títulos dos painéis (Tarjas pretas) */
+        .titulo-painel { 
+            font-family: 'Bebas Neue', sans-serif; 
+            font-size: 1.8rem; 
+            background: linear-gradient(90deg, #111 70%, transparent); 
+            color: var(--texto-claro); 
+            padding: 4px 15px; 
+            border-bottom: 2px solid var(--ferrugem); 
+            margin-top: 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Inputs parecendo linhas de papel */
+        .input-campo { 
+            background: rgba(255, 255, 255, 0.1); 
+            border: none;
+            border-bottom: 2px solid #3a2517; 
+            color: #1a110a; 
+            font-weight: 700; 
+            border-radius: 0; 
+            font-family: 'Special Elite', monospace; 
+            padding: 4px;
+            outline: none;
+            transition: background 0.3s;
+        }
+        .input-campo:focus {
+            background: rgba(255, 255, 255, 0.3);
+            border-bottom: 2px solid var(--sangue);
+        }
+
+        /* Slots (Equipamentos e Mochila) */
+        .slot-vazio { 
+            background: rgba(0,0,0,0.05); 
+            border: 2px solid #4a3322; 
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.3); 
+            border-radius: 2px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            transition: all 0.2s; 
+            cursor: pointer; 
+            position: relative; 
+            overflow: hidden; 
+        }
+        .slot-vazio:hover {
+            border-color: var(--sangue);
+            box-shadow: inset 0 0 20px rgba(138, 19, 19, 0.4);
+        }
         .slot-vazio img { width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; padding: 4px; }
-        .foto-personagem { border: 2px dashed var(--metal); background: rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; height: 100%; width: 100%; }
+        
+        .foto-personagem { border: 2px dashed #4a3322; background: rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; height: 100%; width: 100%; }
         .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
-        .texto-proporcao { position: absolute; bottom: 5px; background: rgba(0,0,0,0.7); color: white; padding: 2px 8px; border-radius: 4px; font-size: 9px; pointer-events: none; z-index: 10; }
-        button { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: .045em; line-height: 1.2; text-shadow: 0 1px 1px rgba(0,0,0,.22); -webkit-tap-highlight-color: transparent; }
+        .texto-proporcao { position: absolute; bottom: 5px; background: rgba(0,0,0,0.8); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; pointer-events: none; z-index: 10; }
+
+        /* Botões */
+        button { 
+            font-family: 'Bebas Neue', sans-serif; 
+            font-weight: 400; 
+            letter-spacing: 1px; 
+            line-height: 1.2; 
+            -webkit-tap-highlight-color: transparent; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            transition: transform 0.1s, filter 0.2s;
+        }
+        button:hover {
+            filter: brightness(1.2);
+            transform: scale(1.02);
+        }
+        button:active {
+            transform: scale(0.98);
+        }
         button:focus-visible { outline: 3px solid #d2b48c; outline-offset: 2px; }
-        #lista-contas-jogadores .uid-conta { font-size: 1rem; line-height: 1.45; font-weight: 700; letter-spacing: .025em; color: #211b17; overflow-wrap: anywhere; }
-        #cards-mestre .uid-ficha { font-size: 1rem; line-height: 1.45; font-weight: 700; letter-spacing: .02em; overflow-wrap: anywhere; color: #f3dfc1; }
+
+        /* Efeito de metal nos botões */
+        .btn-metal {
+            background: linear-gradient(180deg, #3a2e27 0%, #1f1814 100%);
+            border: 1px solid #5c3a21;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 6px rgba(0,0,0,0.5);
+        }
+        .btn-perigo {
+            background: linear-gradient(180deg, #8a1313 0%, #4a0909 100%);
+            border: 1px solid #c42929;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.5);
+        }
+
+        /* Ícones de Atributo */
+        .icone-atributo {
+            width: 32px; height: 32px;
+            background: #1a110a;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            color: #d8c3a5;
+            font-size: 1.2rem;
+            margin-right: 10px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.5);
+            border: 1px solid #4a3322;
+        }
+
         .equip-grid { min-height: 450px; }
+        
         @media (max-width: 767px) {
             #area-ficha > div:first-child { margin-left: 8px; margin-right: 8px; flex-wrap: wrap; gap: 10px; }
             #area-ficha > div:first-child > span { font-size: 1.15rem; }
@@ -35,175 +174,211 @@
             .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; }
             .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; }
             .equip-grid > .slot-vazio:nth-child(3) { grid-column: 1; grid-row: 3; }
-            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 2; grid-row: 3; }
-            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 4; }
-            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 4; }
-            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 5; }
+            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 2; grid-row: 3; }
+            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1; grid-row: 4; }
+            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 2; grid-row: 4; }
+            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 1; grid-row: 5; }
+            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 2; grid-row: 5; }
             .equip-grid > .slot-vazio { min-height: 112px; font-size: .9rem !important; padding: 8px; }
             .equip-grid > .slot-vazio span { font-size: 1.5rem; }
             .texto-proporcao { font-size: 11px; padding: 3px 8px; }
-            #lista-contas-jogadores .uid-conta { font-size: 1.05rem; }
-            #cards-mestre .uid-ficha { font-size: 1rem; }
         }
         @media (max-width: 380px) {
             #area-ficha > div:first-child > div { grid-template-columns: 1fr; }
             .equip-grid > .foto-personagem { height: 320px !important; }
         }
+        
+        /* Scrollbar Customizada */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #1f1814; }
+        ::-webkit-scrollbar-thumb { background: #5c3a21; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #8a1313; }
     </style>
 </head>
 <body>
-    <div id="fundo-animado"></div>
-    <div id="filtro-escuro"></div>
-
     <div id="tela-login" class="fixed inset-0 bg-black/90 z-50 flex justify-center items-center">
         <div class="painel-papel p-8 rounded-lg w-[400px] flex flex-col gap-4 relative">
-            <h2 class="fonte-titulo text-4xl text-center text-[#111] mb-4">ACESSO</h2>
-            <div id="campos-login">
-                <label class="flex flex-col text-sm font-bold text-[#111] mb-2">E-mail: <input type="email" id="login-email" class="input-campo p-2"></label>
-                <label class="flex flex-col text-sm font-bold text-[#111] mb-4">Senha: <input type="password" id="login-senha" class="input-campo p-2"></label>
-                <button id="btn-entrar" class="w-full bg-[#a81c1c] text-white p-3 rounded font-bold hover:brightness-125 mb-2">ENTRAR</button>
-                <button id="btn-cadastrar" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32] mb-2">CRIAR CONTA</button>
+            <h2 class="fonte-titulo text-5xl text-center text-[#1a110a] mb-4 border-b-2 border-[#3a2517] pb-2">ACESSO</h2>
+            <div id="campos-login" class="fonte-papel">
+                <label class="flex flex-col text-sm font-bold text-[#1a110a] mb-2">E-mail: <input type="email" id="login-email" class="input-campo p-2 mt-1"></label>
+                <label class="flex flex-col text-sm font-bold text-[#1a110a] mb-4">Senha: <input type="password" id="login-senha" class="input-campo p-2 mt-1"></label>
+                <button id="btn-entrar" class="btn-perigo w-full text-white p-3 rounded mb-2 text-xl">ENTRAR</button>
+                <button id="btn-cadastrar" class="btn-metal w-full text-white p-3 rounded mb-2 text-xl">CRIAR CONTA</button>
             </div>
-            <p id="mensagem-erro" class="text-red-700 text-center font-bold text-sm hidden"></p>
+            <p id="mensagem-erro" class="text-red-800 text-center font-bold text-sm hidden"></p>
         </div>
     </div>
 
     <div id="site-principal" class="hidden">
         <section id="dashboard-jogador" class="hidden max-w-[1500px] mx-auto px-3 py-8">
             <div class="painel-papel p-6 md:p-8">
-                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                    <div><h1 class="fonte-titulo text-4xl text-[#111]">PAINEL DE PERSONAGENS</h1><p class="text-[#3a2e27] text-lg">Escolha um sobrevivente para abrir sua ficha em uma nova aba.</p></div>
-                    <button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded bg-[#3a2e27] text-white">SAIR</button>
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
+                    <div>
+                        <h1 class="fonte-titulo text-5xl text-[#1a110a]">PAINEL DE PERSONAGENS</h1>
+                        <p class="text-[#3a2517] text-lg font-bold fonte-papel">Escolha um sobrevivente para abrir sua ficha.</p>
+                    </div>
+                    <button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-metal text-white">SAIR</button>
                 </div>
-                <div id="cards-jogador" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#111] text-lg">Carregando personagens...</p></div>
+                <div id="cards-jogador" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando personagens...</p></div>
             </div>
         </section>
 
         <section id="dashboard-mestre" class="hidden max-w-[1500px] mx-auto px-3 py-8">
             <div class="painel-papel p-6 md:p-8">
-                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-                    <div><h1 class="fonte-titulo text-4xl text-[#111]">CENTRAL DO MESTRE</h1><p class="text-[#3a2e27] text-lg">Administração de personagens dos jogadores e PDMs.</p></div>
-                    <div class="flex gap-2"><button id="btn-criar-pdm-dashboard" class="fonte-titulo text-xl px-4 py-2 rounded bg-[#a81c1c] text-white">+ CRIAR PDM</button><button id="btn-sair-mestre" class="fonte-titulo text-xl px-4 py-2 rounded bg-[#3a2e27] text-white">SAIR</button></div>
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
+                    <div>
+                        <h1 class="fonte-titulo text-5xl text-[#1a110a]">CENTRAL DO MESTRE</h1>
+                        <p class="text-[#3a2517] text-lg font-bold fonte-papel">Administração de personagens e PDMs.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="btn-criar-pdm-dashboard" class="fonte-titulo text-xl px-4 py-2 rounded btn-perigo text-white">+ CRIAR PDM</button>
+                        <button id="btn-sair-mestre" class="fonte-titulo text-xl px-4 py-2 rounded btn-metal text-white">SAIR</button>
+                    </div>
                 </div>
-                <div class="flex flex-wrap gap-4 mb-6 text-[#111] font-bold text-lg"><span id="contador-fichas">Fichas: —</span><span id="contador-pdms">PDMs: —</span><span id="contador-contas">Contas: —</span></div>
-                <section class="mb-8 rounded-lg border-2 border-[#3a2e27] bg-black/5 p-4">
-                    <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
-                        <div><h2 class="fonte-titulo text-3xl text-[#111]">CONTAS DE JOGADORES</h2><p class="text-base text-[#3a2e27]">UIDs registrados automaticamente quando o jogador entra no painel. Use COPIAR UID para vincular uma ficha.</p></div>
-                        <button id="btn-atualizar-contas" class="px-4 py-2 rounded bg-[#3a2e27] text-white font-bold text-base">ATUALIZAR CONTAS</button>
-                    </div>
-                    <div id="lista-contas-jogadores" class="flex flex-col gap-2"><p class="text-[#111] text-lg">Carregando contas...</p></div>
-                </section>
-
-                <section class="mb-8 rounded-lg border-2 border-[#7a4e32] bg-yellow-100/40 p-4">
-                    <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                <div class="flex flex-wrap gap-4 mb-6 text-[#1a110a] font-bold text-lg font-papel">
+                    <span id="contador-fichas" class="bg-black/10 px-3 py-1 rounded border border-[#3a2517]">Fichas: —</span>
+                    <span id="contador-pdms" class="bg-black/10 px-3 py-1 rounded border border-[#3a2517]">PDMs: —</span>
+                    <span id="contador-contas" class="bg-black/10 px-3 py-1 rounded border border-[#3a2517]">Contas: —</span>
+                </div>
+                <section class="mb-8 rounded-lg border-2 border-[#3a2517] bg-black/5 p-4">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-3 border-b border-[#3a2517] pb-2">
                         <div>
-                            <h2 class="fonte-titulo text-3xl text-[#111]">SOLICITAÇÕES DE ACESSO PENDENTES</h2>
-                            <p class="text-base text-[#3a2e27]">Convidados que pediram acesso a alguma ficha. Aprove como EDITAR ou VISUALIZAR.</p>
+                            <h2 class="fonte-titulo text-3xl text-[#1a110a]">CONTAS DE JOGADORES</h2>
+                            <p class="text-base text-[#3a2517] font-bold fonte-papel">UIDs registrados automaticamente. Use COPIAR UID para vincular uma ficha.</p>
                         </div>
-                        <button id="btn-atualizar-solicitacoes" class="px-4 py-2 rounded bg-[#3a2e27] text-white font-bold text-base">ATUALIZAR</button>
+                        <button id="btn-atualizar-contas" class="px-4 py-2 rounded btn-metal text-white font-bold text-base">ATUALIZAR CONTAS</button>
                     </div>
-                    <div id="solicitacoes-mestre" class="flex flex-col gap-2"><p class="text-[#111] text-lg">Carregando solicitações...</p></div>
+                    <div id="lista-contas-jogadores" class="flex flex-col gap-2"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando contas...</p></div>
                 </section>
 
-                <div class="mb-3"><h2 class="fonte-titulo text-3xl text-[#111]">FICHAS E PDMs</h2></div>
-                <div id="cards-mestre" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#111] text-lg">Carregando fichas...</p></div>
+                <section class="mb-8 rounded-lg border-2 border-[#8a1313] bg-red-900/10 p-4 shadow-[inset_0_0_20px_rgba(138,19,19,0.3)]">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-3 border-b border-[#8a1313] pb-2">
+                        <div>
+                            <h2 class="fonte-titulo text-3xl text-[#8a1313]">SOLICITAÇÕES DE ACESSO PENDENTES</h2>
+                            <p class="text-base text-[#3a2517] font-bold fonte-papel">Convidados que pediram acesso. Aprove ou recuse.</p>
+                        </div>
+                        <button id="btn-atualizar-solicitacoes" class="px-4 py-2 rounded btn-metal text-white font-bold text-base">ATUALIZAR</button>
+                    </div>
+                    <div id="solicitacoes-mestre" class="flex flex-col gap-2"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando solicitações...</p></div>
+                </section>
+
+                <div class="mb-3 border-b-2 border-[#3a2517] pb-2"><h2 class="fonte-titulo text-4xl text-[#1a110a]">FICHAS E PDMs</h2></div>
+                <div id="cards-mestre" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando fichas...</p></div>
             </div>
         </section>
 
         <div id="area-ficha" class="hidden">
-        <div class="max-w-[1500px] mx-auto mb-4 flex justify-between items-center bg-[#111] p-2 border-b-2 border-[#7a4e32] mt-4">
-            <span class="fonte-titulo text-2xl border-2 border-[#7a4e32] px-4 py-1">MINHA FICHA</span>
-            <div class="flex gap-2">
-                <button id="btn-voltar-painel" class="fonte-titulo text-xl px-4 py-1 rounded bg-[#3a2e27] text-white hover:bg-[#7a4e32] transition">PAINEL</button>
-                <button id="btn-salvar-ficha" class="fonte-titulo text-xl px-4 py-1 rounded bg-[#a81c1c] text-white hover:brightness-125 transition hidden">SALVAR FICHA</button>
-                <button id="btn-sair" class="fonte-titulo text-xl px-4 py-1 rounded border border-gray-500 hover:bg-gray-800 transition">SAIR</button>
+            <div class="max-w-[1500px] mx-auto mb-4 flex justify-between items-center bg-[#1f1814] border-b-4 border-[#5c3a21] p-2 mt-4 shadow-lg">
+                <span class="fonte-titulo text-3xl text-[#d8c3a5] px-4 drop-shadow-md">MINHA FICHA</span>
+                <div class="flex gap-2">
+                    <button id="btn-voltar-painel" class="fonte-titulo text-xl px-4 py-1 rounded btn-metal text-white">PAINEL</button>
+                    <button id="btn-salvar-ficha" class="fonte-titulo text-xl px-4 py-1 rounded btn-perigo text-white hidden">SALVAR FICHA</button>
+                    <button id="btn-sair" class="fonte-titulo text-xl px-4 py-1 rounded btn-metal text-white">SAIR</button>
+                </div>
             </div>
-        </div>
-        <main class="max-w-[1500px] mx-auto flex flex-col gap-4 px-2 relative z-10">
-            <header class="painel-papel p-4 flex flex-col xl:flex-row justify-between items-start xl:items-center flex-wrap gap-4">
-                <div class="flex items-center gap-4">
-                    <h1 class="fonte-titulo text-2xl leading-none text-[#111]">COMO SOBREVIVER AO<br><span class="text-[#a81c1c] text-4xl">APOCALIPSE</span></h1>
-                    <div class="fonte-titulo text-3xl border-2 border-[#3a2e27] px-6 py-1 text-[#111] bg-black/5">FICHA DO SOBREVIVENTE</div>
-                </div>
-                <div class="flex gap-3 flex-wrap items-center">
-                    <label class="flex flex-col text-xs font-bold text-[#111]">NOME: <input type="text" id="nome" class="input-campo p-1 w-32"></label>
-                    <label class="flex flex-col text-xs font-bold text-[#111]">IDADE: <input type="number" id="idade" class="input-campo p-1 w-16"></label>
-                    <label class="flex flex-col text-xs font-bold text-[#111]">ALTURA: <input type="text" id="altura" class="input-campo p-1 w-20" placeholder="Ex: 1,75m"></label>
-                    <label class="flex flex-col text-xs font-bold text-[#111]">SEXO: <input type="text" id="sexo" class="input-campo p-1 w-20"></label>
-                    <label class="flex flex-col text-xs font-bold text-[#111]">ETNIA: <input type="text" id="etnia" class="input-campo p-1 w-24"></label>
-                    <label class="flex flex-col text-xs font-bold text-[#111]">COR DA PELE: <input type="text" id="cor-pele" class="input-campo p-1 w-24"></label>
-                    <label class="flex flex-col text-xs font-bold text-[#111]">PESO (KG): <input type="text" id="peso-personagem" class="input-campo p-1 w-16 text-center" placeholder="kg"></label>
-                    <label class="flex flex-col text-xs font-bold text-[#111]">NÍVEL: <input type="number" id="nivel" class="input-campo p-1 w-16"></label>
-                    <label class="flex flex-col text-xs font-bold text-[#111]">EXP: <input type="text" id="exp" class="input-campo p-1 w-16"></label>
-                </div>
-            </header>
-            <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1.1fr] gap-4">
-                <section class="painel-papel flex flex-col">
-                    <h3 class="titulo-painel">ATRIBUTOS</h3>
-                    <div class="p-4 flex-1 flex flex-col gap-1">
-                        <div class="grid grid-cols-[1fr_45px_45px] gap-2 text-center font-bold text-xs mb-1"><span></span><span>Base</span><span>AÇÃO%</span></div>
-                        <div class="grid grid-cols-[1fr_45px_45px] gap-2 items-center border-b border-black/10 pb-1"><span class="font-bold flex items-center gap-2 text-[#111] text-sm">FORÇA</span><input type="number" id="forca" class="input-campo p-1 text-center w-full"><input type="number" id="forca-acao" class="input-campo p-1 text-center bg-black/10 w-full" readonly></div>
-                        <div class="grid grid-cols-[1fr_45px_45px] gap-2 items-center border-b border-black/10 pb-1"><span class="font-bold flex items-center gap-2 text-[#111] text-sm">DESTREZA</span><input type="number" id="destreza" class="input-campo p-1 text-center w-full"><input type="number" id="destreza-acao" class="input-campo p-1 text-center bg-black/10 w-full" readonly></div>
-                        <div class="grid grid-cols-[1fr_45px_45px] gap-2 items-center border-b border-black/10 pb-1"><span class="font-bold flex items-center gap-2 text-[#111] text-sm">CONSTITUIÇÃO</span><input type="number" id="constituicao" class="input-campo p-1 text-center w-full"><span class="text-center font-bold opacity-40">-</span></div>
-                        <div class="grid grid-cols-[1fr_45px_45px] gap-2 items-center border-b border-black/10 pb-1"><span class="font-bold flex items-center gap-2 text-[#111] text-sm">INTELIGÊNCIA</span><input type="number" id="inteligencia" class="input-campo p-1 text-center w-full"><span class="text-center font-bold opacity-40">-</span></div>
-                        <div class="grid grid-cols-[1fr_45px_45px] gap-2 items-center border-b border-black/10 pb-1"><span class="font-bold flex items-center gap-2 text-[#111] text-sm">PERCEPÇÃO</span><input type="number" id="percepcao" class="input-campo p-1 text-center w-full"><span class="text-center font-bold opacity-40">-</span></div>
-                        <div class="grid grid-cols-[1fr_45px_45px] gap-2 items-center border-b border-black/10 pb-1"><span class="font-bold flex items-center gap-2 text-[#111] text-sm">VONTADE</span><input type="number" id="vontade" class="input-campo p-1 text-center w-full"><span class="text-center font-bold opacity-40">-</span></div>
-                        <div class="grid grid-cols-[1fr_45px_45px] gap-2 items-center pb-1"><span class="font-bold flex items-center gap-2 text-[#111] text-sm">CARISMA</span><input type="number" id="carisma" class="input-campo p-1 text-center w-full"><span class="text-center font-bold opacity-40">-</span></div>
+            
+            <main class="max-w-[1500px] mx-auto flex flex-col gap-4 px-2 relative z-10">
+                <header class="painel-papel p-4 flex flex-col xl:flex-row justify-between items-start xl:items-center flex-wrap gap-4 border-b-4 border-[#3a2517]">
+                    <div class="flex items-center gap-4">
+                        <h1 class="fonte-titulo text-4xl leading-none text-[#8a1313] drop-shadow-sm">COMO SOBREVIVER AO<br><span class="text-5xl">APOCALIPSE</span></h1>
+                        <div class="fonte-titulo text-4xl border-4 border-[#1a110a] px-6 py-1 text-[#1a110a] bg-black/5">FICHA DO SOBREVIVENTE</div>
                     </div>
-                    <div class="bg-black/10 p-3 mt-auto flex justify-between items-center font-bold text-[#111] border-t border-black/20">
-                        <label class="flex items-center gap-2 text-sm">ESQUIVA: <input type="number" id="esquiva" class="input-campo p-1 w-12 text-center"> %</label>
-                        <label class="flex items-center gap-2 text-sm">MOV: <input type="number" id="movimentacao" value="6" class="input-campo p-1 w-12 text-center"></label>
+                    <div class="flex gap-3 flex-wrap items-center fonte-papel font-bold text-[#1a110a]">
+                        <label class="flex flex-col text-xs">NOME: <input type="text" id="nome" class="input-campo w-32 mt-1"></label>
+                        <label class="flex flex-col text-xs">IDADE: <input type="number" id="idade" class="input-campo w-16 mt-1"></label>
+                        <label class="flex flex-col text-xs">ALTURA: <input type="text" id="altura" class="input-campo w-20 mt-1" placeholder="Ex: 1,75m"></label>
+                        <label class="flex flex-col text-xs">SEXO: <input type="text" id="sexo" class="input-campo w-20 mt-1"></label>
+                        <label class="flex flex-col text-xs">ETNIA: <input type="text" id="etnia" class="input-campo w-24 mt-1"></label>
+                        <label class="flex flex-col text-xs">PELE: <input type="text" id="cor-pele" class="input-campo w-24 mt-1"></label>
+                        <label class="flex flex-col text-xs">PESO: <input type="text" id="peso-personagem" class="input-campo w-16 text-center mt-1" placeholder="kg"></label>
+                        <label class="flex flex-col text-xs">NÍVEL: <input type="number" id="nivel" class="input-campo w-16 mt-1"></label>
+                        <label class="flex flex-col text-xs">EXP: <input type="text" id="exp" class="input-campo w-16 mt-1"></label>
                     </div>
-                </section>
-                <section class="painel-papel flex flex-col">
-                    <h3 class="titulo-painel">EQUIPAMENTO</h3>
-                    <div class="equip-grid p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
-                        <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">CABEÇA<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
-                        <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">COLETE<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
-                        <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">FACE<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
-                        <div class="foto-personagem rounded col-start-2 row-start-1 row-span-4 text-[#111] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-4xl text-black/20 mb-2"></i><span class="z-10">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
-                        <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">ROUPA<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
-                        <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">MÃO PRINCIPAL<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
-                        <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">MÃO SECUNDÁRIA<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
-                        <div class="slot-vazio rounded text-xs font-bold text-[#111] text-center" onclick="upload(this)">BOTAS<br><span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span></div>
-                    </div>
-                </section>
-                <section class="painel-papel flex flex-col">
-                    <h3 class="titulo-painel">INVENTÁRIO DA MOCHILA</h3>
-                    <div class="p-4 flex-1 flex flex-col">
-                        <div class="grid grid-cols-4 gap-2 mb-4 flex-1" id="inventario"></div>
-                        <div class="flex flex-col gap-1 font-bold bg-[#3a2e27] text-[#e6d5b8] p-2 rounded text-sm">
-                            <div class="flex justify-between items-center">
-                                <span><i class="fa-solid fa-briefcase"></i> ESPAÇOS: <span id="espacos">0</span>/16</span>
-                                <span>PESO ITENS: <span id="peso-total">0</span> kg</span>
+                </header>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr_1.1fr] gap-4">
+                    <section class="painel-papel flex flex-col">
+                        <h3 class="titulo-painel">ATRIBUTOS</h3>
+                        <div class="p-4 flex-1 flex flex-col gap-2 fonte-papel font-bold text-[#1a110a]">
+                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 text-center text-sm mb-1 border-b-2 border-[#3a2517] pb-1"><span></span><span>Base</span><span>AÇÃO%</span></div>
+                            
+                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-hand-fist"></i></div> FORÇA</span>
+                                <input type="number" id="forca" class="input-campo text-center w-full"><input type="number" id="forca-acao" class="input-campo text-center bg-black/10 w-full" readonly>
                             </div>
-                            <div class="flex justify-between items-center border-t border-white/20 pt-1">
-                                <span>PESO PERSONAGEM+EQUIP: <span id="peso-total-personagem">0</span> kg</span>
-                                <span>PESO TOTAL: <span id="peso-total-geral">0</span> kg</span>
+                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-crosshairs"></i></div> DESTREZA</span>
+                                <input type="number" id="destreza" class="input-campo text-center w-full"><input type="number" id="destreza-acao" class="input-campo text-center bg-black/10 w-full" readonly>
+                            </div>
+                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-heart-pulse"></i></div> CONSTITUIÇÃO</span>
+                                <input type="number" id="constituicao" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
+                            </div>
+                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-brain"></i></div> INTELIGÊNCIA</span>
+                                <input type="number" id="inteligencia" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
+                            </div>
+                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-eye"></i></div> PERCEPÇÃO</span>
+                                <input type="number" id="percepcao" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
+                            </div>
+                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-shield-halved"></i></div> VONTADE</span>
+                                <input type="number" id="vontade" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
+                            </div>
+                            <div class="grid grid-cols-[1fr_50px_50px] gap-2 items-center pb-1">
+                                <span class="flex items-center text-sm"><div class="icone-atributo"><i class="fa-solid fa-users"></i></div> CARISMA</span>
+                                <input type="number" id="carisma" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
                             </div>
                         </div>
-                    </div>
-                </section>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4">
-                <section class="painel-papel flex flex-col"><h3 class="titulo-painel">TALENTOS</h3><div class="p-4 flex-1"><div class="grid grid-cols-2 gap-x-8 gap-y-1" id="talentos"></div></div></section>
-                <section class="painel-papel flex flex-col"><h3 class="titulo-painel">DIÁRIO</h3><div class="p-4 flex-1"><textarea id="diario" class="input-campo w-full h-full resize-none p-2" placeholder="Registre sua jornada..."></textarea></div></section>
-            </div>
-        </main>
+                        <div class="bg-black/10 p-3 mt-auto flex justify-between items-center font-bold text-[#1a110a] border-t-2 border-[#3a2517] fonte-papel">
+                            <label class="flex items-center gap-2 text-sm"><i class="fa-solid fa-person-running text-lg"></i> ESQUIVA: <input type="number" id="esquiva" class="input-campo w-16 text-center"> %</label>
+                            <label class="flex items-center gap-2 text-sm"><i class="fa-solid fa-shoe-prints text-lg"></i> MOV: <input type="number" id="movimentacao" value="6" class="input-campo w-12 text-center"></label>
+                        </div>
+                    </section>
+                    
+                    <section class="painel-papel flex flex-col">
+                        <h3 class="titulo-painel">EQUIPAMENTO</h3>
+                        <div class="equip-grid p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-mask-face text-2xl mb-1 opacity-50"></i>FACE</div>
+                            
+                            <div class="foto-personagem rounded col-start-2 row-start-1 row-span-4 text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
+                            
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO SECUNDÁRIA</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shoe-prints text-2xl mb-1 opacity-50"></i>BOTAS</div>
+                        </div>
+                    </section>
+                    
+                    <section class="painel-papel flex flex-col">
+                        <h3 class="titulo-painel">INVENTÁRIO DA MOCHILA</h3>
+                        <div class="p-4 flex-1 flex flex-col">
+                            <div class="grid grid-cols-4 gap-2 mb-4 flex-1" id="inventario"></div>
+                            <div class="flex flex-col gap-1 font-bold bg-[#1f1814] text-[#d8c3a5] p-2 rounded text-sm font-papel border-2 border-[#5c3a21]">
+                                <div class="flex justify-between items-center">
+                                    <span><i class="fa-solid fa-briefcase text-lg mr-1"></i> ESPAÇOS: <span id="espacos">0</span>/16</span>
+                                    <span>PESO ITENS: <span id="peso-total">0</span> kg</span>
+                                </div>
+                                <div class="flex justify-between items-center border-t border-[#5c3a21] pt-1 mt-1">
+                                    <span>PESO PERSONAGEM+EQUIP: <span id="peso-total-personagem">0</span> kg</span>
+                                    <span class="text-[#c42929]">PESO TOTAL: <span id="peso-total-geral">0</span> kg</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-4">
+                    <section class="painel-papel flex flex-col"><h3 class="titulo-painel">TALENTOS</h3><div class="p-4 flex-1"><div class="grid grid-cols-2 gap-x-8 gap-y-1 fonte-papel font-bold" id="talentos"></div></div></section>
+                    <section class="painel-papel flex flex-col"><h3 class="titulo-painel">DIÁRIO</h3><div class="p-4 flex-1"><textarea id="diario" class="input-campo w-full h-full resize-none p-2 fonte-papel text-lg border-2 border-[#3a2517]/50" placeholder="Registre sua jornada..."></textarea></div></section>
+                </div>
+            </main>
         </div>
     </div>
 
-    <div id="painel-mestre" class="fixed inset-0 bg-black/90 z-40 flex justify-center items-center hidden">
-        <div class="painel-papel p-4 md:p-6 rounded-lg w-[96vw] max-w-[1100px] h-[90vh] flex flex-col relative">
-            <button id="btn-fechar-mestre" class="absolute top-2 right-2 bg-red-800 text-white rounded-full w-8 h-8 font-bold">X</button>
-            <div class="flex flex-wrap justify-between items-center gap-3 pr-10 mb-4">
-                <h2 class="fonte-titulo text-3xl text-[#111]">PAINEL DO MESTRE</h2>
-                <button id="btn-criar-pdm" class="bg-[#a81c1c] text-white px-4 py-2 rounded font-bold hover:brightness-125">+ CRIAR PDM</button>
-            </div>
-            <p class="text-sm text-[#3a2e27] mb-3 font-bold">As fichas abrem em novas abas. Para vincular um jogador, será necessário informar o UID da conta Firebase.</p>
-            <div id="lista-jogadores" class="flex-1 overflow-y-auto bg-white/30 p-2 rounded border border-black/20 text-[#111]"><p class="text-center mt-10 text-lg">Carregando fichas...</p></div>
-        </div>
-    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script type="module" src="script.js"></script>
 </body>
