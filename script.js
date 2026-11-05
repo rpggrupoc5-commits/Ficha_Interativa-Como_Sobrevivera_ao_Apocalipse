@@ -607,9 +607,15 @@ let imagemAtualBase64 = null;
 let quadradoFotoAtual = null;
 let imagemFotoBase64 = null;
 
-function calcularPesoGeral() {
+// Controle de estado da mochila ativa
+let mochilaAtivaId = null;
+let mochilaCapacidade = 0;
+let mochilaStatus = false; 
+
+function recalcularPesoGeral() {
     let pesoItens = 0;
     document.querySelectorAll('.item-adicionado').forEach(item => {
+        if (item.id.startsWith('inv-') && item.classList.contains('slot-bloqueado')) return;
         const qtd = parseFloat(item.dataset.qtd) || 1;
         const pesoStr = (item.dataset.peso || "0").toString().replace(',', '.');
         pesoItens += qtd * (parseFloat(pesoStr) || 0);
@@ -619,18 +625,31 @@ function calcularPesoGeral() {
     let pesoEquip = 0;
     document.querySelectorAll('.slot-vazio.item-adicionado').forEach(item => {
         if (item.id === 'foto-personagem') return;
+        if (item.classList.contains('slot-bloqueado')) return;
         const qtd = parseFloat(item.dataset.qtd) || 1;
         const pesoStr = (item.dataset.peso || "0").toString().replace(',', '.');
         pesoEquip += qtd * (parseFloat(pesoStr) || 0);
     });
 
+    // Adiciona o peso da mochila (se estiver ativa)
+    let pesoMochila = 0;
+    if (mochilaAtivaId) {
+        const mochilaEl = document.getElementById(mochilaAtivaId);
+        if (mochilaEl && mochilaEl.classList.contains('item-adicionado') && mochilaStatus) {
+            const qtd = parseFloat(mochilaEl.dataset.qtd) || 1;
+            const pesoStr = (mochilaEl.dataset.peso || "0").toString().replace(',', '.');
+            pesoMochila = qtd * (parseFloat(pesoStr) || 0);
+        }
+    }
+
     const pesoPers = parseFloat((pesoPersonagemInput?.value || '0').toString().replace(',', '.')) || 0;
-    if (pesoPersonagemEl) pesoPersonagemEl.innerText = (pesoPers + pesoEquip).toFixed(2);
-    if (pesoTotalGeralEl) pesoTotalGeralEl.innerText = (pesoPers + pesoEquip + pesoItens).toFixed(2);
+    if (pesoPersonagemEl) pesoPersonagemEl.innerText = (pesoPers + pesoEquip + pesoMochila).toFixed(2);
+    if (pesoTotalGeralEl) pesoTotalGeralEl.innerText = (pesoPers + pesoEquip + pesoMochila + pesoItens).toFixed(2);
+    
     if (espacosEl) espacosEl.innerText = document.querySelectorAll('#inventario .item-adicionado').length;
 }
 
-if (pesoPersonagemInput) pesoPersonagemInput.addEventListener('input', calcularPesoGeral);
+if (pesoPersonagemInput) pesoPersonagemInput.addEventListener('input', recalcularPesoGeral);
 
 const modalHTML = `
     <div id="modal-item" class="fixed inset-0 bg-black/80 z-50 flex justify-center items-center hidden">
@@ -650,6 +669,23 @@ const modalHTML = `
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Quantidade:<input type="number" id="modal-qtd" value="1" class="input-campo p-2"></label>
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg):<input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
             </div>
+            
+            <!-- CAMPOS DA MOCHILA -->
+            <div id="campos-mochila" class="hidden flex-col gap-2 border-t border-b border-[#3a2517] py-2 my-1">
+                <label class="flex flex-col text-sm font-bold text-[#111]">Capacidade (Slots):
+                    <select id="modal-mochila-capacidade" class="input-campo p-2">
+                        <option value="4">4 Slots</option>
+                        <option value="8">8 Slots</option>
+                        <option value="12">12 Slots</option>
+                        <option value="16">16 Slots</option>
+                    </select>
+                </label>
+                <label class="flex items-center gap-2 text-sm font-bold text-[#111] cursor-pointer">
+                    <input type="checkbox" id="modal-mochila-ativa" class="w-5 h-5 accent-[#a81c1c]">
+                    Mochila Ativa (Habilitar inventário)
+                </label>
+            </div>
+
             <label class="flex flex-col text-sm font-bold text-[#111]">Descrição:<textarea id="modal-desc" class="input-campo p-2 resize-none h-16"></textarea></label>
             <div class="flex justify-between mt-2 gap-2">
                 <button id="btn-excluir" class="btn-cinza p-2 rounded font-bold flex-1 hidden">Excluir</button>
@@ -758,20 +794,45 @@ function abrirModal(q, dados = null) {
     if (modoAcesso === "convidado-visualizar") return;
     tocarSom(audioClique);
     quadradoAtual = q;
+    
+    // Verifica se é o slot da mochila
+    const isMochilaSlot = (q.getAttribute('data-original') || '').includes('MOCHILA') || (q.innerText || '').includes('MOCHILA') || (dados && dados.tipo === 'mochila');
+    const camposMochila = document.getElementById('campos-mochila');
+    
+    if (isMochilaSlot) {
+        camposMochila.classList.remove('hidden');
+        camposMochila.classList.add('flex');
+    } else {
+        camposMochila.classList.add('hidden');
+        camposMochila.classList.remove('flex');
+    }
+
     if (dados && dados.nome) {
         inputNome.value = dados.nome;
         inputQtd.value = dados.qtd;
         inputPeso.value = dados.peso;
         inputDesc.value = dados.desc || "";
         imagemAtualBase64 = dados.img || null;
+        
+        if (isMochilaSlot && dados.mochilaCapacidade) {
+            document.getElementById('modal-mochila-capacidade').value = dados.mochilaCapacidade;
+            document.getElementById('modal-mochila-ativa').checked = dados.mochilaAtiva;
+        }
+
         btnExcluir.classList.remove('hidden');
         document.querySelector('#modal-item h3').innerText = "EDITAR ITEM";
         btnSalvarItem.innerText = "SALVAR";
     } else {
         inputNome.value = ""; inputQtd.value = 1; inputPeso.value = ""; inputDesc.value = "";
         imagemAtualBase64 = null;
+        
+        if (isMochilaSlot) {
+            document.getElementById('modal-mochila-capacidade').value = "16";
+            document.getElementById('modal-mochila-ativa').checked = true;
+        }
+
         btnExcluir.classList.add('hidden');
-        document.querySelector('#modal-item h3').innerText = "NOVO ITEM";
+        document.querySelector('#modal-item h3').innerText = isMochilaSlot ? "EQUIPAR MOCHILA" : "NOVO ITEM";
         btnSalvarItem.innerText = "ADICIONAR";
     }
     atualizarPreviewModal();
@@ -784,6 +845,18 @@ btnUpload.onclick = () => {
 };
 
 btnExcluir.onclick = () => {
+    // Trava de segurança para não perder itens da mochila
+    if (quadradoAtual.dataset.itemData) {
+        const dadosItem = JSON.parse(quadradoAtual.dataset.itemData);
+        if (dadosItem.tipo === 'mochila' || dadosItem.mochilaCapacidade) {
+            const itensNaMochila = Array.from(document.querySelectorAll('#inventario .item-adicionado')).length;
+            if (itensNaMochila > 0) {
+                alert("Você não pode remover a mochila enquanto houver itens dentro dela! Esvazie a mochila primeiro.");
+                return;
+            }
+        }
+    }
+
     tocarSom(audioSairPainel);
     if (quadradoAtual.id.startsWith('inv-')) {
         quadradoAtual.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
@@ -795,7 +868,9 @@ btnExcluir.onclick = () => {
     quadradoAtual.removeAttribute('data-itemData');
     quadradoAtual.removeAttribute('data-peso');
     quadradoAtual.removeAttribute('data-qtd');
-    calcularPesoGeral();
+    
+    atualizarEstadoMochila();
+    recalcularPesoGeral();
     modal.classList.add('hidden');
     agendarAutosave();
 };
@@ -804,6 +879,12 @@ btnSalvarItem.onclick = () => {
     const nome = inputNome.value;
     const pesoString = inputPeso.value.replace(',', '.');
     const qtd = parseInt(inputQtd.value) || 0;
+    
+    // Pega os dados da mochila, se aplicável
+    const camposMochilaVisiveis = !document.getElementById('campos-mochila').classList.contains('hidden');
+    const mochilaCap = camposMochilaVisiveis ? document.getElementById('modal-mochila-capacidade').value : null;
+    const mochilaAtiva = camposMochilaVisiveis ? document.getElementById('modal-mochila-ativa').checked : null;
+
     if (!imagemAtualBase64) return alert("Escolha uma imagem.");
     if (!nome.trim()) return alert("Digite o nome.");
     if (qtd <= 0) return alert("Quantidade > 0.");
@@ -811,8 +892,16 @@ btnSalvarItem.onclick = () => {
     
     tocarSom(audioEntrarPainel);
     const dados = { img: imagemAtualBase64, nome, qtd, peso: pesoString, desc: inputDesc.value };
+    
+    if (camposMochilaVisiveis) {
+        dados.tipo = 'mochila';
+        dados.mochilaCapacidade = parseInt(mochilaCap);
+        dados.mochilaAtiva = mochilaAtiva;
+    }
+
     renderizarItem(quadradoAtual, dados);
-    calcularPesoGeral();
+    atualizarEstadoMochila();
+    recalcularPesoGeral();
     modal.classList.add('hidden');
     agendarAutosave();
 };
@@ -820,7 +909,15 @@ btnSalvarItem.onclick = () => {
 function renderizarItem(q, dados) {
     const isEquipamento = !q.id.startsWith('inv-');
     const classeTexto = isEquipamento ? 'opacity-0 group-hover:opacity-100 transition-opacity' : 'opacity-100';
+    
+    let tarjaHTML = '';
+    if (dados.tipo === 'mochila') {
+        const corTarja = dados.mochilaAtiva ? 'bg-[#a81c1c]' : 'bg-gray-600';
+        tarjaHTML = `<div class="absolute top-0 left-0 right-0 ${corTarja} text-white text-[10px] font-bold text-center py-0.5 z-20">${dados.mochilaCapacidade} SLOTS</div>`;
+    }
+
     q.innerHTML = `
+        ${tarjaHTML}
         ${dados.img ? `<img src="${dados.img}" style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;padding:4px;z-index:1;">` : ''}
         <div class="text-[10px] font-bold bg-black/40 text-white px-1 rounded leading-tight w-full absolute bottom-0 left-0 z-10 text-center ${classeTexto}">
             ${dados.nome} <br>
@@ -838,6 +935,43 @@ function renderizarItem(q, dados) {
     q.dataset.qtd = dados.qtd;
 }
 
+// ==========================================
+// LÓGICA DE ATUALIZAÇÃO DA MOCHILA (BLOQUEIO)
+// ==========================================
+function atualizarEstadoMochila() {
+    mochilaAtivaId = null;
+    mochilaCapacidade = 0;
+    mochilaStatus = false;
+
+    // Procura uma mochila equipada
+    const mochilaEl = document.querySelector('.slot-vazio.item-adicionado[data-item-data*="mochila"]');
+    
+    if (mochilaEl) {
+        const dadosMochila = JSON.parse(mochilaEl.dataset.itemData);
+        mochilaAtivaId = mochilaEl.id;
+        mochilaCapacidade = parseInt(dadosMochila.mochilaCapacidade) || 0;
+        mochilaStatus = dadosMochila.mochilaAtiva;
+    }
+
+    // Aplica o bloqueio nos slots do inventário
+    const slotsInv = document.querySelectorAll('#inventario .slot-vazio');
+    slotsInv.forEach((slot, index) => {
+        if (mochilaStatus && index < mochilaCapacidade) {
+            // Desbloqueado
+            slot.classList.remove('slot-bloqueado');
+            slot.onclick = () => {
+                if (slot.classList.contains('item-adicionado')) abrirModal(slot, JSON.parse(slot.dataset.itemData));
+                else abrirModal(slot);
+            };
+        } else {
+            // Bloqueado
+            slot.classList.add('slot-bloqueado');
+            slot.onclick = null; // Remove o clique
+        }
+    });
+}
+
+// Inicializa os slots de inventário
 if (gridInv) {
     for (let i = 0; i < 16; i++) {
         const q = document.createElement('div');
@@ -954,8 +1088,17 @@ async function salvarFicha(opcoes = {}) {
         const indice = todosSlots.indexOf(el);
         const imagemId = `equipamento_${indice}`;
         if (dados.img) imagensAtivas[imagemId] = dados.img;
+        
+        // Salva os dados extras se for mochila
+        const dadosSalvar = { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" };
+        if (dados.tipo === 'mochila') {
+            dadosSalvar.tipo = 'mochila';
+            dadosSalvar.mochilaCapacidade = dados.mochilaCapacidade;
+            dadosSalvar.mochilaAtiva = dados.mochilaAtiva;
+        }
+
         dadosFicha.itensEquipamento.push({
-            dados: { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" },
+            dados: dadosSalvar,
             imagemId, posicao: el.getAttribute('data-original')
         });
     }
@@ -1107,7 +1250,8 @@ async function carregarFicha() {
         });
     }
 
-    calcularPesoGeral();
+    atualizarEstadoMochila();
+    recalcularPesoGeral();
     ultimoEstadoSalvo = JSON.stringify({
         nome: d.nome || '', idade: d.idade || '', altura: d.altura || '',
         sexo: d.sexo || '', etnia: d.etnia || '', corPele: d.corPele || '',
@@ -1324,7 +1468,7 @@ async function carregarDashboardJogador() {
         vinculadas.forEach(d => encontrados.set(d.id, d.data()));
         lista.innerHTML = '';
         if (!encontrados.size) { 
-            lista.innerHTML = '<p class="text-[#111] text-lg font-bold col-span-full text-center py-10">Nenhum personagem encontrado nesta conta.<br><span class="text-sm font-normal">Sua conta foi criada com sucesso! Peça ao Mestre para vincular um personagem ao seu e-mail ou UID.</span></p>'; 
+            lista.innerHTML = `<p class="text-[#111] text-xl font-bold col-span-full text-center py-10">Nenhum personagem encontrado nesta conta.<br><span class="text-lg font-normal mt-2 block">Sua conta foi criada com <b>SUCESSO</b>! Peça ao Mestre para vincular uma ficha ao seu UID:<br><span class="font-mono bg-black/10 px-2 py-1 rounded select-all mt-1 inline-block">${usuarioAtual.uid}</span></span></p>`; 
             return; 
         }
         for (const [id, ficha] of [...encontrados.entries()].sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '', 'pt-BR'))) {
@@ -1383,6 +1527,7 @@ document.getElementById('btn-voltar-painel').onclick = voltarAoPainel;
 document.getElementById('btn-sair-jogador').onclick = () => { tocarSom(audioSairPainel); signOut(auth).then(() => window.location.reload()); };
 document.getElementById('btn-sair-mestre').onclick = () => { tocarSom(audioSairPainel); signOut(auth).then(() => window.location.reload()); };
 document.getElementById('btn-criar-pdm-dashboard').onclick = () => { tocarSom(audioClique); criarPDM(); };
+document.getElementById('btn-recarregar-jogador').onclick = () => window.location.reload();
 
 function gerarLinkConvite(idFicha) {
     const url = new URL(window.location.href);
