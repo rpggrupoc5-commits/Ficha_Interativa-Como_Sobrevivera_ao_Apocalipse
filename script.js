@@ -96,7 +96,7 @@ function tocarSomTecla() {
 }
 
 // ==========================================
-// COMPRESSÃO DE IMAGEM (GIF SALVO DIRETO)
+// COMPRESSÃO DE IMAGEM
 // ==========================================
 function comprimirImagem(file) {
     return new Promise((resolve, reject) => {
@@ -422,8 +422,8 @@ function mostrarTelaSolicitacao(estado) {
                 <h2 class="fonte-titulo text-3xl text-[#111] text-center">ACESSO À FICHA</h2>
                 <p class="text-[#111] text-center font-bold">Você está abrindo esta ficha como <b>convidado</b>. É necessário solicitar autorização ao mestre.</p>
                 <p class="text-[#111] text-center font-bold">Seu UID: ${usuarioAtual.uid}</p>
-                <button id="btn-solicitar-acesso" class="w-full bg-[#a81c1c] text-white p-3 rounded font-bold hover:brightness-125">SOLICITAR ACESSO</button>
-                <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">VOLTAR</button>
+                <button id="btn-solicitar-acesso" class="w-full btn-perigo p-3 rounded font-bold">SOLICITAR ACESSO</button>
+                <button id="btn-voltar-login" class="w-full btn-metal p-3 rounded font-bold">VOLTAR</button>
             </div>
         `;
         document.getElementById('btn-solicitar-acesso').onclick = () => { tocarSom(audioClique); solicitarAcesso(); };
@@ -434,8 +434,8 @@ function mostrarTelaSolicitacao(estado) {
                 <h2 class="fonte-titulo text-3xl text-[#111] text-center">AGUARDANDO APROVAÇÃO</h2>
                 <p class="text-[#111] text-center font-bold">Sua solicitação foi enviada ao mestre. Aguarde a aprovação para acessar a ficha.</p>
                 <p class="text-[#111] text-center font-bold">Seu UID: ${usuarioAtual.uid}</p>
-                <button id="btn-verificar" class="w-full bg-[#a81c1c] text-white p-3 rounded font-bold hover:brightness-125">VERIFICAR NOVAMENTE</button>
-                <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">SAIR</button>
+                <button id="btn-verificar" class="w-full btn-perigo p-3 rounded font-bold">VERIFICAR NOVAMENTE</button>
+                <button id="btn-voltar-login" class="w-full btn-metal p-3 rounded font-bold">SAIR</button>
             </div>
         `;
         document.getElementById('btn-verificar').onclick = () => { tocarSom(audioClique); window.location.reload(); };
@@ -445,7 +445,7 @@ function mostrarTelaSolicitacao(estado) {
             <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
                 <h2 class="fonte-titulo text-3xl text-[#111] text-center">ACESSO RECUSADO</h2>
                 <p class="text-[#111] text-center font-bold">O mestre recusou sua solicitação de acesso a esta ficha.</p>
-                <button id="btn-voltar-login" class="w-full bg-[#3a2e27] text-white p-3 rounded font-bold hover:bg-[#7a4e32]">SAIR</button>
+                <button id="btn-voltar-login" class="w-full btn-metal p-3 rounded font-bold">SAIR</button>
             </div>
         `;
         document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioSairFicha); signOut(auth).then(() => window.location.reload()); };
@@ -643,7 +643,7 @@ const modalHTML = `
                 </div>
                 <div class="flex-1 flex flex-col gap-2">
                     <label class="flex flex-col text-sm font-bold text-[#111]">Nome do Item:<input type="text" id="modal-nome" class="input-campo p-2"></label>
-                    <button id="btn-upload" class="bg-[#3a2e27] text-white p-2 rounded font-bold hover:bg-[#a81c1c] transition text-sm"><i class="fa-solid fa-camera"></i> Escolher Imagem</button>
+                    <button id="btn-upload" class="btn-metal p-2 rounded font-bold transition text-sm"><i class="fa-solid fa-camera"></i> Escolher Imagem</button>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -652,9 +652,9 @@ const modalHTML = `
             </div>
             <label class="flex flex-col text-sm font-bold text-[#111]">Descrição:<textarea id="modal-desc" class="input-campo p-2 resize-none h-16"></textarea></label>
             <div class="flex justify-between mt-2 gap-2">
-                <button id="btn-excluir" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700 hidden">Excluir</button>
-                <button id="btn-cancelar" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700">Cancelar</button>
-                <button id="btn-salvar-item" class="bg-[#a81c1c] text-white p-2 rounded font-bold flex-1 hover:brightness-125">Salvar</button>
+                <button id="btn-excluir" class="btn-cinza p-2 rounded font-bold flex-1 hidden">Excluir</button>
+                <button id="btn-cancelar" class="btn-cinza p-2 rounded font-bold flex-1">Cancelar</button>
+                <button id="btn-salvar-item" class="btn-perigo p-2 rounded font-bold flex-1">Salvar</button>
             </div>
         </div>
     </div>
@@ -669,14 +669,14 @@ const modalHTML = `
                 </div>
                 <div class="flex-1 flex flex-col gap-2">
                     <label class="flex flex-col text-sm font-bold text-[#111]">Nome (opcional):<input type="text" id="modal-foto-nome" class="input-campo p-2" placeholder="Nome do personagem"></label>
-                    <button id="btn-upload-foto" class="bg-[#3a2e27] text-white p-2 rounded font-bold hover:bg-[#a81c1c] transition text-sm"><i class="fa-solid fa-camera"></i> Escolher Imagem</button>
+                    <button id="btn-upload-foto" class="btn-metal p-2 rounded font-bold transition text-sm"><i class="fa-solid fa-camera"></i> Escolher Imagem</button>
                 </div>
             </div>
             <label class="flex flex-col text-sm font-bold text-[#111]">Descrição:<textarea id="modal-foto-desc" class="input-campo p-2 resize-none h-16"></textarea></label>
             <div class="flex justify-between mt-2 gap-2">
-                <button id="btn-excluir-foto" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700 hidden">Excluir</button>
-                <button id="btn-cancelar-foto" class="bg-gray-600 text-white p-2 rounded font-bold flex-1 hover:bg-gray-700">Cancelar</button>
-                <button id="btn-salvar-foto" class="bg-[#a81c1c] text-white p-2 rounded font-bold flex-1 hover:brightness-125">Salvar</button>
+                <button id="btn-excluir-foto" class="btn-cinza p-2 rounded font-bold flex-1 hidden">Excluir</button>
+                <button id="btn-cancelar-foto" class="btn-cinza p-2 rounded font-bold flex-1">Cancelar</button>
+                <button id="btn-salvar-foto" class="btn-perigo p-2 rounded font-bold flex-1">Salvar</button>
             </div>
         </div>
     </div>
@@ -1159,8 +1159,8 @@ async function carregarContasJogadores() {
             
             const acoes = document.createElement('div');
             acoes.className = 'flex gap-2';
-            acoes.append(criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => { tocarSom(audioClique); copiarTexto(conta.uid || conta.id); }));
-            acoes.append(criarBotaoPainel('BANIR', 'bg-red-900', () => { tocarSom(audioClique); banirConta(conta.uid || conta.id); }));
+            acoes.append(criarBotaoPainel('COPIAR UID', 'btn-azul', () => { tocarSom(audioClique); copiarTexto(conta.uid || conta.id); }));
+            acoes.append(criarBotaoPainel('BANIR', 'btn-perigo', () => { tocarSom(audioClique); banirConta(conta.uid || conta.id); }));
 
             linha.append(dados, acoes);
             lista.appendChild(linha);
@@ -1173,7 +1173,7 @@ async function carregarContasJogadores() {
 }
 
 async function banirConta(uid) {
-    if (!confirm("Tem certeza que deseja BANIR esta conta? O jogador perderá o acesso e o perfil será deletado do banco de dados. (Nota: a conta de login ainda existirá no Firebase Authentication por segurança).")) return;
+    if (!confirm("Tem certeza que deseja BANIR esta conta? O jogador perderá o acesso e o perfil será deletado do banco de dados.")) return;
     try {
         await deleteDoc(doc(db, 'usuarios', uid));
         alert('Conta banida e removida do banco de dados.');
@@ -1225,7 +1225,6 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     conteudo.className = 'p-4 flex flex-col gap-2 flex-1';
     
     if (modoMestre) {
-        // FUNDO PRETO E LETRAS BRANCAS
         const infoBox = document.createElement('div');
         infoBox.className = 'bg-black text-white p-3 rounded-md shadow-inner texto-card-mestre flex flex-col gap-1';
 
@@ -1274,12 +1273,12 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
                     acoesConv.className = 'flex gap-1 mt-2 md:mt-0';
                     
                     const btnMudar = document.createElement('button');
-                    btnMudar.className = 'bg-blue-800 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-bold transition w-full md:w-auto';
+                    btnMudar.className = 'btn-azul px-2 py-1 rounded text-xs font-bold w-full md:w-auto';
                     btnMudar.textContent = d.permissao === 'editar' ? 'MUDAR P/ VER' : 'MUDAR P/ EDITAR';
                     btnMudar.onclick = () => { tocarSom(audioClique); mudarPermissao(idFicha, a.id, d.permissao); };
 
                     const btnRevogar = document.createElement('button');
-                    btnRevogar.className = 'bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition w-full md:w-auto';
+                    btnRevogar.className = 'btn-perigo px-2 py-1 rounded text-xs font-bold w-full md:w-auto';
                     btnRevogar.textContent = 'REVOGAR';
                     btnRevogar.onclick = () => { tocarSom(audioClique); revogarAcesso(idFicha, a.id); };
                     
@@ -1298,15 +1297,15 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     }
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
-    acoes.append(criarBotaoPainel(modoMestre ? 'ABRIR / EDITAR' : 'ABRIR FICHA', 'bg-[#a81c1c] hover:brightness-125', () => abrirFichaEmNovaAba(idFicha)));
+    acoes.append(criarBotaoPainel(modoMestre ? 'ABRIR / EDITAR' : 'ABRIR FICHA', 'btn-perigo', () => abrirFichaEmNovaAba(idFicha)));
 
     if (modoMestre) {
-        acoes.append(criarBotaoPainel('CONVIDAR POR LINK', 'bg-purple-800', () => { tocarSom(audioClique); gerarLinkConvite(idFicha); }));
-        if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('COPIAR UID', 'bg-indigo-800', () => { tocarSom(audioClique); copiarTexto(ficha.proprietarioUid); }));
-        acoes.append(criarBotaoPainel('DUPLICAR', 'bg-blue-800', () => { tocarSom(audioClique); duplicarFicha(idFicha, ficha); }));
-        acoes.append(criarBotaoPainel('VINCULAR JOGADOR', 'bg-green-800', () => { tocarSom(audioClique); vincularJogador(idFicha, ficha); }));
-        if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('DESVINCULAR', 'bg-gray-700', () => { tocarSom(audioClique); desvincularJogador(idFicha, ficha); }));
-        acoes.append(criarBotaoPainel('EXCLUIR', 'bg-red-900', () => { tocarSom(audioClique); excluirFicha(idFicha, ficha); }));
+        acoes.append(criarBotaoPainel('CONVIDAR POR LINK', 'btn-roxo', () => { tocarSom(audioClique); gerarLinkConvite(idFicha); }));
+        if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('COPIAR UID', 'btn-azul', () => { tocarSom(audioClique); copiarTexto(ficha.proprietarioUid); }));
+        acoes.append(criarBotaoPainel('DUPLICAR', 'btn-azul', () => { tocarSom(audioClique); duplicarFicha(idFicha, ficha); }));
+        acoes.append(criarBotaoPainel('VINCULAR JOGADOR', 'btn-verde', () => { tocarSom(audioClique); vincularJogador(idFicha, ficha); }));
+        if (ficha.proprietarioUid) acoes.append(criarBotaoPainel('DESVINCULAR', 'btn-cinza', () => { tocarSom(audioClique); desvincularJogador(idFicha, ficha); }));
+        acoes.append(criarBotaoPainel('EXCLUIR', 'btn-perigo', () => { tocarSom(audioClique); excluirFicha(idFicha, ficha); }));
     }
 
     conteudo.append(acoes);
@@ -1453,9 +1452,9 @@ async function carregarSolicitacoesPendentes() {
             const acoes = document.createElement('div'); 
             acoes.className = 'flex flex-wrap gap-2 mt-2 md:mt-0';
             
-            acoes.append(criarBotaoPainel('APROVAR (EDITAR)', 'bg-green-800 text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'editar'); }));
-            acoes.append(criarBotaoPainel('APROVAR (VER)', 'bg-blue-800 text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'visualizar'); }));
-            acoes.append(criarBotaoPainel('RECUSAR', 'bg-red-900 text-base', () => { tocarSom(audioSairPainel); recusarSolicitacao(sol.fichaId, sol.uidConvidado); }));
+            acoes.append(criarBotaoPainel('APROVAR (EDITAR)', 'btn-verde text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'editar'); }));
+            acoes.append(criarBotaoPainel('APROVAR (VER)', 'btn-azul text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'visualizar'); }));
+            acoes.append(criarBotaoPainel('RECUSAR', 'btn-perigo text-base', () => { tocarSom(audioSairPainel); recusarSolicitacao(sol.fichaId, sol.uidConvidado); }));
             
             linha.append(dados, acoes);
             container.appendChild(linha);
@@ -1579,7 +1578,6 @@ async function duplicarFicha(idFicha, ficha) {
     } catch (e) { console.error(e); alert(`Erro ao duplicar ficha: ${e.message}`); }
 }
 
-// CORREÇÃO: BUCAR EMAIL DO JOGADOR AO VINCULAR
 async function vincularJogador(idFicha, ficha) {
     const uid = prompt('UID da conta Firebase do jogador:', ficha.proprietarioUid || ''); if (uid === null) return;
     const uidLimpo = uid.trim();
@@ -1588,7 +1586,6 @@ async function vincularJogador(idFicha, ficha) {
     
     try {
         let emailEncontrado = '';
-        // Busca o e-mail na coleção 'usuarios' usando o UID
         const userSnap = await getDoc(doc(db, 'usuarios', uidLimpo));
         if (userSnap.exists()) {
             emailEncontrado = userSnap.data().email || '';
@@ -1597,7 +1594,7 @@ async function vincularJogador(idFicha, ficha) {
         await setDoc(doc(db, 'fichas', idFicha), { 
             proprietarioUid: uidLimpo, 
             proprietarioNome: nomeJogador.trim(), 
-            proprietarioEmail: emailEncontrado, // Salva o e-mail na ficha
+            proprietarioEmail: emailEncontrado,
             tipo: 'jogador' 
         }, { merge: true });
         
