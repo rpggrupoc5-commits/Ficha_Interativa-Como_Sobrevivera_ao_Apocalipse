@@ -631,7 +631,6 @@ function recalcularPesoGeral() {
         pesoEquip += qtd * (parseFloat(pesoStr) || 0);
     });
 
-    // Adiciona o peso da mochila (se estiver ativa)
     let pesoMochila = 0;
     if (mochilaAtivaId) {
         const mochilaEl = document.getElementById(mochilaAtivaId);
@@ -670,7 +669,6 @@ const modalHTML = `
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg):<input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
             </div>
             
-            <!-- CAMPOS DA MOCHILA -->
             <div id="campos-mochila" class="hidden flex-col gap-2 border-t border-b border-[#3a2517] py-2 my-1">
                 <label class="flex flex-col text-sm font-bold text-[#111]">Capacidade (Slots):
                     <select id="modal-mochila-capacidade" class="input-campo p-2">
@@ -795,7 +793,6 @@ function abrirModal(q, dados = null) {
     tocarSom(audioClique);
     quadradoAtual = q;
     
-    // Verifica se é o slot da mochila
     const isMochilaSlot = (q.getAttribute('data-original') || '').includes('MOCHILA') || (q.innerText || '').includes('MOCHILA') || (dados && dados.tipo === 'mochila');
     const camposMochila = document.getElementById('campos-mochila');
     
@@ -845,7 +842,6 @@ btnUpload.onclick = () => {
 };
 
 btnExcluir.onclick = () => {
-    // Trava de segurança para não perder itens da mochila
     if (quadradoAtual.dataset.itemData) {
         const dadosItem = JSON.parse(quadradoAtual.dataset.itemData);
         if (dadosItem.tipo === 'mochila' || dadosItem.mochilaCapacidade) {
@@ -880,7 +876,6 @@ btnSalvarItem.onclick = () => {
     const pesoString = inputPeso.value.replace(',', '.');
     const qtd = parseInt(inputQtd.value) || 0;
     
-    // Pega os dados da mochila, se aplicável
     const camposMochilaVisiveis = !document.getElementById('campos-mochila').classList.contains('hidden');
     const mochilaCap = camposMochilaVisiveis ? document.getElementById('modal-mochila-capacidade').value : null;
     const mochilaAtiva = camposMochilaVisiveis ? document.getElementById('modal-mochila-ativa').checked : null;
@@ -910,14 +905,8 @@ function renderizarItem(q, dados) {
     const isEquipamento = !q.id.startsWith('inv-');
     const classeTexto = isEquipamento ? 'opacity-0 group-hover:opacity-100 transition-opacity' : 'opacity-100';
     
-    let tarjaHTML = '';
-    if (dados.tipo === 'mochila') {
-        const corTarja = dados.mochilaAtiva ? 'bg-[#a81c1c]' : 'bg-gray-600';
-        tarjaHTML = `<div class="absolute top-0 left-0 right-0 ${corTarja} text-white text-[10px] font-bold text-center py-0.5 z-20">${dados.mochilaCapacidade} SLOTS</div>`;
-    }
-
+    // A TARJA FOI REMOVIDA DAQUI PARA NÃO APARECER NO QUADRADINHO
     q.innerHTML = `
-        ${tarjaHTML}
         ${dados.img ? `<img src="${dados.img}" style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;padding:4px;z-index:1;">` : ''}
         <div class="text-[10px] font-bold bg-black/40 text-white px-1 rounded leading-tight w-full absolute bottom-0 left-0 z-10 text-center ${classeTexto}">
             ${dados.nome} <br>
@@ -935,15 +924,11 @@ function renderizarItem(q, dados) {
     q.dataset.qtd = dados.qtd;
 }
 
-// ==========================================
-// LÓGICA DE ATUALIZAÇÃO DA MOCHILA (BLOQUEIO)
-// ==========================================
 function atualizarEstadoMochila() {
     mochilaAtivaId = null;
     mochilaCapacidade = 0;
     mochilaStatus = false;
 
-    // Procura uma mochila equipada
     const mochilaEl = document.querySelector('.slot-vazio.item-adicionado[data-item-data*="mochila"]');
     
     if (mochilaEl) {
@@ -953,25 +938,21 @@ function atualizarEstadoMochila() {
         mochilaStatus = dadosMochila.mochilaAtiva;
     }
 
-    // Aplica o bloqueio nos slots do inventário
     const slotsInv = document.querySelectorAll('#inventario .slot-vazio');
     slotsInv.forEach((slot, index) => {
         if (mochilaStatus && index < mochilaCapacidade) {
-            // Desbloqueado
             slot.classList.remove('slot-bloqueado');
             slot.onclick = () => {
                 if (slot.classList.contains('item-adicionado')) abrirModal(slot, JSON.parse(slot.dataset.itemData));
                 else abrirModal(slot);
             };
         } else {
-            // Bloqueado
             slot.classList.add('slot-bloqueado');
-            slot.onclick = null; // Remove o clique
+            slot.onclick = null;
         }
     });
 }
 
-// Inicializa os slots de inventário
 if (gridInv) {
     for (let i = 0; i < 16; i++) {
         const q = document.createElement('div');
@@ -1089,7 +1070,6 @@ async function salvarFicha(opcoes = {}) {
         const imagemId = `equipamento_${indice}`;
         if (dados.img) imagensAtivas[imagemId] = dados.img;
         
-        // Salva os dados extras se for mochila
         const dadosSalvar = { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" };
         if (dados.tipo === 'mochila') {
             dadosSalvar.tipo = 'mochila';
