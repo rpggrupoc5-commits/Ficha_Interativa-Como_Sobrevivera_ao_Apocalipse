@@ -135,24 +135,80 @@
         button:active { transform: scale(0.98); box-shadow: inset 0 3px 5px rgba(0,0,0,0.5); }
         button:focus-visible { outline: 3px solid #d2b48c; outline-offset: 2px; }
 
-        .btn-metal { background: linear-gradient(180deg, #4a3b32 0%, #2a211b 100%); border: 1px solid #1a120e; box-shadow: inset 0 2px 0 rgba(255,255,255,0.15), 0 4px 6px rgba(0,0,0,0.7); color: #f0e6d2; }
-        .btn-perigo { background: linear-gradient(180deg, #a81c1c 0%, #5c0d0d 100%); border: 1px solid #3a0505; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
-        .btn-roxo { background: linear-gradient(180deg, #8b5cf6 0%, #5b21b6 100%); border: 1px solid #3b0764; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
-        .btn-azul { background: linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%); border: 1px solid #172554; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
-        .btn-verde { background: linear-gradient(180deg, #22c55e 0%, #14532d 100%); border: 1px solid #052e16; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
-        .btn-cinza { background: linear-gradient(180deg, #6b7280 0%, #374151 100%); border: 1px solid #1f2937; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
+        .btn-metal {
+            background: linear-gradient(180deg, #4a3b32 0%, #2a211b 100%);
+            border: 1px solid #1a120e;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.15), 0 4px 6px rgba(0,0,0,0.7);
+            color: #f0e6d2;
+        }
+        
+        .btn-perigo {
+            background: linear-gradient(180deg, #a81c1c 0%, #5c0d0d 100%);
+            border: 1px solid #3a0505;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
 
-        .icone-atributo { width: 32px; height: 32px; background: #1a110a; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #d8c3a5; font-size: 1.2rem; margin-right: 10px; box-shadow: inset 0 0 5px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #4a3322; flex-shrink: 0; }
-        .slot-bloqueado { position: relative; pointer-events: none; }
-        .slot-bloqueado::after { content: "🔒"; position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; font-size: 2rem; color: white; z-index: 20; backdrop-filter: grayscale(100%) blur(1px); }
+        .btn-roxo {
+            background: linear-gradient(180deg, #8b5cf6 0%, #5b21b6 100%);
+            border: 1px solid #3b0764;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+        .btn-azul {
+            background: linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%);
+            border: 1px solid #172554;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+        .btn-verde {
+            background: linear-gradient(180deg, #22c55e 0%, #14532d 100%);
+            border: 1px solid #052e16;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+        .btn-cinza {
+            background: linear-gradient(180deg, #6b7280 0%, #374151 100%);
+            border: 1px solid #1f2937;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
 
-        /* ========================================= */
-        /* RESPONSIVIDADE - APENAS PARA CELULAR E TABLET */
-        /* ========================================= */
+        .icone-atributo {
+            width: 32px; height: 32px;
+            background: #1a110a;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            color: #d8c3a5;
+            font-size: 1.2rem;
+            margin-right: 10px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.5);
+            border: 1px solid #4a3322;
+            flex-shrink: 0;
+        }
+
         .equip-grid { min-height: 450px; }
+        
+        /* Slot Bloqueado */
+        .slot-bloqueado {
+            position: relative;
+            pointer-events: none;
+        }
+        .slot-bloqueado::after {
+            content: "🔒";
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            color: white;
+            z-index: 20;
+            backdrop-filter: grayscale(100%) blur(1px);
+        }
 
         @media (max-width: 1024px) {
-            /* Topo da ficha (Nome, idade) em grade */
             header .flex-wrap {
                 display: grid !important;
                 grid-template-columns: repeat(3, 1fr);
@@ -161,66 +217,34 @@
             }
             header h1, header .border-4 { margin-bottom: 10px; }
             
-            /* O SEGREDO: Força o container a ser um grid de 2 colunas e ignora o Tailwind */
             .equip-grid { 
+                height: auto !important; 
+                min-height: 0; 
                 display: grid !important;
                 grid-template-columns: repeat(2, 1fr) !important; 
-                grid-auto-rows: auto !important;
-                gap: 12px !important; 
-                height: auto !important;
-                min-height: 0 !important;
+                grid-template-rows: auto !important; 
+                gap: 10px !important; 
             }
             
-            /* Limpa as posições do Tailwind para podermos desenhar o layout */
-            .equip-grid > div {
-                grid-column: auto !important;
-                grid-row: auto !important;
-            }
-
-            /* FOTO DO PERSONAGEM (Formato 9x16) */
             .equip-grid > .foto-personagem { 
                 grid-column: 1 / -1 !important; 
-                width: 100% !important;
-                aspect-ratio: 9 / 16 !important; 
-                height: auto !important;
-                max-height: 500px;
-                margin-bottom: 10px;
+                grid-row: 1 !important; 
+                height: 300px !important; 
             }
-            .equip-grid > .foto-personagem img { object-fit: contain !important; } /* Mostra a imagem inteira */
-
-            /* Quadrados padrão */
-            .equip-grid > .slot-vazio {
-                aspect-ratio: 1 / 1 !important;
-                min-height: 100px;
-                font-size: 1rem !important;
-                padding: 10px;
-            }
-            .equip-grid > .slot-vazio i { font-size: 2.5rem; margin-bottom: 5px;}
-
-            /* Posicionamento igual ao seu desenho de papel */
+            
+            /* Ordem no celular */
             .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } /* CABEÇA */
-            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; } /* COLETE */
-            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 1; grid-row: 3; } /* FACE */
+            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 3; } /* COLETE */
+            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 2; grid-row: 2; } /* FACE */
+            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 3; } /* ROUPA */
+            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1 / -1; grid-row: 4; min-height: 80px; } /* MOCHILA */
+            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 5; } /* MÃO PRINCIPAL */
+            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 5; } /* MÃO SECUNDÁRIA */
+            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 6; } /* BOTAS */
             
-            /* ROUPA: Ocupa a coluna 2 e desce 2 linhas (Retângulo vertical) */
-            .equip-grid > .slot-vazio:nth-child(4) { 
-                grid-column: 2; 
-                grid-row: 3 / span 2; 
-                aspect-ratio: auto !important;
-                min-height: 100% !important; 
-            }
-
-            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 4; } /* MOCHILA */
+            .equip-grid > .slot-vazio { min-height: 100px; font-size: .8rem !important; padding: 5px; }
             
-            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 1; grid-row: 5; } /* MÃO PRINCIPAL */
-            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 2; grid-row: 5; } /* MÃO SECUNDÁRIA */
-            
-            .equip-grid > .slot-vazio:nth-child(9) { 
-                grid-column: 1 / -1; 
-                grid-row: 6; 
-                aspect-ratio: auto !important; 
-                min-height: 90px; 
-            } /* BOTAS (linha toda) */
+            #peso-personagem { text-align: left !important; padding-left: 8px; }
         }
 
         @media (max-width: 640px) {
@@ -259,7 +283,6 @@
     </div>
 
     <div id="site-principal" class="hidden">
-        <!-- DASHBOARD JOGADOR -->
         <section id="dashboard-jogador" class="hidden max-w-[1500px] mx-auto px-3 py-8">
             <div class="painel-papel p-4 md:p-8">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
@@ -276,7 +299,6 @@
             </div>
         </section>
 
-        <!-- DASHBOARD MESTRE -->
         <section id="dashboard-mestre" class="hidden max-w-[1500px] mx-auto px-3 py-8">
             <div class="painel-papel p-4 md:p-8">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
@@ -321,7 +343,6 @@
             </div>
         </section>
 
-        <!-- ÁREA DA FICHA -->
         <div id="area-ficha" class="hidden">
             <div class="max-w-[1500px] mx-auto mb-4 flex flex-col md:flex-row justify-between items-center bg-[#1f1814] border-b-4 border-[#5c3a21] p-2 mt-4 shadow-lg gap-2">
                 <span class="fonte-titulo text-3xl text-[#d8c3a5] px-4 drop-shadow-md">MINHA FICHA</span>
@@ -394,7 +415,7 @@
                     
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">EQUIPAMENTO</h3>
-                        <!-- AQUI FOI CORRIGIDO: Classes do Tailwind de volta para o PC -->
+                        <!-- Adicionado o slot 5 da Mochila -->
                         <div class="equip-grid p-3 md:p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
@@ -404,6 +425,7 @@
                             
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
                             
+                            <!-- NOVO SLOT MOCHILA -->
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
                             
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
