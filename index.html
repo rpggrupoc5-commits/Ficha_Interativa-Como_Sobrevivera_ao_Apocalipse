@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Como Sobreviver ao Apocalipse</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+    <!-- Trocamos Bebas Neue por Oswald para melhorar a leitura no PC -->
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
         :root { 
             --bg-escuro: #0f0c0a; 
@@ -35,7 +36,8 @@
             z-index: -1;
         }
 
-        .fonte-titulo { font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
+        /* Fonte trocada para Oswald (mais cheia e legível no PC) */
+        .fonte-titulo { font-family: 'Oswald', sans-serif; font-weight: 700; letter-spacing: 1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
         .fonte-papel { font-family: 'Special Elite', monospace; }
         
         .texto-card-mestre { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-shadow: none; }
@@ -61,8 +63,9 @@
         }
 
         .titulo-painel { 
-            font-family: 'Bebas Neue', sans-serif; 
-            font-size: 1.8rem; 
+            font-family: 'Oswald', sans-serif; 
+            font-size: 1.6rem; 
+            font-weight: 700;
             background: linear-gradient(90deg, #111 70%, transparent); 
             color: var(--texto-claro); 
             padding: 4px 15px; 
@@ -121,28 +124,59 @@
         .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
         .texto-proporcao { position: absolute; bottom: 5px; background: rgba(0,0,0,0.8); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; pointer-events: none; z-index: 10; }
 
+        /* NOVO DESIGN DOS BOTÕES (ESTILO PLÁSTICO/METAL) */
         button { 
-            font-family: 'Bebas Neue', sans-serif; 
-            font-weight: 400; 
+            font-family: 'Oswald', sans-serif; 
+            font-weight: 600; 
             letter-spacing: 1px; 
             line-height: 1.2; 
             -webkit-tap-highlight-color: transparent; 
             text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-            transition: transform 0.1s, filter 0.2s;
+            transition: transform 0.1s, filter 0.2s, box-shadow 0.2s;
+            border-radius: 4px;
         }
-        button:hover { filter: brightness(1.2); transform: scale(1.02); }
-        button:active { transform: scale(0.98); }
+        button:hover { filter: brightness(1.15); transform: scale(1.02); }
+        button:active { transform: scale(0.98); box-shadow: inset 0 3px 5px rgba(0,0,0,0.5); }
         button:focus-visible { outline: 3px solid #d2b48c; outline-offset: 2px; }
 
         .btn-metal {
-            background: linear-gradient(180deg, #3a2e27 0%, #1f1814 100%);
-            border: 1px solid #5c3a21;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 6px rgba(0,0,0,0.5);
+            background: linear-gradient(180deg, #4a3b32 0%, #2a211b 100%);
+            border: 1px solid #1a120e;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.15), 0 4px 6px rgba(0,0,0,0.7);
+            color: #f0e6d2;
         }
+        
         .btn-perigo {
-            background: linear-gradient(180deg, #8a1313 0%, #4a0909 100%);
-            border: 1px solid #c42929;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.5);
+            background: linear-gradient(180deg, #a81c1c 0%, #5c0d0d 100%);
+            border: 1px solid #3a0505;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+
+        /* Botões específicos com as cores que você já tinha, mas com o novo relevo */
+        .btn-roxo {
+            background: linear-gradient(180deg, #8b5cf6 0%, #5b21b6 100%);
+            border: 1px solid #3b0764;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+        .btn-azul {
+            background: linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%);
+            border: 1px solid #172554;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+        .btn-verde {
+            background: linear-gradient(180deg, #22c55e 0%, #14532d 100%);
+            border: 1px solid #052e16;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+        .btn-cinza {
+            background: linear-gradient(180deg, #6b7280 0%, #374151 100%);
+            border: 1px solid #1f2937;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
         }
 
         .icone-atributo {
@@ -226,8 +260,8 @@
                 <div class="flex justify-end mb-4">
                     <button id="btn-esqueci-senha" type="button" class="text-sm font-bold text-[#3a2517] hover:text-[#8a1313] hover:underline">Esqueci a senha</button>
                 </div>
-                <button id="btn-entrar" class="btn-perigo w-full text-white p-3 rounded mb-2 text-xl">ENTRAR</button>
-                <button id="btn-cadastrar" class="btn-metal w-full text-white p-3 rounded mb-2 text-xl">CRIAR CONTA</button>
+                <button id="btn-entrar" class="btn-perigo w-full p-3 rounded mb-2 text-xl">ENTRAR</button>
+                <button id="btn-cadastrar" class="btn-metal w-full p-3 rounded mb-2 text-xl">CRIAR CONTA</button>
             </div>
             <p id="mensagem-erro" class="text-red-800 text-center font-bold text-sm hidden"></p>
         </div>
@@ -241,7 +275,7 @@
                         <h1 class="fonte-titulo text-4xl md:text-5xl text-[#1a110a]">PAINEL DE PERSONAGENS</h1>
                         <p class="text-[#3a2517] text-lg font-bold fonte-papel">Escolha um sobrevivente para abrir sua ficha.</p>
                     </div>
-                    <button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-metal text-white w-full md:w-auto">SAIR</button>
+                    <button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-metal w-full md:w-auto">SAIR</button>
                 </div>
                 <div id="cards-jogador" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando personagens...</p></div>
             </div>
@@ -255,8 +289,8 @@
                         <p class="text-[#3a2517] text-lg font-bold fonte-papel">Administração de personagens e PDMs.</p>
                     </div>
                     <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                        <button id="btn-criar-pdm-dashboard" class="fonte-titulo text-xl px-4 py-2 rounded btn-perigo text-white w-full md:w-auto">+ CRIAR PDM</button>
-                        <button id="btn-sair-mestre" class="fonte-titulo text-xl px-4 py-2 rounded btn-metal text-white w-full md:w-auto">SAIR</button>
+                        <button id="btn-criar-pdm-dashboard" class="fonte-titulo text-xl px-4 py-2 rounded btn-perigo w-full md:w-auto">+ CRIAR PDM</button>
+                        <button id="btn-sair-mestre" class="fonte-titulo text-xl px-4 py-2 rounded btn-metal w-full md:w-auto">SAIR</button>
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-4 mb-6 text-[#1a110a] font-bold text-lg font-papel">
@@ -270,7 +304,7 @@
                             <h2 class="fonte-titulo text-3xl text-[#1a110a]">CONTAS DE JOGADORES</h2>
                             <p class="text-base text-[#3a2517] font-bold fonte-papel">UIDs registrados automaticamente. Use COPIAR UID para vincular uma ficha.</p>
                         </div>
-                        <button id="btn-atualizar-contas" class="px-4 py-2 rounded btn-metal text-white font-bold text-base w-full md:w-auto">ATUALIZAR CONTAS</button>
+                        <button id="btn-atualizar-contas" class="px-4 py-2 rounded btn-metal font-bold text-base w-full md:w-auto">ATUALIZAR CONTAS</button>
                     </div>
                     <div id="lista-contas-jogadores" class="flex flex-col gap-2"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando contas...</p></div>
                 </section>
@@ -281,7 +315,7 @@
                             <h2 class="fonte-titulo text-3xl text-[#8a1313]">SOLICITAÇÕES DE ACESSO PENDENTES</h2>
                             <p class="text-base text-[#3a2517] font-bold fonte-papel">Convidados que pediram acesso. Aprove ou recuse.</p>
                         </div>
-                        <button id="btn-atualizar-solicitacoes" class="px-4 py-2 rounded btn-metal text-white font-bold text-base w-full md:w-auto">ATUALIZAR</button>
+                        <button id="btn-atualizar-solicitacoes" class="px-4 py-2 rounded btn-metal font-bold text-base w-full md:w-auto">ATUALIZAR</button>
                     </div>
                     <div id="solicitacoes-mestre" class="flex flex-col gap-2"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando solicitações...</p></div>
                 </section>
@@ -295,9 +329,9 @@
             <div class="max-w-[1500px] mx-auto mb-4 flex flex-col md:flex-row justify-between items-center bg-[#1f1814] border-b-4 border-[#5c3a21] p-2 mt-4 shadow-lg gap-2">
                 <span class="fonte-titulo text-3xl text-[#d8c3a5] px-4 drop-shadow-md">MINHA FICHA</span>
                 <div class="flex gap-2 w-full md:w-auto justify-center">
-                    <button id="btn-voltar-painel" class="fonte-titulo text-lg md:text-xl px-3 md:px-4 py-1 rounded btn-metal text-white flex-1 md:flex-none">PAINEL</button>
-                    <button id="btn-salvar-ficha" class="fonte-titulo text-lg md:text-xl px-3 md:px-4 py-1 rounded btn-perigo text-white hidden flex-1 md:flex-none">SALVAR FICHA</button>
-                    <button id="btn-sair" class="fonte-titulo text-lg md:text-xl px-3 md:px-4 py-1 rounded btn-metal text-white flex-1 md:flex-none">SAIR</button>
+                    <button id="btn-voltar-painel" class="fonte-titulo text-lg md:text-xl px-3 md:px-4 py-1 rounded btn-metal flex-1 md:flex-none">PAINEL</button>
+                    <button id="btn-salvar-ficha" class="fonte-titulo text-lg md:text-xl px-3 md:px-4 py-1 rounded btn-perigo hidden flex-1 md:flex-none">SALVAR FICHA</button>
+                    <button id="btn-sair" class="fonte-titulo text-lg md:text-xl px-3 md:px-4 py-1 rounded btn-metal flex-1 md:flex-none">SAIR</button>
                 </div>
             </div>
             
