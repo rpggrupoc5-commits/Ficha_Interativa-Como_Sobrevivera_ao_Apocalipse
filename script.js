@@ -354,14 +354,12 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
     }
 }
 
-// MONITORAMENTO INTELIGENTE (REVOGAÇÃO E MUDANÇA DE PERMISSÃO)
 function monitorarRevogacao(fichaId) {
     if (intervalMonitorRevogacao) clearInterval(intervalMonitorRevogacao);
     intervalMonitorRevogacao = setInterval(async () => {
         try {
             const snap = await getDoc(doc(db, 'fichas', fichaId, 'acessos', usuarioAtual.uid));
             
-            // Se o acesso foi deletado (revogado)
             if (!snap.exists()) {
                 clearInterval(intervalMonitorRevogacao);
                 desativarAutosave();
@@ -373,14 +371,13 @@ function monitorarRevogacao(fichaId) {
                 return;
             }
 
-            // Se o acesso existe, mas a permissão mudou (ex: de editar para visualizar)
             const novaPermissao = snap.data().permissao || "visualizar";
             const permissaoAtualMapeada = modoAcesso === "convidado-editar" ? "editar" : "visualizar";
             
             if (novaPermissao !== permissaoAtualMapeada) {
                 clearInterval(intervalMonitorRevogacao);
                 alert(`O mestre alterou sua permissão para ${novaPermissao.toUpperCase()}. A página será recarregada.`);
-                window.location.reload(); // Recarrega para aplicar as novas regras
+                window.location.reload();
             }
 
         } catch (e) {}
@@ -1175,13 +1172,12 @@ async function carregarContasJogadores() {
     }
 }
 
-// FUNÇÃO PARA BANIR CONTA
 async function banirConta(uid) {
     if (!confirm("Tem certeza que deseja BANIR esta conta? O jogador perderá o acesso e o perfil será deletado do banco de dados. (Nota: a conta de login ainda existirá no Firebase Authentication por segurança).")) return;
     try {
         await deleteDoc(doc(db, 'usuarios', uid));
         alert('Conta banida e removida do banco de dados.');
-        carregarContasJogadores(); // Recarrega a lista
+        carregarContasJogadores();
     } catch (e) {
         console.error("Erro ao banir conta:", e);
         alert(`Erro ao banir: ${e.message}`);
@@ -1229,34 +1225,39 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     conteudo.className = 'p-4 flex flex-col gap-2 flex-1';
     
     if (modoMestre) {
+        // FUNDO PRETO E LETRAS BRANCAS
+        const infoBox = document.createElement('div');
+        infoBox.className = 'bg-black text-white p-3 rounded-md shadow-inner texto-card-mestre flex flex-col gap-1';
+
         const nome = document.createElement('h3'); 
-        nome.className = 'fonte-titulo text-3xl text-[#fff]'; 
+        nome.className = 'fonte-titulo text-3xl text-[#e6d5b8]'; 
         nome.textContent = ficha.nome || 'Personagem sem nome';
         
         const nivelExp = document.createElement('p'); 
-        nivelExp.className = 'text-base font-bold text-[#d2b48c] texto-card-mestre'; 
+        nivelExp.className = 'text-base font-bold text-[#d2b48c]'; 
         nivelExp.textContent = `NÍVEL: ${ficha.nivel || '1'} | EXP: ${ficha.exp || '0'}`;
         
         const jogador = document.createElement('p'); 
-        jogador.className = 'text-lg font-bold text-[#fff] mt-2 texto-card-mestre';
+        jogador.className = 'text-base font-bold text-white mt-2';
         const nomeDono = ficha.proprietarioNome || 'NÃO VINCULADO';
         jogador.textContent = `Jogador (Dono): ${nomeDono}`;
         
         const emailDono = document.createElement('p'); 
-        emailDono.className = 'text-base font-bold text-[#fff] texto-card-mestre';
+        emailDono.className = 'text-base font-bold text-white';
         emailDono.textContent = `Email do Dono: ${ficha.proprietarioEmail || (ficha.tipo === 'pdm' ? 'N/A' : 'Nenhum')}`;
         
         const uid = document.createElement('p'); 
-        uid.className = 'text-base font-bold text-[#fff] break-all texto-card-mestre';
+        uid.className = 'text-base font-bold text-white break-all';
         uid.textContent = `UID do Dono: ${ficha.proprietarioUid || 'N/A'}`;
-        
-        conteudo.append(nome, nivelExp, jogador, emailDono, uid);
+
+        infoBox.append(nome, nivelExp, jogador, emailDono, uid);
+        conteudo.append(infoBox);
         
         try {
             const acessosSnap = await getDocs(collection(db, 'fichas', idFicha, 'acessos'));
             if (!acessosSnap.empty) {
                 const tituloAcesso = document.createElement('p');
-                tituloAcesso.className = 'text-sm font-bold text-[#f3dfc1] mt-4 mb-2 border-b border-[#7a4e32] pb-1 texto-card-mestre';
+                tituloAcesso.className = 'text-sm font-bold text-[#f3dfc1] mt-4 mb-2 border-b border-[#7a4e32] pb-1';
                 tituloAcesso.textContent = 'CONVIDADOS COM ACESSO:';
                 conteudo.append(tituloAcesso);
                 
@@ -1578,15 +1579,34 @@ async function duplicarFicha(idFicha, ficha) {
     } catch (e) { console.error(e); alert(`Erro ao duplicar ficha: ${e.message}`); }
 }
 
+// CORREÇÃO: BUCAR EMAIL DO JOGADOR AO VINCULAR
 async function vincularJogador(idFicha, ficha) {
     const uid = prompt('UID da conta Firebase do jogador:', ficha.proprietarioUid || ''); if (uid === null) return;
     const uidLimpo = uid.trim();
     if (!uidLimpo || uidLimpo.length < 10) return alert('Informe o UID completo da conta Firebase.');
     const nomeJogador = prompt('Nome do jogador (opcional):', ficha.proprietarioNome || ''); if (nomeJogador === null) return;
+    
     try {
-        await setDoc(doc(db, 'fichas', idFicha), { proprietarioUid: uidLimpo, proprietarioNome: nomeJogador.trim(), tipo: 'jogador' }, { merge: true });
-        await atualizarPainelMestre(); alert('Jogador vinculado.');
-    } catch (e) { console.error(e); alert(`Erro ao vincular jogador: ${e.message}`); }
+        let emailEncontrado = '';
+        // Busca o e-mail na coleção 'usuarios' usando o UID
+        const userSnap = await getDoc(doc(db, 'usuarios', uidLimpo));
+        if (userSnap.exists()) {
+            emailEncontrado = userSnap.data().email || '';
+        }
+
+        await setDoc(doc(db, 'fichas', idFicha), { 
+            proprietarioUid: uidLimpo, 
+            proprietarioNome: nomeJogador.trim(), 
+            proprietarioEmail: emailEncontrado, // Salva o e-mail na ficha
+            tipo: 'jogador' 
+        }, { merge: true });
+        
+        await atualizarPainelMestre(); 
+        alert('Jogador vinculado com sucesso!');
+    } catch (e) { 
+        console.error(e); 
+        alert(`Erro ao vincular jogador: ${e.message}`); 
+    }
 }
 
 async function desvincularJogador(idFicha, ficha) {
