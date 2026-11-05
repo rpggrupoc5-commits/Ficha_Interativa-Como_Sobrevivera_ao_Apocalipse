@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Como Sobreviver ao Apocalipse</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Trocamos Bebas Neue por Oswald para melhorar a leitura no PC -->
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
         :root { 
@@ -36,10 +35,8 @@
             z-index: -1;
         }
 
-        /* Fonte trocada para Oswald (mais cheia e legível no PC) */
         .fonte-titulo { font-family: 'Oswald', sans-serif; font-weight: 700; letter-spacing: 1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
         .fonte-papel { font-family: 'Special Elite', monospace; }
-        
         .texto-card-mestre { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-shadow: none; }
 
         .painel-papel { 
@@ -124,7 +121,6 @@
         .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
         .texto-proporcao { position: absolute; bottom: 5px; background: rgba(0,0,0,0.8); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; pointer-events: none; z-index: 10; }
 
-        /* NOVO DESIGN DOS BOTÕES (ESTILO PLÁSTICO/METAL) */
         button { 
             font-family: 'Oswald', sans-serif; 
             font-weight: 600; 
@@ -153,7 +149,6 @@
             color: #ffffff;
         }
 
-        /* Botões específicos com as cores que você já tinha, mas com o novo relevo */
         .btn-roxo {
             background: linear-gradient(180deg, #8b5cf6 0%, #5b21b6 100%);
             border: 1px solid #3b0764;
@@ -194,6 +189,25 @@
 
         .equip-grid { min-height: 450px; }
         
+        /* Slot Bloqueado */
+        .slot-bloqueado {
+            position: relative;
+            pointer-events: none;
+        }
+        .slot-bloqueado::after {
+            content: "🔒";
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            color: white;
+            z-index: 20;
+            backdrop-filter: grayscale(100%) blur(1px);
+        }
+
         @media (max-width: 1024px) {
             header .flex-wrap {
                 display: grid !important;
@@ -218,14 +232,15 @@
                 height: 300px !important; 
             }
             
-            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } 
-            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 3; } 
-            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 2; grid-row: 2; } 
-            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 3; } 
-            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1 / -1; grid-row: 4; min-height: 80px; } 
-            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 5; } 
-            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 5; } 
-            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 6; } 
+            /* Ordem no celular */
+            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } /* CABEÇA */
+            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 3; } /* COLETE */
+            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 2; grid-row: 2; } /* FACE */
+            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 3; } /* ROUPA */
+            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1 / -1; grid-row: 4; min-height: 80px; } /* MOCHILA */
+            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 5; } /* MÃO PRINCIPAL */
+            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 5; } /* MÃO SECUNDÁRIA */
+            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 6; } /* BOTAS */
             
             .equip-grid > .slot-vazio { min-height: 100px; font-size: .8rem !important; padding: 5px; }
             
@@ -275,7 +290,10 @@
                         <h1 class="fonte-titulo text-4xl md:text-5xl text-[#1a110a]">PAINEL DE PERSONAGENS</h1>
                         <p class="text-[#3a2517] text-lg font-bold fonte-papel">Escolha um sobrevivente para abrir sua ficha.</p>
                     </div>
-                    <button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-metal w-full md:w-auto">SAIR</button>
+                    <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                        <button id="btn-recarregar-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-azul w-full md:w-auto">RECARREGAR</button>
+                        <button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-metal w-full md:w-auto">SAIR</button>
+                    </div>
                 </div>
                 <div id="cards-jogador" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando personagens...</p></div>
             </div>
@@ -397,6 +415,7 @@
                     
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">EQUIPAMENTO</h3>
+                        <!-- Adicionado o slot 5 da Mochila -->
                         <div class="equip-grid p-3 md:p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
@@ -405,6 +424,10 @@
                             <div class="foto-personagem rounded col-start-2 row-start-1 row-span-4 text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
                             
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
+                            
+                            <!-- NOVO SLOT MOCHILA -->
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
+                            
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO SECUNDÁRIA</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shoe-prints text-2xl mb-1 opacity-50"></i>BOTAS</div>
