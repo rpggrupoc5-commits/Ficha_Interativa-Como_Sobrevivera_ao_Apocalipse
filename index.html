@@ -208,6 +208,9 @@
             backdrop-filter: grayscale(100%) blur(1px);
         }
 
+        /* ========================================= */
+        /* RESPONSIVIDADE (CELULAR E TABLET) */
+        /* ========================================= */
         @media (max-width: 1024px) {
             header .flex-wrap {
                 display: grid !important;
@@ -217,38 +220,49 @@
             }
             header h1, header .border-4 { margin-bottom: 10px; }
             
+            /* A MÁGICA ACONTECE AQUI: Grid de 2 colunas para os quadrados */
             .equip-grid { 
                 height: auto !important; 
                 min-height: 0; 
                 display: grid !important;
                 grid-template-columns: repeat(2, 1fr) !important; 
-                grid-template-rows: auto !important; 
-                gap: 10px !important; 
+                grid-auto-rows: minmax(100px, auto) !important;
+                gap: 12px !important; 
             }
             
+            /* Foto do personagem inteira no topo */
             .equip-grid > .foto-personagem { 
                 grid-column: 1 / -1 !important; 
                 grid-row: 1 !important; 
-                height: 300px !important; 
+                height: 350px !important; 
+                object-fit: contain !important;
             }
-            
-            /* Ordem no celular */
-            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } /* CABEÇA */
-            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 3; } /* COLETE */
-            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 2; grid-row: 2; } /* FACE */
-            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 3; } /* ROUPA */
-            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1 / -1; grid-row: 4; min-height: 80px; } /* MOCHILA */
-            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 5; } /* MÃO PRINCIPAL */
-            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 5; } /* MÃO SECUNDÁRIA */
-            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 6; } /* BOTAS */
-            
-            .equip-grid > .slot-vazio { min-height: 100px; font-size: .8rem !important; padding: 5px; }
+
+            /* Força os itens a ficarem quadrados */
+            .equip-grid > .slot-vazio {
+                aspect-ratio: 1 / 1;
+                min-height: 100px;
+                font-size: 1rem !important;
+                padding: 10px;
+            }
+            .equip-grid > .slot-vazio i { font-size: 2.5rem; margin-bottom: 5px;}
+
+            /* Posicionamento Igual ao Desenho de Papel */
+            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 1; grid-row: 2; } /* CABEÇA */
+            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 2; grid-row: 2; } /* COLETE */
+            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 3; } /* FACE */
+            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 2; grid-row: 3; } /* ROUPA */
+            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 4; } /* MOCHILA */
+            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 4; } /* MÃO PRINCIPAL */
+            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 5; aspect-ratio: auto; min-height: 80px; } /* MÃO SECUNDÁRIA (Largura total) */
+            .equip-grid > .slot-vazio:nth-child(9) { grid-column: 1 / -1; grid-row: 6; aspect-ratio: auto; min-height: 80px; } /* BOTAS (Largura total) */
             
             #peso-personagem { text-align: left !important; padding-left: 8px; }
         }
 
         @media (max-width: 640px) {
             header .flex-wrap { grid-template-columns: repeat(2, 1fr); }
+            .equip-grid > .foto-personagem { height: 280px !important; }
         }
         
         ::-webkit-scrollbar { width: 10px; }
@@ -415,7 +429,7 @@
                     
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">EQUIPAMENTO</h3>
-                        <!-- Adicionado o slot 5 da Mochila -->
+                        <!-- Estrutura exata para a responsividade funcionar -->
                         <div class="equip-grid p-3 md:p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
