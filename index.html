@@ -118,7 +118,8 @@
         .slot-vazio img { width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; padding: 4px; }
         
         .foto-personagem { border: 2px dashed #4a3322; background: rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; height: 100%; width: 100%; }
-        .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+        /* CORREÇÃO: object-fit contain para a imagem não cortar no celular */
+        .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; background-color: rgba(0,0,0,0.2); }
         .texto-proporcao { position: absolute; bottom: 5px; background: rgba(0,0,0,0.8); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; pointer-events: none; z-index: 10; }
 
         button { 
@@ -135,82 +136,23 @@
         button:active { transform: scale(0.98); box-shadow: inset 0 3px 5px rgba(0,0,0,0.5); }
         button:focus-visible { outline: 3px solid #d2b48c; outline-offset: 2px; }
 
-        .btn-metal {
-            background: linear-gradient(180deg, #4a3b32 0%, #2a211b 100%);
-            border: 1px solid #1a120e;
-            box-shadow: inset 0 2px 0 rgba(255,255,255,0.15), 0 4px 6px rgba(0,0,0,0.7);
-            color: #f0e6d2;
-        }
+        .btn-metal { background: linear-gradient(180deg, #4a3b32 0%, #2a211b 100%); border: 1px solid #1a120e; box-shadow: inset 0 2px 0 rgba(255,255,255,0.15), 0 4px 6px rgba(0,0,0,0.7); color: #f0e6d2; }
+        .btn-perigo { background: linear-gradient(180deg, #a81c1c 0%, #5c0d0d 100%); border: 1px solid #3a0505; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
+        .btn-roxo { background: linear-gradient(180deg, #8b5cf6 0%, #5b21b6 100%); border: 1px solid #3b0764; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
+        .btn-azul { background: linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%); border: 1px solid #172554; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
+        .btn-verde { background: linear-gradient(180deg, #22c55e 0%, #14532d 100%); border: 1px solid #052e16; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
+        .btn-cinza { background: linear-gradient(180deg, #6b7280 0%, #374151 100%); border: 1px solid #1f2937; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
+
+        .icone-atributo { width: 32px; height: 32px; background: #1a110a; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #d8c3a5; font-size: 1.2rem; margin-right: 10px; box-shadow: inset 0 0 5px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #4a3322; flex-shrink: 0; }
+        .slot-bloqueado { position: relative; pointer-events: none; }
+        .slot-bloqueado::after { content: "🔒"; position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; font-size: 2rem; color: white; z-index: 20; backdrop-filter: grayscale(100%) blur(1px); }
+
+        /* ========================================= */
+        /* RESPONSIVIDADE CORRIGIDA */
+        /* ========================================= */
         
-        .btn-perigo {
-            background: linear-gradient(180deg, #a81c1c 0%, #5c0d0d 100%);
-            border: 1px solid #3a0505;
-            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
-            color: #ffffff;
-        }
-
-        .btn-roxo {
-            background: linear-gradient(180deg, #8b5cf6 0%, #5b21b6 100%);
-            border: 1px solid #3b0764;
-            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
-            color: #ffffff;
-        }
-        .btn-azul {
-            background: linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%);
-            border: 1px solid #172554;
-            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
-            color: #ffffff;
-        }
-        .btn-verde {
-            background: linear-gradient(180deg, #22c55e 0%, #14532d 100%);
-            border: 1px solid #052e16;
-            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
-            color: #ffffff;
-        }
-        .btn-cinza {
-            background: linear-gradient(180deg, #6b7280 0%, #374151 100%);
-            border: 1px solid #1f2937;
-            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
-            color: #ffffff;
-        }
-
-        .icone-atributo {
-            width: 32px; height: 32px;
-            background: #1a110a;
-            border-radius: 50%;
-            display: flex; justify-content: center; align-items: center;
-            color: #d8c3a5;
-            font-size: 1.2rem;
-            margin-right: 10px;
-            box-shadow: inset 0 0 5px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.5);
-            border: 1px solid #4a3322;
-            flex-shrink: 0;
-        }
-
         .equip-grid { min-height: 450px; }
-        
-        /* Slot Bloqueado */
-        .slot-bloqueado {
-            position: relative;
-            pointer-events: none;
-        }
-        .slot-bloqueado::after {
-            content: "🔒";
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2rem;
-            color: white;
-            z-index: 20;
-            backdrop-filter: grayscale(100%) blur(1px);
-        }
 
-        /* ========================================= */
-        /* RESPONSIVIDADE (CELULAR E TABLET) */
-        /* ========================================= */
         @media (max-width: 1024px) {
             header .flex-wrap {
                 display: grid !important;
@@ -220,49 +162,56 @@
             }
             header h1, header .border-4 { margin-bottom: 10px; }
             
-            /* A MÁGICA ACONTECE AQUI: Grid de 2 colunas para os quadrados */
+            /* Destrói o grid padrão e cria um novo focado no celular */
             .equip-grid { 
-                height: auto !important; 
-                min-height: 0; 
                 display: grid !important;
                 grid-template-columns: repeat(2, 1fr) !important; 
-                grid-auto-rows: minmax(100px, auto) !important;
-                gap: 12px !important; 
+                grid-auto-rows: auto !important;
+                gap: 15px !important; 
+                height: auto !important;
+                min-height: 0 !important;
             }
             
-            /* Foto do personagem inteira no topo */
+            /* Limpa qualquer posicionamento do Tailwind */
+            .equip-grid > div {
+                grid-column: auto !important;
+                grid-row: auto !important;
+            }
+
+            /* Foto no topo, inteira */
             .equip-grid > .foto-personagem { 
                 grid-column: 1 / -1 !important; 
-                grid-row: 1 !important; 
-                height: 350px !important; 
-                object-fit: contain !important;
+                height: 300px !important; 
+                aspect-ratio: auto !important;
+                margin-bottom: 10px;
             }
 
-            /* Força os itens a ficarem quadrados */
+            /* Itens quadrados */
             .equip-grid > .slot-vazio {
                 aspect-ratio: 1 / 1;
-                min-height: 100px;
-                font-size: 1rem !important;
+                min-height: 120px;
+                font-size: 1.1rem !important;
                 padding: 10px;
             }
+            
             .equip-grid > .slot-vazio i { font-size: 2.5rem; margin-bottom: 5px;}
 
-            /* Posicionamento Igual ao Desenho de Papel */
-            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 1; grid-row: 2; } /* CABEÇA */
-            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 2; grid-row: 2; } /* COLETE */
-            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 3; } /* FACE */
-            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 2; grid-row: 3; } /* ROUPA */
+            /* Ordem correta: Colete, Face, Cabeça, Roupa, Mochila, Mão Princ, Mão Sec, Botas */
+            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } /* CABEÇA */
+            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; } /* COLETE */
+            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 1; grid-row: 3; } /* FACE */
+            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 2; grid-row: 3; } /* ROUPA */
             .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 4; } /* MOCHILA */
             .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 4; } /* MÃO PRINCIPAL */
-            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 5; aspect-ratio: auto; min-height: 80px; } /* MÃO SECUNDÁRIA (Largura total) */
-            .equip-grid > .slot-vazio:nth-child(9) { grid-column: 1 / -1; grid-row: 6; aspect-ratio: auto; min-height: 80px; } /* BOTAS (Largura total) */
             
-            #peso-personagem { text-align: left !important; padding-left: 8px; }
+            /* Mão secundária e botas ocupam a linha toda */
+            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 5; aspect-ratio: auto !important; min-height: 100px; } /* MÃO SEC */
+            .equip-grid > .slot-vazio:nth-child(9) { grid-column: 1 / -1; grid-row: 6; aspect-ratio: auto !important; min-height: 100px; } /* BOTAS */
         }
 
         @media (max-width: 640px) {
             header .flex-wrap { grid-template-columns: repeat(2, 1fr); }
-            .equip-grid > .foto-personagem { height: 280px !important; }
+            .equip-grid > .foto-personagem { height: 250px !important; }
         }
         
         ::-webkit-scrollbar { width: 10px; }
@@ -297,6 +246,7 @@
     </div>
 
     <div id="site-principal" class="hidden">
+        <!-- DASHBOARD JOGADOR -->
         <section id="dashboard-jogador" class="hidden max-w-[1500px] mx-auto px-3 py-8">
             <div class="painel-papel p-4 md:p-8">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
@@ -313,6 +263,7 @@
             </div>
         </section>
 
+        <!-- DASHBOARD MESTRE -->
         <section id="dashboard-mestre" class="hidden max-w-[1500px] mx-auto px-3 py-8">
             <div class="painel-papel p-4 md:p-8">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
@@ -357,6 +308,7 @@
             </div>
         </section>
 
+        <!-- ÁREA DA FICHA -->
         <div id="area-ficha" class="hidden">
             <div class="max-w-[1500px] mx-auto mb-4 flex flex-col md:flex-row justify-between items-center bg-[#1f1814] border-b-4 border-[#5c3a21] p-2 mt-4 shadow-lg gap-2">
                 <span class="fonte-titulo text-3xl text-[#d8c3a5] px-4 drop-shadow-md">MINHA FICHA</span>
@@ -429,19 +381,17 @@
                     
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">EQUIPAMENTO</h3>
-                        <!-- Estrutura exata para a responsividade funcionar -->
-                        <div class="equip-grid p-3 md:p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
+                        
+                        <!-- O Tailwind (col-start, row-start) foi removido daqui. A responsividade é 100% via CSS agora -->
+                        <div class="equip-grid p-3 md:p-4 flex-1 grid gap-2">
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-mask-face text-2xl mb-1 opacity-50"></i>FACE</div>
                             
-                            <div class="foto-personagem rounded col-start-2 row-start-1 row-span-4 text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
+                            <div class="foto-personagem rounded text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
                             
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
-                            
-                            <!-- NOVO SLOT MOCHILA -->
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
-                            
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO SECUNDÁRIA</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shoe-prints text-2xl mb-1 opacity-50"></i>BOTAS</div>
