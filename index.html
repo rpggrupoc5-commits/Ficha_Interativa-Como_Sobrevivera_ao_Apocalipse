@@ -118,8 +118,7 @@
         .slot-vazio img { width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; padding: 4px; }
         
         .foto-personagem { border: 2px dashed #4a3322; background: rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; height: 100%; width: 100%; }
-        /* CORREÇÃO: object-fit contain para a imagem não cortar no celular */
-        .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; background-color: rgba(0,0,0,0.2); }
+        .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
         .texto-proporcao { position: absolute; bottom: 5px; background: rgba(0,0,0,0.8); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; pointer-events: none; z-index: 10; }
 
         button { 
@@ -148,12 +147,12 @@
         .slot-bloqueado::after { content: "🔒"; position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; font-size: 2rem; color: white; z-index: 20; backdrop-filter: grayscale(100%) blur(1px); }
 
         /* ========================================= */
-        /* RESPONSIVIDADE CORRIGIDA */
+        /* RESPONSIVIDADE - APENAS PARA CELULAR E TABLET */
         /* ========================================= */
-        
         .equip-grid { min-height: 450px; }
 
         @media (max-width: 1024px) {
+            /* Topo da ficha (Nome, idade) em grade */
             header .flex-wrap {
                 display: grid !important;
                 grid-template-columns: repeat(3, 1fr);
@@ -162,56 +161,70 @@
             }
             header h1, header .border-4 { margin-bottom: 10px; }
             
-            /* Destrói o grid padrão e cria um novo focado no celular */
+            /* O SEGREDO: Força o container a ser um grid de 2 colunas e ignora o Tailwind */
             .equip-grid { 
                 display: grid !important;
                 grid-template-columns: repeat(2, 1fr) !important; 
                 grid-auto-rows: auto !important;
-                gap: 15px !important; 
+                gap: 12px !important; 
                 height: auto !important;
                 min-height: 0 !important;
             }
             
-            /* Limpa qualquer posicionamento do Tailwind */
+            /* Limpa as posições do Tailwind para podermos desenhar o layout */
             .equip-grid > div {
                 grid-column: auto !important;
                 grid-row: auto !important;
             }
 
-            /* Foto no topo, inteira */
+            /* FOTO DO PERSONAGEM (Formato 9x16) */
             .equip-grid > .foto-personagem { 
                 grid-column: 1 / -1 !important; 
-                height: 300px !important; 
-                aspect-ratio: auto !important;
+                width: 100% !important;
+                aspect-ratio: 9 / 16 !important; 
+                height: auto !important;
+                max-height: 500px;
                 margin-bottom: 10px;
             }
+            .equip-grid > .foto-personagem img { object-fit: contain !important; } /* Mostra a imagem inteira */
 
-            /* Itens quadrados */
+            /* Quadrados padrão */
             .equip-grid > .slot-vazio {
-                aspect-ratio: 1 / 1;
-                min-height: 120px;
-                font-size: 1.1rem !important;
+                aspect-ratio: 1 / 1 !important;
+                min-height: 100px;
+                font-size: 1rem !important;
                 padding: 10px;
             }
-            
             .equip-grid > .slot-vazio i { font-size: 2.5rem; margin-bottom: 5px;}
 
-            /* Ordem correta: Colete, Face, Cabeça, Roupa, Mochila, Mão Princ, Mão Sec, Botas */
+            /* Posicionamento igual ao seu desenho de papel */
             .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } /* CABEÇA */
             .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; } /* COLETE */
             .equip-grid > .slot-vazio:nth-child(3) { grid-column: 1; grid-row: 3; } /* FACE */
-            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 2; grid-row: 3; } /* ROUPA */
-            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 4; } /* MOCHILA */
-            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 4; } /* MÃO PRINCIPAL */
             
-            /* Mão secundária e botas ocupam a linha toda */
-            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 5; aspect-ratio: auto !important; min-height: 100px; } /* MÃO SEC */
-            .equip-grid > .slot-vazio:nth-child(9) { grid-column: 1 / -1; grid-row: 6; aspect-ratio: auto !important; min-height: 100px; } /* BOTAS */
+            /* ROUPA: Ocupa a coluna 2 e desce 2 linhas (Retângulo vertical) */
+            .equip-grid > .slot-vazio:nth-child(4) { 
+                grid-column: 2; 
+                grid-row: 3 / span 2; 
+                aspect-ratio: auto !important;
+                min-height: 100% !important; 
+            }
+
+            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 4; } /* MOCHILA */
+            
+            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 1; grid-row: 5; } /* MÃO PRINCIPAL */
+            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 2; grid-row: 5; } /* MÃO SECUNDÁRIA */
+            
+            .equip-grid > .slot-vazio:nth-child(9) { 
+                grid-column: 1 / -1; 
+                grid-row: 6; 
+                aspect-ratio: auto !important; 
+                min-height: 90px; 
+            } /* BOTAS (linha toda) */
         }
 
         @media (max-width: 640px) {
             header .flex-wrap { grid-template-columns: repeat(2, 1fr); }
-            .equip-grid > .foto-personagem { height: 250px !important; }
         }
         
         ::-webkit-scrollbar { width: 10px; }
@@ -381,17 +394,18 @@
                     
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">EQUIPAMENTO</h3>
-                        
-                        <!-- O Tailwind (col-start, row-start) foi removido daqui. A responsividade é 100% via CSS agora -->
-                        <div class="equip-grid p-3 md:p-4 flex-1 grid gap-2">
+                        <!-- AQUI FOI CORRIGIDO: Classes do Tailwind de volta para o PC -->
+                        <div class="equip-grid p-3 md:p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-mask-face text-2xl mb-1 opacity-50"></i>FACE</div>
                             
-                            <div class="foto-personagem rounded text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
+                            <div class="foto-personagem rounded col-start-2 row-start-1 row-span-4 text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
                             
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
+                            
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
+                            
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO SECUNDÁRIA</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shoe-prints text-2xl mb-1 opacity-50"></i>BOTAS</div>
