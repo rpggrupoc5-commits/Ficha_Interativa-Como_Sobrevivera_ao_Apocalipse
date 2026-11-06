@@ -76,7 +76,7 @@ audioSalvarManual.volume = 0.9;
 audioEntrarFicha.volume = 0.8;
 audioSairFicha.volume = 0.8;
 audioEntrarPainel.volume = 0.8;
-audioSairPainel.volume = 0.8;
+audioSairPainel.volume = 1.2;
 audioCancelarItem.volume = 0.8;
 
 function tocarSom(audio, pausarAnterior = true) {
