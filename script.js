@@ -98,9 +98,14 @@ function tocarSomTecla() {
 // ==========================================
 // COMPRESSÃO DE IMAGEM
 // ==========================================
+function arquivoEhGif(file) {
+    return (file.type || '').toLowerCase() === 'image/gif' || /\.gif$/i.test(file.name || '');
+}
+
 function comprimirImagem(file) {
     return new Promise((resolve, reject) => {
-        if (file.type === 'image/gif') {
+        // GIFs são lidos diretamente para preservar todos os quadros da animação.
+        if (arquivoEhGif(file)) {
             const reader = new FileReader();
             reader.onload = (e) => resolve(e.target.result);
             reader.onerror = () => reject(new Error("Erro ao ler o GIF"));
@@ -138,18 +143,25 @@ const LIMITE_IMAGEM_FIRESTORE = 900 * 1024;
 
 window.abrirSeletor = function(callback) {
     const input = document.createElement('input');
-    input.type = 'file'; input.accept = 'image/*';
+    input.type = 'file';
+    // A extensão explícita ajuda navegadores que não identificam corretamente o MIME do GIF.
+    input.accept = 'image/*,.gif,image/gif';
     input.onchange = async (e) => {
         const file = e.target.files[0]; if (!file) return;
-        if (!file.type.startsWith('image/')) { alert("Selecione um arquivo de imagem."); return; }
+        const ehGif = arquivoEhGif(file);
+        if (!((file.type || '').toLowerCase().startsWith('image/') || ehGif)) {
+            alert("Selecione um arquivo de imagem válido."); return;
+        }
         try {
-            // A compressão existente continua sendo executada sem alterações.
-            // GIF passa pelo fluxo original, sem ser convertido em imagem estática.
+            // PNG/JPEG e demais formatos mantêm a compressão automática original.
+            // GIF é preservado como animação, sem conversão para imagem estática.
             const imagemComprimida = await comprimirImagem(file);
             const tamanhoFinalBytes = new Blob([imagemComprimida]).size;
 
             if (tamanhoFinalBytes > LIMITE_IMAGEM_FIRESTORE) {
-                alert("Arquivo muito grande para salvar na ficha! Escolha uma imagem menor e tente novamente.");
+                alert(ehGif
+                    ? "Este GIF é grande demais para a ficha. Como a animação precisa ser preservada, escolha um GIF menor (até aproximadamente 650 KB) e tente novamente."
+                    : "Arquivo muito grande para salvar na ficha! Escolha uma imagem menor e tente novamente.");
                 return;
             }
 
