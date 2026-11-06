@@ -32,7 +32,8 @@ let ultimoEstadoSalvo = "";
 let intervalMonitorRevogacao = null;
 let tempoUltimoSomTecla = 0;
 let layoutAtual = "layout-quadrado";
-let modoEdicaoAtivo = false;
+let camposCustomizadosGlobais = [];
+let valoresCamposCustomizados = {};
 
 // AUDIO
 const audioAbertura = new Audio('abertura.mp3'); const audioTecla = new Audio('tecla.mp3'); const audioClique = new Audio('clique.mp3');
@@ -101,13 +102,11 @@ function parametros() { return new URLSearchParams(window.location.search); }
 function ehConvite() { return parametros().get('convite') === '1'; }
 function fichaSolicitada() { return parametros().get('ficha'); }
 
-// CARREGAR CONFIGURAÇÃO DE LAYOUT
+// CONFIGURAÇÕES DE LAYOUT (CSS)
 async function carregarConfiguracaoLayout() {
     try {
         const docSnap = await getDoc(doc(db, 'configuracoes', 'layout'));
-        if (docSnap.exists()) {
-            layoutAtual = docSnap.data().formato || "layout-quadrado";
-        }
+        if (docSnap.exists()) { layoutAtual = docSnap.data().formato || "layout-quadrado"; }
     } catch (e) { console.warn("Não foi possível carregar o layout:", e); }
     aplicarLayoutNaTela();
 }
@@ -120,49 +119,86 @@ function aplicarLayoutNaTela() {
 }
 
 async function salvarConfiguracaoLayout(formato) {
-    try {
-        await setDoc(doc(db, 'configuracoes', 'layout'), { formato: formato }, { merge: true });
-        layoutAtual = formato; aplicarLayoutNaTela(); alert('Layout alterado com sucesso!');
-    } catch (e) { alert(`Erro ao salvar layout: ${e.message}`); }
+    try { await setDoc(doc(db, 'configuracoes', 'layout'), { formato: formato }, { merge: true }); layoutAtual = formato; aplicarLayoutNaTela(); alert('Layout alterado com sucesso!'); } 
+    catch (e) { alert(`Erro ao salvar layout: ${e.message}`); }
 }
 
-// CONFIGURAR DRAG AND DROP DO EDITOR
-function configurarSortable() {
-    if (typeof Sortable === 'undefined') return;
-    const opcoes = { animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true };
+// CONFIGURAÇÕES DE CAMPOS CUSTOMIZADOS
+async function carregarCamposCustomizados() {
+    try {
+        const docSnap = await getDoc(doc(db, 'configuracoes', 'campos_customizados'));
+        if (docSnap.exists()) { camposCustomizadosGlobais = docSnap.data().campos || []; } 
+        else { camposCustomizadosGlobais = []; }
+    } catch (e) { console.warn("Não foi possível carregar campos customizados:", e); camposCustomizadosGlobais = []; }
+    renderizarCamposCustomizadosNaFicha();
+    renderizarListaCamposNoPainel();
+}
+
+async function salvarCamposCustomizadosGlobais() {
+    try { await setDoc(doc(db, 'configuracoes', 'campos_customizados'), { campos: camposCustomizadosGlobais }); } 
+    catch (e) { alert(`Erro ao salvar lista de campos: ${e.message}`); }
+}
+
+function renderizarListaCamposNoPainel() {
+    const container = document.getElementById('lista-campos-customizados');
+    if (!container) return;
+    container.innerHTML = '';
+    if (camposCustomizadosGlobais.length === 0) { container.innerHTML = '<p class="text-[#1a110a] font-bold">Nenhum campo personalizado criado ainda.</p>'; return; }
+    camposCustomizadosGlobais.forEach((campo, index) => {
+        const linha = document.createElement('div'); linha.className = 'flex justify-between items-center bg-white/50 p-2 rounded border border-[#7a4e32]';
+        const info = document.createElement('span'); info.className = 'text-[#1a110a] font-bold'; info.innerText = `${campo.nome} (${campo.posicao})`;
+        const btnRemover = document.createElement('button'); btnRemover.className = 'btn-perigo px-3 py-1 rounded text-sm font-bold'; btnRemover.innerText = 'REMOVER';
+        btnRemover.onclick = () => { if(confirm('Remover este campo de todas as fichas?')) { camposCustomizadosGlobais.splice(index, 1); salvarCamposCustomizadosGlobais(); renderizarCamposCustomizadosNaFicha(); renderizarListaCamposNoPainel(); } };
+        linha.append(info, btnRemover); container.appendChild(linha);
+    });
+}
+
+function renderizarCamposCustomizadosNaFicha() {
+    const containerCabecalho = document.getElementById('cabecalho-campos');
+    const containerEquip = document.getElementById('campos-customizados-equipamento');
+    const containerInv = document.getElementById('campos-customizados-inventario');
+    const containerFim = document.getElementById('campos-customizados-fim');
     
-    Sortable.create(document.getElementById('grid-principal'), { ...opcoes, group: 'principal' });
-    Sortable.create(document.getElementById('grid-secundario'), { ...opcoes, group: 'principal' });
+    [containerCabecalho, containerEquip, containerInv, containerFim].forEach(c => { 
+        if (c) c.querySelectorAll('.campo-dinamico').forEach(el => el.remove()); 
+    });
+
+    camposCustomizadosGlobais.forEach(campo => {
+        const wrapper = document.createElement('label');
+        wrapper.className = 'campo-dinamico flex flex-col text-xs flex-1 min-w-[120px] fonte-papel font-bold text-[#1a110a] mt-2';
+        if (campo.posicao === 'equipamento') wrapper.classList.add('w-full');
+        wrapper.innerText = campo.nome.toUpperCase() + ':';
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'input-campo mt-1';
+        input.dataset.campoNome = campo.nome;
+        input.value = valoresCamposCustomizados[campo.nome] || '';
+        input.addEventListener('input', (e) => { valoresCamposCustomizados[campo.nome] = e.target.value; agendarAutosave(); });
+        
+        wrapper.appendChild(input);
+
+        if (campo.posicao === 'inicio' && containerCabecalho) containerCabecalho.appendChild(wrapper);
+        else if (campo.posicao === 'equipamento' && containerEquip) containerEquip.appendChild(wrapper);
+        else if (campo.posicao === 'inventario' && containerInv) containerInv.appendChild(wrapper);
+        else if (campo.posicao === 'fim' && containerFim) containerFim.appendChild(wrapper);
+        else if (containerFim) containerFim.appendChild(wrapper);
+    });
 }
 
-async function carregarLayoutEditor() {
-    try {
-        const docSnap = await getDoc(doc(db, 'configuracoes', 'layout_editor'));
-        if (docSnap.exists()) {
-            const dados = docSnap.data();
-            if (dados.principal && dados.secundario) {
-                document.getElementById('grid-principal').innerHTML = dados.principal;
-                document.getElementById('grid-secundario').innerHTML = dados.secundario;
-                // Reinicializa listeners de itens
-                const itensMochila = document.querySelectorAll('#inventario .item-adicionado');
-                // Simulando recriação dos botoes (simplificado)
-            }
-        }
-    } catch (e) { console.warn("Erro ao carregar layout editor:", e); }
+async function adicionarNovoCampo() {
+    const nome = document.getElementById('input-novo-campo').value.trim();
+    const posicao = document.getElementById('select-posicao-campo').value;
+    if (!nome) return alert('Digite um nome para o campo.');
+    if (camposCustomizadosGlobais.some(c => c.nome.toLowerCase() === nome.toLowerCase())) return alert('Já existe um campo com esse nome.');
+    camposCustomizadosGlobais.push({ nome, posicao });
+    document.getElementById('input-novo-campo').value = '';
+    await salvarCamposCustomizadosGlobais();
+    renderizarCamposCustomizadosNaFicha(); renderizarListaCamposNoPainel();
+    alert('Campo adicionado com sucesso!');
 }
 
-async function salvarLayoutEditor() {
-    try {
-        const principalHTML = document.getElementById('grid-principal').innerHTML;
-        const secundarioHTML = document.getElementById('grid-secundario').innerHTML;
-        await setDoc(doc(db, 'configuracoes', 'layout_editor'), { principal: principalHTML, secundario: secundarioHTML });
-        alert('Layout Padrão salvo com sucesso! Todos os jogadores vão ver a ficha assim.');
-        modoEdicaoAtivo = false;
-        document.getElementById('banner-edicao').classList.add('hidden');
-        document.body.classList.remove('modo-edicao-ativo');
-    } catch (e) { alert(`Erro ao salvar layout do editor: ${e.message}`); }
-}
-
+// INICIALIZAÇÃO
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         usuarioAtual = user;
@@ -170,16 +206,12 @@ onAuthStateChanged(auth, async (user) => {
         if (user.email) { try { await registrarContaJogador(user); } catch (erroPerfil) { console.error(erroPerfil); } }
         
         await carregarConfiguracaoLayout();
+        await carregarCamposCustomizados();
 
         const fichaId = fichaSolicitada(); const convite = ehConvite();
         telaLogin.classList.add('hidden'); sitePrincipal.classList.remove('hidden');
 
-        if (fichaId) { 
-            await abrirRotaFicha(fichaId, convite); 
-            await carregarLayoutEditor();
-            configurarSortable();
-            return; 
-        }
+        if (fichaId) { await abrirRotaFicha(fichaId, convite); return; }
 
         if (mestreLogado) {
             document.getElementById('dashboard-mestre').classList.remove('hidden');
@@ -190,24 +222,7 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('btn-layout-quadrado').onclick = () => { tocarSom(audioClique); salvarConfiguracaoLayout('layout-quadrado'); };
             document.getElementById('btn-layout-retangulo-h').onclick = () => { tocarSom(audioClique); salvarConfiguracaoLayout('layout-retangulo-h'); };
             document.getElementById('btn-layout-retangulo-v').onclick = () => { tocarSom(audioClique); salvarConfiguracaoLayout('layout-retangulo-v'); };
-            
-            document.getElementById('btn-abrir-editor').onclick = async () => {
-                tocarSom(audioClique);
-                modoEdicaoAtivo = true;
-                document.getElementById('dashboard-mestre').classList.add('hidden');
-                document.getElementById('area-ficha').classList.remove('hidden');
-                document.getElementById('banner-edicao').classList.remove('hidden');
-                document.body.id = 'modo-edicao-ativo'; 
-                document.querySelectorAll('.bloco-editavel').forEach(el => el.classList.add('bloco-editavel'));
-                
-                if (typeof Sortable !== 'undefined') {
-                    const opcoes = { animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true };
-                    Sortable.create(document.getElementById('grid-principal'), { ...opcoes, group: 'principal' });
-                    Sortable.create(document.getElementById('grid-secundario'), { ...opcoes, group: 'principal' });
-                }
-                
-                document.getElementById('btn-salvar-layout').onclick = () => { tocarSom(audioClique); salvarLayoutEditor(); };
-            };
+            document.getElementById('btn-adicionar-campo').onclick = () => { tocarSom(audioClique); adicionarNovoCampo(); };
         } else {
             document.getElementById('dashboard-jogador').classList.remove('hidden');
             document.getElementById('dashboard-mestre').classList.add('hidden');
@@ -441,7 +456,7 @@ async function salvarFicha(opcoes = {}) {
     if (!usuarioAtual || !fichaAtualId) return; if (modoAcesso === "convidado-visualizar") return; if (salvandoEmProgresso) return;
 
     const dadosFicha = {
-        nome: document.getElementById('nome').value, idade: document.getElementById('idade').value, altura: document.getElementById('altura').value, sexo: document.getElementById('sexo').value, etnia: document.getElementById('etnia').value, corPele: document.getElementById('cor-pele').value, nivel: document.getElementById('nivel').value, exp: document.getElementById('exp').value, forca: forca.value, destreza: destreza.value, forcaAcao: forcaAcao.value, destrezaAcao: destrezaAcao.value, constituicao: document.getElementById('constituicao').value, inteligencia: document.getElementById('inteligencia').value, percepcao: document.getElementById('percepcao').value, vontade: document.getElementById('vontade').value, carisma: document.getElementById('carisma').value, esquiva: document.getElementById('esquiva').value, movimentacao: document.getElementById('movimentacao').value, diario: document.getElementById('diario').value, talentos: Array.from(document.querySelectorAll('#talentos input')).map(input => input.value), pesoPersonagem: pesoPersonagemInput ? pesoPersonagemInput.value : '', fotoPersonagem: "", fotoPersonagemNome: "", fotoPersonagemDesc: "", itensMochila: [], itensEquipamento: []
+        nome: document.getElementById('nome').value, idade: document.getElementById('idade').value, altura: document.getElementById('altura').value, sexo: document.getElementById('sexo').value, etnia: document.getElementById('etnia').value, corPele: document.getElementById('cor-pele').value, nivel: document.getElementById('nivel').value, exp: document.getElementById('exp').value, forca: forca.value, destreza: destreza.value, forcaAcao: forcaAcao.value, destrezaAcao: destrezaAcao.value, constituicao: document.getElementById('constituicao').value, inteligencia: document.getElementById('inteligencia').value, percepcao: document.getElementById('percepcao').value, vontade: document.getElementById('vontade').value, carisma: document.getElementById('carisma').value, esquiva: document.getElementById('esquiva').value, movimentacao: document.getElementById('movimentacao').value, diario: document.getElementById('diario').value, talentos: Array.from(document.querySelectorAll('#talentos input')).map(input => input.value), pesoPersonagem: pesoPersonagemInput ? pesoPersonagemInput.value : '', fotoPersonagem: "", fotoPersonagemNome: "", fotoPersonagemDesc: "", itensMochila: [], itensEquipamento: [], camposExtras: { ...valoresCamposCustomizados }
     };
 
     const imagensAtivas = {};
@@ -503,6 +518,17 @@ async function carregarFicha() {
 
     if (d.itensMochila) { d.itensMochila.forEach(item => { const el = document.getElementById(item.posicao); if (el) { const dados = { ...item.dados }; if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId]; if (!dados.img && item.dados.img) dados.img = item.dados.img; renderizarItem(el, dados); } }); }
     if (d.itensEquipamento) { d.itensEquipamento.forEach(item => { const el = Array.from(document.querySelectorAll('.slot-vazio')).find(e => e.getAttribute('data-original') === item.posicao); if (el) { const dados = { ...item.dados }; if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId]; if (!dados.img && item.dados.img) dados.img = item.dados.img; renderizarItem(el, dados); } }); }
+
+    if (d.camposExtras) {
+        valoresCamposCustomizados = { ...d.camposExtras };
+        camposCustomizadosGlobais.forEach(campo => {
+            const input = document.querySelector(`input[data-campo-nome="${campo.nome}"]`);
+            if (input) input.value = valoresCamposCustomizados[campo.nome] || '';
+        });
+    } else {
+        valoresCamposCustomizados = {};
+        renderizarCamposCustomizadosNaFicha();
+    }
 
     atualizarEstadoMochila(); recalcularPesoGeral();
     ultimoEstadoSalvo = JSON.stringify({ nome: d.nome || '', idade: d.idade || '', altura: d.altura || '', sexo: d.sexo || '', etnia: d.etnia || '', corPele: d.corPele || '', nivel: d.nivel || '', exp: d.exp || '' });
@@ -657,7 +683,7 @@ async function recusarSolicitacao(fichaId, uidConvidado) { try { await setDoc(do
 
 const btnAtualizarSolicitacoes = document.getElementById('btn-atualizar-solicitacoes'); if (btnAtualizarSolicitacoes) btnAtualizarSolicitacoes.addEventListener('click', () => { tocarSom(audioClique); carregarSolicitacoesPendentes(); });
 
-async function criarPDM() { if (!usuarioAtual || (usuarioAtual.email || '').trim().toLowerCase() !== emailMestre.toLowerCase()) return; const nome = prompt('Nome do novo PDM:', 'Novo PDM'); if (nome === null) return; try { const novaFicha = doc(collection(db, 'fichas')); await setDoc(novaFicha, { tipo: 'pdm', proprietarioUid: null, proprietarioNome: '', criadoPor: usuarioAtual.uid, nome: nome.trim() || 'Novo PDM', idade: '', altura: '', sexo: '', etnia: '', corPele: '', nivel: '1', exp: '', forca: '', destreza: '', forcaAcao: '', destrezaAcao: '', constituicao: '', inteligencia: '', percepcao: '', vontade: '', carisma: '', esquiva: '', movimentacao: '6', diario: '', talentos: [], pesoPersonagem: '', fotoPersonagem: '', itensMochila: [], itensEquipamento: [] }); await atualizarPainelMestre(); alert('PDM criado!'); } catch (e) { alert(`Não foi possível criar o PDM: ${e.message}`); } }
+async function criarPDM() { if (!usuarioAtual || (usuarioAtual.email || '').trim().toLowerCase() !== emailMestre.toLowerCase()) return; const nome = prompt('Nome do novo PDM:', 'Novo PDM'); if (nome === null) return; try { const novaFicha = doc(collection(db, 'fichas')); await setDoc(novaFicha, { tipo: 'pdm', proprietarioUid: null, proprietarioNome: '', criadoPor: usuarioAtual.uid, nome: nome.trim() || 'Novo PDM', idade: '', altura: '', sexo: '', etnia: '', corPele: '', nivel: '1', exp: '', forca: '', destreza: '', forcaAcao: '', destrezaAcao: '', constituicao: '', inteligencia: '', percepcao: '', vontade: '', carisma: '', esquiva: '', movimentacao: '6', diario: '', talentos: [], pesoPersonagem: '', fotoPersonagem: '', itensMochila: [], itensEquipamento: [], camposExtras: {} }); await atualizarPainelMestre(); alert('PDM criado!'); } catch (e) { alert(`Não foi possível criar o PDM: ${e.message}`); } }
 
 async function excluirFicha(idFicha, ficha) { if (!confirm(`Tem certeza de que deseja excluir ${ficha.nome || 'esta ficha'}? Esta ação não pode ser desfeita.`)) return; try { const imagens = await getDocs(collection(db, 'fichas', idFicha, 'imagens')); const acessos = await getDocs(collection(db, 'fichas', idFicha, 'acessos')); const solicitacoes = await getDocs(collection(db, 'fichas', idFicha, 'solicitacoes')); const lote = writeBatch(db); imagens.forEach(item => lote.delete(item.ref)); acessos.forEach(item => lote.delete(item.ref)); solicitacoes.forEach(item => lote.delete(item.ref)); lote.delete(doc(db, 'fichas', idFicha)); await lote.commit(); await atualizarPainelMestre(); alert('Ficha, imagens, acessos e solicitações excluídos.'); } catch (e) { alert(`Erro ao excluir ficha: ${e.message}`); } }
 
