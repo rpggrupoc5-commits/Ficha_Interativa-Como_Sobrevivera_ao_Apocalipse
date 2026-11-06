@@ -118,7 +118,7 @@
         .slot-vazio img { width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; padding: 4px; }
         
         .foto-personagem { border: 2px dashed #4a3322; background: rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; height: 100%; width: 100%; }
-        .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+        .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; }
         .texto-proporcao { position: absolute; bottom: 5px; background: rgba(0,0,0,0.8); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; pointer-events: none; z-index: 10; }
 
         button { 
@@ -187,9 +187,71 @@
             flex-shrink: 0;
         }
 
-        .equip-grid { min-height: 450px; }
-        
-        /* Slot Bloqueado */
+        /* Layout do Equipamento no Desktop */
+        .equip-grid { 
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            grid-template-rows: repeat(5, minmax(80px, 1fr));
+            gap: 8px;
+            height: 100%;
+            min-height: 480px;
+        }
+
+        /* Layout do Equipamento no Celular (seu desenho) */
+        @media (max-width: 1024px) {
+            header .flex-wrap {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+                width: 100%;
+            }
+            header h1, header .border-4 { margin-bottom: 10px; }
+
+            .equip-grid {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                grid-template-rows: auto !important;
+                height: auto !important;
+                min-height: 0 !important;
+                gap: 10px !important;
+            }
+
+            /* Foto do Personagem no topo, ocupando as duas colunas */
+            .equip-grid > .foto-personagem {
+                grid-column: 1 / -1 !important;
+                grid-row: 1 !important;
+                height: 400px !important;
+                width: 100% !important;
+            }
+
+            /* Cabeça (L) */
+            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; aspect-ratio: 1 / 1; }
+            /* Colete (C) */
+            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 3; aspect-ratio: 2 / 1; }
+            /* Face (F) */
+            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 2; grid-row: 2; aspect-ratio: 2 / 1; }
+            /* Roupa (R) */
+            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 3; aspect-ratio: 1 / 1; }
+            /* Mochila (P) */
+            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1; grid-row: 4; aspect-ratio: 1 / 1; }
+            /* Mão Principal (S) */
+            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 2; grid-row: 5; aspect-ratio: 2 / 1; }
+            /* Botas (B) */
+            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 4; aspect-ratio: 2 / 1; }
+            /* Mão Secundária */
+            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 6; aspect-ratio: 3 / 1; min-height: 80px; }
+
+            .equip-grid > .slot-vazio { font-size: .8rem !important; padding: 5px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+            .equip-grid > .slot-vazio i { font-size: 1.5rem; margin-bottom: 4px; }
+            .equip-grid > .slot-vazio img { padding: 2px; }
+
+            #peso-personagem { text-align: left !important; padding-left: 8px; }
+        }
+
+        @media (max-width: 640px) {
+            header .flex-wrap { grid-template-columns: repeat(2, 1fr); }
+        }
+
         .slot-bloqueado {
             position: relative;
             pointer-events: none;
@@ -208,49 +270,6 @@
             backdrop-filter: grayscale(100%) blur(1px);
         }
 
-        @media (max-width: 1024px) {
-            header .flex-wrap {
-                display: grid !important;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 10px;
-                width: 100%;
-            }
-            header h1, header .border-4 { margin-bottom: 10px; }
-            
-            .equip-grid { 
-                height: auto !important; 
-                min-height: 0; 
-                display: grid !important;
-                grid-template-columns: repeat(2, 1fr) !important; 
-                grid-template-rows: auto !important; 
-                gap: 10px !important; 
-            }
-            
-            .equip-grid > .foto-personagem { 
-                grid-column: 1 / -1 !important; 
-                grid-row: 1 !important; 
-                height: 300px !important; 
-            }
-            
-            /* Ordem no celular */
-            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } /* CABEÇA */
-            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 3; } /* COLETE */
-            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 2; grid-row: 2; } /* FACE */
-            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 3; } /* ROUPA */
-            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1 / -1; grid-row: 4; min-height: 80px; } /* MOCHILA */
-            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 5; } /* MÃO PRINCIPAL */
-            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 5; } /* MÃO SECUNDÁRIA */
-            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 6; } /* BOTAS */
-            
-            .equip-grid > .slot-vazio { min-height: 100px; font-size: .8rem !important; padding: 5px; }
-            
-            #peso-personagem { text-align: left !important; padding-left: 8px; }
-        }
-
-        @media (max-width: 640px) {
-            header .flex-wrap { grid-template-columns: repeat(2, 1fr); }
-        }
-        
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: #1f1814; }
         ::-webkit-scrollbar-thumb { background: #5c3a21; border-radius: 5px; }
@@ -415,17 +434,15 @@
                     
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">EQUIPAMENTO</h3>
-                        <!-- Adicionado o slot 5 da Mochila -->
-                        <div class="equip-grid p-3 md:p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
+                        <div class="equip-grid p-3 md:p-4 flex-1">
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-mask-face text-2xl mb-1 opacity-50"></i>FACE</div>
                             
-                            <div class="foto-personagem rounded col-start-2 row-start-1 row-span-4 text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
+                            <div class="foto-personagem rounded col-start-2 row-start-1 row-span-5 text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
                             
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
                             
-                            <!-- NOVO SLOT MOCHILA -->
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
                             
                             <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
