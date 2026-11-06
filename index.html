@@ -200,7 +200,7 @@
         }
 
         /* ==================================================== */
-        /* LAYOUT DO EQUIPAMENTO (CELULAR) - NOVO AJUSTE        */
+        /* LAYOUT DO EQUIPAMENTO (CELULAR) - CORRIGIDO           */
         /* ==================================================== */
         @media (max-width: 1024px) {
             header .flex-wrap {
@@ -214,24 +214,38 @@
             .equip-grid {
                 display: grid !important;
                 grid-template-columns: 1fr 1fr !important; /* Duas colunas iguais */
-                grid-auto-rows: minmax(140px, auto) !important; /* Quadrados mais altos */
+                grid-auto-rows: auto !important; /* Não força a altura da tela */
                 height: auto !important;
                 min-height: 0 !important;
                 gap: 10px !important;
+                align-content: start !important;
             }
 
             /* Foto do Personagem (ocupa as duas colunas, no topo) */
             .equip-grid > .foto-personagem {
                 grid-column: 1 / -1 !important;
                 grid-row: 1 !important;
-                height: 400px !important;
+                height: 350px !important;
                 width: 100% !important;
+            }
+
+            /* Aqui a gente trava o formato quadrado de verdade usando aspect-ratio */
+            .equip-grid > .slot-vazio {
+                aspect-ratio: 1 / 1 !important; /* QUADRADO PERFEITO */
+                width: 100% !important;
+                height: auto !important;
+                font-size: .9rem !important; 
+                padding: 5px; 
+                display: flex; 
+                flex-direction: column; 
+                justify-content: center; 
+                align-items: center; 
             }
 
             /* CABEÇA (Coluna 1, Linha 2) */
             .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; }
 
-            /* COLETE (Coluna 1, Linha 3) */
+            /* FACE (Coluna 1, Linha 3) */
             .equip-grid > .slot-vazio:nth-child(3) { grid-column: 1; grid-row: 3; }
 
             /* ROUPA (Coluna 1, Linha 4) */
@@ -240,7 +254,7 @@
             /* MOCHILA (Coluna 1, Linha 5) */
             .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1; grid-row: 5; }
 
-            /* FACE (Coluna 2, Linha 2) */
+            /* COLETE (Coluna 2, Linha 2) */
             .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; }
 
             /* MÃO PRINCIPAL (Coluna 2, Linha 3) */
@@ -252,15 +266,6 @@
             /* BOTAS (Coluna 2, Linha 5) */
             .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 5; }
 
-            /* Ajustes visuais dos textos e ícones no celular */
-            .equip-grid > .slot-vazio { 
-                font-size: .9rem !important; 
-                padding: 5px; 
-                display: flex; 
-                flex-direction: column; 
-                justify-content: center; 
-                align-items: center; 
-            }
             .equip-grid > .slot-vazio i { font-size: 1.8rem; margin-bottom: 6px; }
             .equip-grid > .slot-vazio img { padding: 2px; }
 
