@@ -133,6 +133,21 @@
 
                 <section class="mb-8 rounded-lg border-2 border-[#8a1313] bg-red-900/10 p-3 md:p-4">
                     <div class="mb-3 border-b border-[#8a1313] pb-2">
+                        <h2 class="fonte-titulo text-3xl text-[#8a1313]">GERENCIADOR DE EQUIPAMENTOS</h2>
+                        <p class="text-base text-[#3a2517] font-bold fonte-papel">Adicione ou remova slots de equipamento em todas as fichas.</p>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-2 mb-4">
+                        <input type="text" id="input-novo-equipamento" class="input-campo p-2 flex-1 bg-white/50" placeholder="Nome do Equipamento (ex: CINTO)">
+                        <input type="text" id="input-icone-equipamento" class="input-campo p-2 w-24 bg-white/50" placeholder="Ícone (ex: fa-solid fa-shield)">
+                        <button id="btn-adicionar-equipamento" class="btn-verde px-4 py-2 rounded font-bold">ADICIONAR</button>
+                    </div>
+                    <div id="lista-equipamentos-customizados" class="flex flex-col gap-2 mb-2">
+                        <p class="text-[#1a110a] font-bold">Nenhum equipamento personalizado criado ainda.</p>
+                    </div>
+                </section>
+
+                <section class="mb-8 rounded-lg border-2 border-[#8a1313] bg-red-900/10 p-3 md:p-4">
+                    <div class="mb-3 border-b border-[#8a1313] pb-2">
                         <h2 class="fonte-titulo text-3xl text-[#8a1313]">CONFIGURAÇÕES VISUAIS DA FICHA</h2>
                         <p class="text-base text-[#3a2517] font-bold fonte-papel">Escolha o formato dos quadrados de equipamento no celular.</p>
                     </div>
@@ -214,16 +229,17 @@
                     
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">EQUIPAMENTO</h3>
-                        <div class="equip-grid p-3 md:p-4 flex-1">
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-mask-face text-2xl mb-1 opacity-50"></i>FACE</div>
+                        <div class="equip-grid p-3 md:p-4 flex-1" id="equip-grid-container">
                             <div class="foto-personagem rounded col-start-2 row-start-1 row-span-5 text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO SECUNDÁRIA</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shoe-prints text-2xl mb-1 opacity-50"></i>BOTAS</div>
+                            
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="CABEÇA" data-icone="fa-helmet-safety" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="COLETE" data-icone="fa-vest" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="FACE" data-icone="fa-mask-face" onclick="upload(this)"><i class="fa-solid fa-mask-face text-2xl mb-1 opacity-50"></i>FACE</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="ROUPA" data-icone="fa-shirt" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="MOCHILA" data-icone="fa-bag-shopping" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="MÃO PRINCIPAL" data-icone="fa-gun" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="MÃO SECUNDÁRIA" data-icone="fa-gun" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO SECUNDÁRIA</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="BOTAS" data-icone="fa-shoe-prints" onclick="upload(this)"><i class="fa-solid fa-shoe-prints text-2xl mb-1 opacity-50"></i>BOTAS</div>
                             <div id="campos-customizados-equipamento" class="col-span-3 flex flex-col gap-2 mt-2"></div>
                         </div>
                     </section>
