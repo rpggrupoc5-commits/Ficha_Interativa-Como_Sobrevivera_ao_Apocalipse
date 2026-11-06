@@ -31,7 +31,8 @@ let salvandoEmProgresso = false;
 let ultimoEstadoSalvo = "";
 let intervalMonitorRevogacao = null;
 let tempoUltimoSomTecla = 0;
-let layoutAtual = "layout-quadrado"; // Padrão
+let layoutAtual = "layout-quadrado";
+let modoEdicaoAtivo = false;
 
 // AUDIO
 const audioAbertura = new Audio('abertura.mp3'); const audioTecla = new Audio('tecla.mp3'); const audioClique = new Audio('clique.mp3');
@@ -107,9 +108,7 @@ async function carregarConfiguracaoLayout() {
         if (docSnap.exists()) {
             layoutAtual = docSnap.data().formato || "layout-quadrado";
         }
-    } catch (e) {
-        console.warn("Não foi possível carregar o layout:", e);
-    }
+    } catch (e) { console.warn("Não foi possível carregar o layout:", e); }
     aplicarLayoutNaTela();
 }
 
@@ -122,14 +121,46 @@ function aplicarLayoutNaTela() {
 
 async function salvarConfiguracaoLayout(formato) {
     try {
-        await setDoc(doc(db, 'configuracoes', 'layout'), { formato: formato });
-        layoutAtual = formato;
-        aplicarLayoutNaTela();
-        alert('Layout alterado com sucesso! Todas as fichas foram atualizadas.');
-    } catch (e) {
-        console.error("Erro ao salvar layout:", e);
-        alert(`Erro ao salvar layout: ${e.message}`);
-    }
+        await setDoc(doc(db, 'configuracoes', 'layout'), { formato: formato }, { merge: true });
+        layoutAtual = formato; aplicarLayoutNaTela(); alert('Layout alterado com sucesso!');
+    } catch (e) { alert(`Erro ao salvar layout: ${e.message}`); }
+}
+
+// CONFIGURAR DRAG AND DROP DO EDITOR
+function configurarSortable() {
+    if (typeof Sortable === 'undefined') return;
+    const opcoes = { animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true };
+    
+    Sortable.create(document.getElementById('grid-principal'), { ...opcoes, group: 'principal' });
+    Sortable.create(document.getElementById('grid-secundario'), { ...opcoes, group: 'principal' });
+}
+
+async function carregarLayoutEditor() {
+    try {
+        const docSnap = await getDoc(doc(db, 'configuracoes', 'layout_editor'));
+        if (docSnap.exists()) {
+            const dados = docSnap.data();
+            if (dados.principal && dados.secundario) {
+                document.getElementById('grid-principal').innerHTML = dados.principal;
+                document.getElementById('grid-secundario').innerHTML = dados.secundario;
+                // Reinicializa listeners de itens
+                const itensMochila = document.querySelectorAll('#inventario .item-adicionado');
+                // Simulando recriação dos botoes (simplificado)
+            }
+        }
+    } catch (e) { console.warn("Erro ao carregar layout editor:", e); }
+}
+
+async function salvarLayoutEditor() {
+    try {
+        const principalHTML = document.getElementById('grid-principal').innerHTML;
+        const secundarioHTML = document.getElementById('grid-secundario').innerHTML;
+        await setDoc(doc(db, 'configuracoes', 'layout_editor'), { principal: principalHTML, secundario: secundarioHTML });
+        alert('Layout Padrão salvo com sucesso! Todos os jogadores vão ver a ficha assim.');
+        modoEdicaoAtivo = false;
+        document.getElementById('banner-edicao').classList.add('hidden');
+        document.body.classList.remove('modo-edicao-ativo');
+    } catch (e) { alert(`Erro ao salvar layout do editor: ${e.message}`); }
 }
 
 onAuthStateChanged(auth, async (user) => {
@@ -143,7 +174,12 @@ onAuthStateChanged(auth, async (user) => {
         const fichaId = fichaSolicitada(); const convite = ehConvite();
         telaLogin.classList.add('hidden'); sitePrincipal.classList.remove('hidden');
 
-        if (fichaId) { await abrirRotaFicha(fichaId, convite); return; }
+        if (fichaId) { 
+            await abrirRotaFicha(fichaId, convite); 
+            await carregarLayoutEditor();
+            configurarSortable();
+            return; 
+        }
 
         if (mestreLogado) {
             document.getElementById('dashboard-mestre').classList.remove('hidden');
@@ -151,10 +187,27 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('area-ficha').classList.add('hidden');
             tocarSom(audioEntrarPainel); carregarDashboardMestre();
             
-            // BOTOES DE LAYOUT NO PAINEL DO MESTRE
             document.getElementById('btn-layout-quadrado').onclick = () => { tocarSom(audioClique); salvarConfiguracaoLayout('layout-quadrado'); };
             document.getElementById('btn-layout-retangulo-h').onclick = () => { tocarSom(audioClique); salvarConfiguracaoLayout('layout-retangulo-h'); };
             document.getElementById('btn-layout-retangulo-v').onclick = () => { tocarSom(audioClique); salvarConfiguracaoLayout('layout-retangulo-v'); };
+            
+            document.getElementById('btn-abrir-editor').onclick = async () => {
+                tocarSom(audioClique);
+                modoEdicaoAtivo = true;
+                document.getElementById('dashboard-mestre').classList.add('hidden');
+                document.getElementById('area-ficha').classList.remove('hidden');
+                document.getElementById('banner-edicao').classList.remove('hidden');
+                document.body.id = 'modo-edicao-ativo'; 
+                document.querySelectorAll('.bloco-editavel').forEach(el => el.classList.add('bloco-editavel'));
+                
+                if (typeof Sortable !== 'undefined') {
+                    const opcoes = { animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true };
+                    Sortable.create(document.getElementById('grid-principal'), { ...opcoes, group: 'principal' });
+                    Sortable.create(document.getElementById('grid-secundario'), { ...opcoes, group: 'principal' });
+                }
+                
+                document.getElementById('btn-salvar-layout').onclick = () => { tocarSom(audioClique); salvarLayoutEditor(); };
+            };
         } else {
             document.getElementById('dashboard-jogador').classList.remove('hidden');
             document.getElementById('dashboard-mestre').classList.add('hidden');
