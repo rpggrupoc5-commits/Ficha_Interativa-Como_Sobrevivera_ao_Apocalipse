@@ -188,6 +188,16 @@
         }
 
         .equip-grid { min-height: 450px; }
+
+        /* Posição dos equipamentos no painel (computador) */
+        .equip-grid > .slot-cabeca { grid-column: 1; grid-row: 1; }
+        .equip-grid > .slot-colete { grid-column: 3; grid-row: 1; }
+        .equip-grid > .slot-face { grid-column: 1; grid-row: 2; }
+        .equip-grid > .slot-roupa { grid-column: 3; grid-row: 4; }
+        .equip-grid > .slot-mochila { grid-column: 3; grid-row: 3; }
+        .equip-grid > .slot-mao-principal { grid-column: 1; grid-row: 3; }
+        .equip-grid > .slot-mao-secundaria { grid-column: 1; grid-row: 4; }
+        .equip-grid > .slot-botas { grid-column: 3; grid-row: 2; }
         
         /* Slot Bloqueado */
         .slot-bloqueado {
@@ -232,15 +242,15 @@
                 height: 300px !important; 
             }
             
-            /* Ordem no celular */
-            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } /* CABEÇA */
-            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 3; } /* COLETE */
-            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 2; grid-row: 2; } /* FACE */
-            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 3; } /* BOTAS */
-            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1 / -1; grid-row: 4; min-height: 80px; } /* MÂO SECUNDÁRIA */
-            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 5; } /* MÃO PRINCIPAL */
-            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 5; } /* MOCHILA */
-            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 6; } /* ROUPAS */
+            /* Posição dos equipamentos no celular */
+            .equip-grid > .slot-cabeca { grid-column: 1; grid-row: 2; }
+            .equip-grid > .slot-colete { grid-column: 2; grid-row: 3; }
+            .equip-grid > .slot-face { grid-column: 2; grid-row: 2; }
+            .equip-grid > .slot-botas { grid-column: 1; grid-row: 3; }
+            .equip-grid > .slot-mao-principal { grid-column: 1 / -1; grid-row: 4; min-height: 80px; }
+            .equip-grid > .slot-mochila { grid-column: 1; grid-row: 5; }
+            .equip-grid > .slot-mao-secundaria { grid-column: 2; grid-row: 5; }
+            .equip-grid > .slot-roupa { grid-column: 1 / -1; grid-row: 6; }
             
             .equip-grid > .slot-vazio { min-height: 100px; font-size: .8rem !important; padding: 5px; }
             
@@ -417,20 +427,20 @@
                         <h3 class="titulo-painel">EQUIPAMENTO</h3>
                         <!-- Adicionado o slot 5 da Mochila -->
                         <div class="equip-grid p-3 md:p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-mask-face text-2xl mb-1 opacity-50"></i>FACE</div>
+                            <div class="slot-vazio slot-cabeca rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
+                            <div class="slot-vazio slot-colete rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
+                            <div class="slot-vazio slot-face rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-mask-face text-2xl mb-1 opacity-50"></i>FACE</div>
                             
                             <div class="foto-personagem rounded col-start-2 row-start-1 row-span-4 text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
                             
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
+                            <div class="slot-vazio slot-roupa rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
                             
                             <!-- NOVO SLOT MOCHILA -->
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
+                            <div class="slot-vazio slot-mochila rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
                             
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO SECUNDÁRIA</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shoe-prints text-2xl mb-1 opacity-50"></i>BOTAS</div>
+                            <div class="slot-vazio slot-mao-principal rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
+                            <div class="slot-vazio slot-mao-secundaria rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO SECUNDÁRIA</div>
+                            <div class="slot-vazio slot-botas rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shoe-prints text-2xl mb-1 opacity-50"></i>BOTAS</div>
                         </div>
                     </section>
                     
