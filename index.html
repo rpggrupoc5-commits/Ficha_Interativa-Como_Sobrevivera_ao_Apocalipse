@@ -7,66 +7,250 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet">
     <style>
-        :root { --bg-escuro: #0f0c0a; --metal: #1f1814; --ferrugem: #5c3a21; --sangue: #8a1313; --texto-claro: #d8c3a5; }
-        body { font-family: 'Barlow Condensed', sans-serif; color: var(--texto-claro); padding-bottom: 40px; background-image: url('fundo.gif'); background-size: cover; background-position: center; background-attachment: fixed; position: relative; overflow-x: hidden; }
-        body::before { content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(10, 8, 6, 0.60); z-index: -1; }
+        :root { 
+            --bg-escuro: #0f0c0a; 
+            --metal: #1f1814; 
+            --ferrugem: #5c3a21; 
+            --sangue: #8a1313; 
+            --texto-claro: #d8c3a5; 
+        }
+
+        body { 
+            font-family: 'Barlow Condensed', sans-serif; 
+            color: var(--texto-claro); 
+            padding-bottom: 40px; 
+            background-image: url('fundo.gif'); 
+            background-size: cover; 
+            background-position: center; 
+            background-attachment: fixed;
+            position: relative; 
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: rgba(10, 8, 6, 0.60);
+            z-index: -1;
+        }
+
         .fonte-titulo { font-family: 'Oswald', sans-serif; font-weight: 700; letter-spacing: 1px; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
         .fonte-papel { font-family: 'Special Elite', monospace; }
         .texto-card-mestre { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; text-shadow: none; }
-        .painel-papel { background-image: url('papel.jpg'); background-size: cover; background-position: center; color: #1a110a; border: 2px solid #3a2517; border-radius: 4px; box-shadow: inset 0 0 40px rgba(0,0,0,0.6), 5px 10px 25px rgba(0,0,0,0.9); position: relative; overflow: hidden; }
-        .painel-papel::after { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; box-shadow: inset 0 0 30px rgba(80, 40, 10, 0.5); pointer-events: none; }
-        .titulo-painel { font-family: 'Oswald', sans-serif; font-size: 1.6rem; font-weight: 700; background: linear-gradient(90deg, #111 70%, transparent); color: var(--texto-claro); padding: 4px 15px; border-bottom: 2px solid var(--ferrugem); margin-top: 0; position: relative; z-index: 10; }
-        .input-campo { background: rgba(255, 255, 255, 0.1); border: none; border-bottom: 2px solid #3a2517; color: #1a110a; font-weight: 700; border-radius: 0; font-family: 'Special Elite', monospace; padding: 4px; outline: none; transition: background 0.3s; width: 100%; }
-        .input-campo:focus { background: rgba(255, 255, 255, 0.3); border-bottom: 2px solid var(--sangue); }
-        input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active{ -webkit-box-shadow: 0 0 0 30px #e6d5b8 inset !important; -webkit-text-fill-color: #1a110a !important; transition: background-color 5000s ease-in-out 0s; }
-        .slot-vazio { background: rgba(0,0,0,0.05); border: 2px solid #4a3322; box-shadow: inset 0 0 15px rgba(0,0,0,0.3); border-radius: 2px; display: flex; justify-content: center; align-items: center; transition: all 0.2s; cursor: pointer; position: relative; overflow: hidden; }
-        .slot-vazio:hover { border-color: var(--sangue); box-shadow: inset 0 0 20px rgba(138, 19, 19, 0.4); }
+
+        .painel-papel { 
+            background-image: url('papel.jpg');
+            background-size: cover;
+            background-position: center;
+            color: #1a110a; 
+            border: 2px solid #3a2517; 
+            border-radius: 4px; 
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.6), 5px 10px 25px rgba(0,0,0,0.9);
+            position: relative; 
+            overflow: hidden;
+        }
+
+        .painel-papel::after {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            box-shadow: inset 0 0 30px rgba(80, 40, 10, 0.5);
+            pointer-events: none;
+        }
+
+        .titulo-painel { 
+            font-family: 'Oswald', sans-serif; 
+            font-size: 1.6rem; 
+            font-weight: 700;
+            background: linear-gradient(90deg, #111 70%, transparent); 
+            color: var(--texto-claro); 
+            padding: 4px 15px; 
+            border-bottom: 2px solid var(--ferrugem); 
+            margin-top: 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .input-campo { 
+            background: rgba(255, 255, 255, 0.1); 
+            border: none;
+            border-bottom: 2px solid #3a2517; 
+            color: #1a110a; 
+            font-weight: 700; 
+            border-radius: 0; 
+            font-family: 'Special Elite', monospace; 
+            padding: 4px;
+            outline: none;
+            transition: background 0.3s;
+            width: 100%;
+        }
+        .input-campo:focus {
+            background: rgba(255, 255, 255, 0.3);
+            border-bottom: 2px solid var(--sangue);
+        }
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active{
+            -webkit-box-shadow: 0 0 0 30px #e6d5b8 inset !important;
+            -webkit-text-fill-color: #1a110a !important;
+            transition: background-color 5000s ease-in-out 0s;
+        }
+
+        .slot-vazio { 
+            background: rgba(0,0,0,0.05); 
+            border: 2px solid #4a3322; 
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.3); 
+            border-radius: 2px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            transition: all 0.2s; 
+            cursor: pointer; 
+            position: relative; 
+            overflow: hidden; 
+        }
+        .slot-vazio:hover {
+            border-color: var(--sangue);
+            box-shadow: inset 0 0 20px rgba(138, 19, 19, 0.4);
+        }
         .slot-vazio img { width: 100%; height: 100%; object-fit: contain; position: absolute; top: 0; left: 0; padding: 4px; }
+        
         .foto-personagem { border: 2px dashed #4a3322; background: rgba(0,0,0,0.05); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; height: 100%; width: 100%; }
-        .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; }
+        .foto-personagem img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; object-position: top center; }
         .texto-proporcao { position: absolute; bottom: 5px; background: rgba(0,0,0,0.8); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; pointer-events: none; z-index: 10; }
-        button { font-family: 'Oswald', sans-serif; font-weight: 600; letter-spacing: 1px; line-height: 1.2; -webkit-tap-highlight-color: transparent; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); transition: transform 0.1s, filter 0.2s, box-shadow 0.2s; border-radius: 4px; }
+
+        button { 
+            font-family: 'Oswald', sans-serif; 
+            font-weight: 600; 
+            letter-spacing: 1px; 
+            line-height: 1.2; 
+            -webkit-tap-highlight-color: transparent; 
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            transition: transform 0.1s, filter 0.2s, box-shadow 0.2s;
+            border-radius: 4px;
+        }
         button:hover { filter: brightness(1.15); transform: scale(1.02); }
         button:active { transform: scale(0.98); box-shadow: inset 0 3px 5px rgba(0,0,0,0.5); }
         button:focus-visible { outline: 3px solid #d2b48c; outline-offset: 2px; }
-        .btn-metal { background: linear-gradient(180deg, #4a3b32 0%, #2a211b 100%); border: 1px solid #1a120e; box-shadow: inset 0 2px 0 rgba(255,255,255,0.15), 0 4px 6px rgba(0,0,0,0.7); color: #f0e6d2; }
-        .btn-perigo { background: linear-gradient(180deg, #a81c1c 0%, #5c0d0d 100%); border: 1px solid #3a0505; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
-        .btn-roxo { background: linear-gradient(180deg, #8b5cf6 0%, #5b21b6 100%); border: 1px solid #3b0764; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
-        .btn-azul { background: linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%); border: 1px solid #172554; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
-        .btn-verde { background: linear-gradient(180deg, #22c55e 0%, #14532d 100%); border: 1px solid #052e16; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
-        .btn-cinza { background: linear-gradient(180deg, #6b7280 0%, #374151 100%); border: 1px solid #1f2937; box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7); color: #ffffff; }
-        .icone-atributo { width: 32px; height: 32px; background: #1a110a; border-radius: 50%; display: flex; justify-content: center; align-items: center; color: #d8c3a5; font-size: 1.2rem; margin-right: 10px; box-shadow: inset 0 0 5px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.5); border: 1px solid #4a3322; flex-shrink: 0; }
+
+        .btn-metal {
+            background: linear-gradient(180deg, #4a3b32 0%, #2a211b 100%);
+            border: 1px solid #1a120e;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.15), 0 4px 6px rgba(0,0,0,0.7);
+            color: #f0e6d2;
+        }
         
-        .equip-grid { display: grid; grid-template-columns: 1fr 1.2fr 1fr; grid-template-rows: repeat(5, minmax(80px, 1fr)); gap: 8px; height: 100%; min-height: 480px; }
+        .btn-perigo {
+            background: linear-gradient(180deg, #a81c1c 0%, #5c0d0d 100%);
+            border: 1px solid #3a0505;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+
+        .btn-roxo {
+            background: linear-gradient(180deg, #8b5cf6 0%, #5b21b6 100%);
+            border: 1px solid #3b0764;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+        .btn-azul {
+            background: linear-gradient(180deg, #3b82f6 0%, #1e3a8a 100%);
+            border: 1px solid #172554;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+        .btn-verde {
+            background: linear-gradient(180deg, #22c55e 0%, #14532d 100%);
+            border: 1px solid #052e16;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+        .btn-cinza {
+            background: linear-gradient(180deg, #6b7280 0%, #374151 100%);
+            border: 1px solid #1f2937;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.2), 0 4px 6px rgba(0,0,0,0.7);
+            color: #ffffff;
+        }
+
+        .icone-atributo {
+            width: 32px; height: 32px;
+            background: #1a110a;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            color: #d8c3a5;
+            font-size: 1.2rem;
+            margin-right: 10px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.5);
+            border: 1px solid #4a3322;
+            flex-shrink: 0;
+        }
+
+        .equip-grid { min-height: 450px; }
+        
+        /* Slot Bloqueado */
+        .slot-bloqueado {
+            position: relative;
+            pointer-events: none;
+        }
+        .slot-bloqueado::after {
+            content: "🔒";
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            color: white;
+            z-index: 20;
+            backdrop-filter: grayscale(100%) blur(1px);
+        }
 
         @media (max-width: 1024px) {
-            header .flex-wrap { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+            header .flex-wrap {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+                width: 100%;
+            }
             header h1, header .border-4 { margin-bottom: 10px; }
-
-            .equip-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 10px !important; height: auto !important; min-height: 0 !important; }
-            .equip-grid > .foto-personagem { grid-column: 1 / -1 !important; grid-row: 1 !important; height: 300px !important; width: 100% !important; }
-            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; }
-            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 1; grid-row: 3; }
-            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 4; }
-            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1; grid-row: 5; }
-            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; }
-            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 2; grid-row: 3; }
-            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 2; grid-row: 4; }
-            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 5; }
-            .equip-grid > .slot-vazio { font-size: .9rem !important; padding: 5px; display: flex; flex-direction: column; justify-content: center; align-items: center; aspect-ratio: 1 / 1 !important; }
-            .equip-grid > .slot-vazio i { font-size: 1.5rem; margin-bottom: 4px; }
+            
+            .equip-grid { 
+                height: auto !important; 
+                min-height: 0; 
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important; 
+                grid-template-rows: auto !important; 
+                gap: 10px !important; 
+            }
+            
+            .equip-grid > .foto-personagem { 
+                grid-column: 1 / -1 !important; 
+                grid-row: 1 !important; 
+                height: 300px !important; 
+            }
+            
+            /* Ordem no celular */
+            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } /* CABEÇA */
+            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 3; } /* COLETE */
+            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 2; grid-row: 2; } /* FACE */
+            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 3; } /* ROUPA */
+            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1 / -1; grid-row: 4; min-height: 80px; } /* MOCHILA */
+            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 1; grid-row: 5; } /* MÃO PRINCIPAL */
+            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 5; } /* MÃO SECUNDÁRIA */
+            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 1 / -1; grid-row: 6; } /* BOTAS */
+            
+            .equip-grid > .slot-vazio { min-height: 100px; font-size: .8rem !important; padding: 5px; }
+            
             #peso-personagem { text-align: left !important; padding-left: 8px; }
         }
 
-        @media (max-width: 1024px) {
-            .layout-quadrado > .slot-vazio { aspect-ratio: 1 / 1 !important; width: 100% !important; height: auto !important; }
-            .layout-retangulo-h > .slot-vazio { aspect-ratio: 2 / 1 !important; width: 100% !important; height: auto !important; }
-            .layout-retangulo-v > .slot-vazio { aspect-ratio: 1 / 2 !important; width: 100% !important; height: auto !important; }
+        @media (max-width: 640px) {
+            header .flex-wrap { grid-template-columns: repeat(2, 1fr); }
         }
-
-        @media (max-width: 640px) { header .flex-wrap { grid-template-columns: repeat(2, 1fr); } }
-        .slot-bloqueado { position: relative; pointer-events: none; }
-        .slot-bloqueado::after { content: "🔒"; position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; font-size: 2rem; color: white; z-index: 20; backdrop-filter: grayscale(100%) blur(1px); }
+        
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: #1f1814; }
         ::-webkit-scrollbar-thumb { background: #5c3a21; border-radius: 5px; }
@@ -79,8 +263,18 @@
             <h2 class="fonte-titulo text-5xl text-center text-[#1a110a] mb-4 border-b-2 border-[#3a2517] pb-2">ACESSO</h2>
             <div id="campos-login" class="fonte-papel">
                 <label class="flex flex-col text-sm font-bold text-[#1a110a] mb-2">E-mail: <input type="email" id="login-email" class="input-campo p-2 mt-1"></label>
-                <label class="flex flex-col text-sm font-bold text-[#1a110a] mb-2">Senha: <div class="relative flex items-center mt-1"><input type="password" id="login-senha" class="input-campo p-2 w-full pr-10"><button id="toggle-senha" type="button" class="absolute right-2 text-[#3a2517] hover:text-[#8a1313] transition"><i class="fa-solid fa-eye"></i></button></div></label>
-                <div class="flex justify-end mb-4"><button id="btn-esqueci-senha" type="button" class="text-sm font-bold text-[#3a2517] hover:text-[#8a1313] hover:underline">Esqueci a senha</button></div>
+                <label class="flex flex-col text-sm font-bold text-[#1a110a] mb-2">
+                    Senha: 
+                    <div class="relative flex items-center mt-1">
+                        <input type="password" id="login-senha" class="input-campo p-2 w-full pr-10">
+                        <button id="toggle-senha" type="button" class="absolute right-2 text-[#3a2517] hover:text-[#8a1313] transition">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </label>
+                <div class="flex justify-end mb-4">
+                    <button id="btn-esqueci-senha" type="button" class="text-sm font-bold text-[#3a2517] hover:text-[#8a1313] hover:underline">Esqueci a senha</button>
+                </div>
                 <button id="btn-entrar" class="btn-perigo w-full p-3 rounded mb-2 text-xl">ENTRAR</button>
                 <button id="btn-cadastrar" class="btn-metal w-full p-3 rounded mb-2 text-xl">CRIAR CONTA</button>
             </div>
@@ -92,8 +286,14 @@
         <section id="dashboard-jogador" class="hidden max-w-[1500px] mx-auto px-3 py-8">
             <div class="painel-papel p-4 md:p-8">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
-                    <div><h1 class="fonte-titulo text-4xl md:text-5xl text-[#1a110a]">PAINEL DE PERSONAGENS</h1><p class="text-[#3a2517] text-lg font-bold fonte-papel">Escolha um sobrevivente para abrir sua ficha.</p></div>
-                    <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto"><button id="btn-recarregar-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-azul w-full md:w-auto">RECARREGAR</button><button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-metal w-full md:w-auto">SAIR</button></div>
+                    <div>
+                        <h1 class="fonte-titulo text-4xl md:text-5xl text-[#1a110a]">PAINEL DE PERSONAGENS</h1>
+                        <p class="text-[#3a2517] text-lg font-bold fonte-papel">Escolha um sobrevivente para abrir sua ficha.</p>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                        <button id="btn-recarregar-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-azul w-full md:w-auto">RECARREGAR</button>
+                        <button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-metal w-full md:w-auto">SAIR</button>
+                    </div>
                 </div>
                 <div id="cards-jogador" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando personagens...</p></div>
             </div>
@@ -102,65 +302,26 @@
         <section id="dashboard-mestre" class="hidden max-w-[1500px] mx-auto px-3 py-8">
             <div class="painel-papel p-4 md:p-8">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 border-b-2 border-[#3a2517] pb-4">
-                    <div><h1 class="fonte-titulo text-4xl md:text-5xl text-[#1a110a]">CENTRAL DO MESTRE</h1><p class="text-[#3a2517] text-lg font-bold fonte-papel">Administração de personagens e PDMs.</p></div>
-                    <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto"><button id="btn-criar-pdm-dashboard" class="fonte-titulo text-xl px-4 py-2 rounded btn-perigo w-full md:w-auto">+ CRIAR PDM</button><button id="btn-sair-mestre" class="fonte-titulo text-xl px-4 py-2 rounded btn-metal w-full md:w-auto">SAIR</button></div>
+                    <div>
+                        <h1 class="fonte-titulo text-4xl md:text-5xl text-[#1a110a]">CENTRAL DO MESTRE</h1>
+                        <p class="text-[#3a2517] text-lg font-bold fonte-papel">Administração de personagens e PDMs.</p>
+                    </div>
+                    <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                        <button id="btn-criar-pdm-dashboard" class="fonte-titulo text-xl px-4 py-2 rounded btn-perigo w-full md:w-auto">+ CRIAR PDM</button>
+                        <button id="btn-sair-mestre" class="fonte-titulo text-xl px-4 py-2 rounded btn-metal w-full md:w-auto">SAIR</button>
+                    </div>
                 </div>
                 <div class="flex flex-wrap gap-4 mb-6 text-[#1a110a] font-bold text-lg font-papel">
                     <span id="contador-fichas" class="bg-black/10 px-3 py-1 rounded border border-[#3a2517]">Fichas: —</span>
                     <span id="contador-pdms" class="bg-black/10 px-3 py-1 rounded border border-[#3a2517]">PDMs: —</span>
                     <span id="contador-contas" class="bg-black/10 px-3 py-1 rounded border border-[#3a2517]">Contas: —</span>
                 </div>
-                
-                <section class="mb-8 rounded-lg border-2 border-[#8a1313] bg-red-900/10 p-3 md:p-4">
-                    <div class="mb-3 border-b border-[#8a1313] pb-2">
-                        <h2 class="fonte-titulo text-3xl text-[#8a1313]">GERENCIADOR DE CAMPOS DA FICHA</h2>
-                        <p class="text-base text-[#3a2517] font-bold fonte-papel">Adicione ou remova campos personalizados em todas as fichas.</p>
-                    </div>
-                    <div class="flex flex-col md:flex-row gap-2 mb-4">
-                        <input type="text" id="input-novo-campo" class="input-campo p-2 flex-1 bg-white/50" placeholder="Nome do campo (ex: País de Nascimento)">
-                        <select id="select-posicao-campo" class="input-campo p-2 flex-1 bg-white/50">
-                            <option value="inicio">No início (junto ao Nome)</option>
-                            <option value="fim">No final (depois do Diário)</option>
-                            <option value="equipamento">Dentro do Equipamento</option>
-                            <option value="inventario">Dentro do Inventário</option>
-                        </select>
-                        <button id="btn-adicionar-campo" class="btn-verde px-4 py-2 rounded font-bold">ADICIONAR CAMPO</button>
-                    </div>
-                    <div id="lista-campos-customizados" class="flex flex-col gap-2 mb-2">
-                        <p class="text-[#1a110a] font-bold">Nenhum campo personalizado criado ainda.</p>
-                    </div>
-                </section>
-
-                <section class="mb-8 rounded-lg border-2 border-[#8a1313] bg-red-900/10 p-3 md:p-4">
-                    <div class="mb-3 border-b border-[#8a1313] pb-2">
-                        <h2 class="fonte-titulo text-3xl text-[#8a1313]">GERENCIADOR DE EQUIPAMENTOS</h2>
-                        <p class="text-base text-[#3a2517] font-bold fonte-papel">Adicione ou remova slots de equipamento em todas as fichas.</p>
-                    </div>
-                    <div class="flex flex-col md:flex-row gap-2 mb-4">
-                        <input type="text" id="input-novo-equipamento" class="input-campo p-2 flex-1 bg-white/50" placeholder="Nome do Equipamento (ex: CINTO)">
-                        <input type="text" id="input-icone-equipamento" class="input-campo p-2 w-24 bg-white/50" placeholder="Ícone (ex: fa-solid fa-shield)">
-                        <button id="btn-adicionar-equipamento" class="btn-verde px-4 py-2 rounded font-bold">ADICIONAR</button>
-                    </div>
-                    <div id="lista-equipamentos-customizados" class="flex flex-col gap-2 mb-2">
-                        <p class="text-[#1a110a] font-bold">Nenhum equipamento personalizado criado ainda.</p>
-                    </div>
-                </section>
-
-                <section class="mb-8 rounded-lg border-2 border-[#8a1313] bg-red-900/10 p-3 md:p-4">
-                    <div class="mb-3 border-b border-[#8a1313] pb-2">
-                        <h2 class="fonte-titulo text-3xl text-[#8a1313]">CONFIGURAÇÕES VISUAIS DA FICHA</h2>
-                        <p class="text-base text-[#3a2517] font-bold fonte-papel">Escolha o formato dos quadrados de equipamento no celular.</p>
-                    </div>
-                    <div class="flex flex-wrap gap-3">
-                        <button id="btn-layout-quadrado" class="px-4 py-2 rounded btn-azul font-bold text-base flex-1">QUADRADO</button>
-                        <button id="btn-layout-retangulo-h" class="px-4 py-2 rounded btn-azul font-bold text-base flex-1">RETÂNGULO HORIZONTAL</button>
-                        <button id="btn-layout-retangulo-v" class="px-4 py-2 rounded btn-azul font-bold text-base flex-1">RETÂNGULO VERTICAL</button>
-                    </div>
-                </section>
-
                 <section class="mb-8 rounded-lg border-2 border-[#3a2517] bg-black/5 p-3 md:p-4">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-3 border-b border-[#3a2517] pb-2">
-                        <div><h2 class="fonte-titulo text-3xl text-[#1a110a]">CONTAS DE JOGADORES</h2><p class="text-base text-[#3a2517] font-bold fonte-papel">UIDs registrados automaticamente. Use COPIAR UID para vincular uma ficha.</p></div>
+                        <div>
+                            <h2 class="fonte-titulo text-3xl text-[#1a110a]">CONTAS DE JOGADORES</h2>
+                            <p class="text-base text-[#3a2517] font-bold fonte-papel">UIDs registrados automaticamente. Use COPIAR UID para vincular uma ficha.</p>
+                        </div>
                         <button id="btn-atualizar-contas" class="px-4 py-2 rounded btn-metal font-bold text-base w-full md:w-auto">ATUALIZAR CONTAS</button>
                     </div>
                     <div id="lista-contas-jogadores" class="flex flex-col gap-2"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando contas...</p></div>
@@ -168,7 +329,10 @@
 
                 <section class="mb-8 rounded-lg border-2 border-[#8a1313] bg-red-900/10 p-3 md:p-4 shadow-[inset_0_0_20px_rgba(138,19,19,0.3)]">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-3 border-b border-[#8a1313] pb-2">
-                        <div><h2 class="fonte-titulo text-3xl text-[#8a1313]">SOLICITAÇÕES DE ACESSO PENDENTES</h2><p class="text-base text-[#3a2517] font-bold fonte-papel">Convidados que pediram acesso. Aprove ou recuse.</p></div>
+                        <div>
+                            <h2 class="fonte-titulo text-3xl text-[#8a1313]">SOLICITAÇÕES DE ACESSO PENDENTES</h2>
+                            <p class="text-base text-[#3a2517] font-bold fonte-papel">Convidados que pediram acesso. Aprove ou recuse.</p>
+                        </div>
                         <button id="btn-atualizar-solicitacoes" class="px-4 py-2 rounded btn-metal font-bold text-base w-full md:w-auto">ATUALIZAR</button>
                     </div>
                     <div id="solicitacoes-mestre" class="flex flex-col gap-2"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando solicitações...</p></div>
@@ -195,7 +359,7 @@
                         <h1 class="fonte-titulo text-4xl leading-none text-[#8a1313] drop-shadow-sm text-center xl:text-left">COMO SOBREVIVER AO<br><span class="text-5xl">APOCALIPSE</span></h1>
                         <div class="fonte-titulo text-2xl md:text-4xl border-4 border-[#1a110a] px-4 md:px-6 py-1 text-[#1a110a] bg-black/5 w-full xl:w-auto text-center">FICHA DO SOBREVIVENTE</div>
                     </div>
-                    <div class="flex flex-wrap gap-3 items-center fonte-papel font-bold text-[#1a110a] w-full xl:w-auto" id="cabecalho-campos">
+                    <div class="flex flex-wrap gap-3 items-center fonte-papel font-bold text-[#1a110a] w-full xl:w-auto">
                         <label class="flex flex-col text-xs flex-1 min-w-[120px]">NOME: <input type="text" id="nome" class="input-campo mt-1"></label>
                         <label class="flex flex-col text-xs flex-1 min-w-[60px]">IDADE: <input type="number" id="idade" class="input-campo mt-1"></label>
                         <label class="flex flex-col text-xs flex-1 min-w-[80px]">ALTURA: <input type="text" id="altura" class="input-campo mt-1" placeholder="Ex: 1,75m"></label>
@@ -213,13 +377,35 @@
                         <h3 class="titulo-painel">ATRIBUTOS</h3>
                         <div class="p-3 md:p-4 flex-1 flex flex-col gap-2 fonte-papel font-bold text-[#1a110a]">
                             <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 text-center text-xs md:text-sm mb-1 border-b-2 border-[#3a2517] pb-1"><span></span><span>Base</span><span>AÇÃO%</span></div>
-                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1"><span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-hand-fist"></i></div> FORÇA</span><input type="number" id="forca" class="input-campo text-center w-full"><input type="number" id="forca-acao" class="input-campo text-center bg-black/10 w-full" readonly></div>
-                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1"><span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-crosshairs"></i></div> DESTREZA</span><input type="number" id="destreza" class="input-campo text-center w-full"><input type="number" id="destreza-acao" class="input-campo text-center bg-black/10 w-full" readonly></div>
-                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1"><span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-heart-pulse"></i></div> CONSTITUIÇÃO</span><input type="number" id="constituicao" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span></div>
-                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1"><span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-brain"></i></div> INTELIGÊNCIA</span><input type="number" id="inteligencia" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span></div>
-                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1"><span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-eye"></i></div> PERCEPÇÃO</span><input type="number" id="percepcao" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span></div>
-                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1"><span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-shield-halved"></i></div> VONTADE</span><input type="number" id="vontade" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span></div>
-                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center pb-1"><span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-users"></i></div> CARISMA</span><input type="number" id="carisma" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span></div>
+                            
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-hand-fist"></i></div> FORÇA</span>
+                                <input type="number" id="forca" class="input-campo text-center w-full"><input type="number" id="forca-acao" class="input-campo text-center bg-black/10 w-full" readonly>
+                            </div>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-crosshairs"></i></div> DESTREZA</span>
+                                <input type="number" id="destreza" class="input-campo text-center w-full"><input type="number" id="destreza-acao" class="input-campo text-center bg-black/10 w-full" readonly>
+                            </div>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-heart-pulse"></i></div> CONSTITUIÇÃO</span>
+                                <input type="number" id="constituicao" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
+                            </div>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-brain"></i></div> INTELIGÊNCIA</span>
+                                <input type="number" id="inteligencia" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
+                            </div>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-eye"></i></div> PERCEPÇÃO</span>
+                                <input type="number" id="percepcao" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
+                            </div>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center border-b border-[#3a2517]/30 pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-shield-halved"></i></div> VONTADE</span>
+                                <input type="number" id="vontade" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
+                            </div>
+                            <div class="grid grid-cols-[1fr_40px_40px] md:grid-cols-[1fr_50px_50px] gap-2 items-center pb-1">
+                                <span class="flex items-center text-xs md:text-sm"><div class="icone-atributo scale-75 md:scale-100"><i class="fa-solid fa-users"></i></div> CARISMA</span>
+                                <input type="number" id="carisma" class="input-campo text-center w-full"><span class="text-center opacity-40">-</span>
+                            </div>
                         </div>
                         <div class="bg-black/10 p-3 mt-auto flex flex-col md:flex-row justify-between items-center font-bold text-[#1a110a] border-t-2 border-[#3a2517] fonte-papel gap-2">
                             <label class="flex items-center gap-2 text-sm w-full md:w-auto justify-between md:justify-start"><span><i class="fa-solid fa-person-running text-lg"></i> ESQUIVA:</span> <div class="flex items-center"><input type="number" id="esquiva" class="input-campo w-16 text-center"> %</div></label>
@@ -229,18 +415,22 @@
                     
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">EQUIPAMENTO</h3>
-                        <div class="equip-grid p-3 md:p-4 flex-1" id="equip-grid-container">
-                            <div class="foto-personagem rounded col-start-2 row-start-1 row-span-5 text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
+                        <!-- Adicionado o slot 5 da Mochila -->
+                        <div class="equip-grid p-3 md:p-4 flex-1 grid grid-cols-3 grid-rows-4 gap-2 h-[450px]">
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-mask-face text-2xl mb-1 opacity-50"></i>FACE</div>
                             
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="CABEÇA" data-icone="fa-helmet-safety" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="COLETE" data-icone="fa-vest" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="FACE" data-icone="fa-mask-face" onclick="upload(this)"><i class="fa-solid fa-mask-face text-2xl mb-1 opacity-50"></i>FACE</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="ROUPA" data-icone="fa-shirt" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="MOCHILA" data-icone="fa-bag-shopping" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="MÃO PRINCIPAL" data-icone="fa-gun" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="MÃO SECUNDÁRIA" data-icone="fa-gun" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO SECUNDÁRIA</div>
-                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" data-slot-name="BOTAS" data-icone="fa-shoe-prints" onclick="upload(this)"><i class="fa-solid fa-shoe-prints text-2xl mb-1 opacity-50"></i>BOTAS</div>
-                            <div id="campos-customizados-equipamento" class="col-span-3 flex flex-col gap-2 mt-2"></div>
+                            <div class="foto-personagem rounded col-start-2 row-start-1 row-span-4 text-[#1a110a] text-sm font-bold flex flex-col justify-center items-center" id="foto-personagem"><i class="fa-solid fa-camera text-5xl opacity-20 mb-2"></i><span class="z-10 text-center">FOTO DO<br>PERSONAGEM</span><div class="texto-proporcao z-10">PROPORÇÃO 9x16</div></div>
+                            
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
+                            
+                            <!-- NOVO SLOT MOCHILA -->
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
+                            
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO SECUNDÁRIA</div>
+                            <div class="slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shoe-prints text-2xl mb-1 opacity-50"></i>BOTAS</div>
                         </div>
                     </section>
                     
@@ -248,10 +438,15 @@
                         <h3 class="titulo-painel">INVENTÁRIO DA MOCHILA</h3>
                         <div class="p-3 md:p-4 flex-1 flex flex-col">
                             <div class="grid grid-cols-4 gap-2 mb-4 flex-1" id="inventario"></div>
-                            <div id="campos-customizados-inventario" class="flex flex-col gap-2 mb-2"></div>
                             <div class="flex flex-col gap-1 font-bold bg-[#1f1814] text-[#d8c3a5] p-2 rounded text-xs md:text-sm font-papel border-2 border-[#5c3a21]">
-                                <div class="flex flex-col md:flex-row justify-between items-center gap-1 md:gap-0"><span><i class="fa-solid fa-briefcase text-lg mr-1"></i> ESPAÇOS: <span id="espacos">0</span>/16</span><span>PESO DOS ITENS: <span id="peso-total">0</span> kg</span></div>
-                                <div class="flex flex-col md:flex-row justify-between items-center border-t border-[#5c3a21] pt-1 mt-1 gap-1 md:gap-0"><span>PESO DO PERSONAGEM + EQUIPAMENTO: <span id="peso-total-personagem">0</span> kg</span><span class="text-[#c42929]">PESO TOTAL: <span id="peso-total-geral">0</span> kg</span></div>
+                                <div class="flex flex-col md:flex-row justify-between items-center gap-1 md:gap-0">
+                                    <span><i class="fa-solid fa-briefcase text-lg mr-1"></i> ESPAÇOS: <span id="espacos">0</span>/16</span>
+                                    <span>PESO DOS ITENS: <span id="peso-total">0</span> kg</span>
+                                </div>
+                                <div class="flex flex-col md:flex-row justify-between items-center border-t border-[#5c3a21] pt-1 mt-1 gap-1 md:gap-0">
+                                    <span>PESO DO PERSONAGEM + EQUIPAMENTO: <span id="peso-total-personagem">0</span> kg</span>
+                                    <span class="text-[#c42929]">PESO TOTAL: <span id="peso-total-geral">0</span> kg</span>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -261,11 +456,10 @@
                     <section class="painel-papel flex flex-col"><h3 class="titulo-painel">TALENTOS</h3><div class="p-3 md:p-4 flex-1"><div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-1 fonte-papel font-bold" id="talentos"></div></div></section>
                     <section class="painel-papel flex flex-col"><h3 class="titulo-painel">DIÁRIO</h3><div class="p-3 md:p-4 flex-1"><textarea id="diario" class="input-campo w-full h-full resize-none p-2 fonte-papel text-lg border-2 border-[#3a2517]/50" placeholder="Registre sua jornada..."></textarea></div></section>
                 </div>
-
-                <div id="campos-customizados-fim" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
             </main>
         </div>
     </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <script type="module" src="script.js"></script>
 </body>
