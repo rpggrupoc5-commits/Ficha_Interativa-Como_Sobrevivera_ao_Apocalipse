@@ -190,14 +190,16 @@
         /* Painel de equipamento: visual tático contemporâneo */
         .equip-grid {
             display: grid !important;
-            grid-template-columns: minmax(112px, 1fr) minmax(210px, 1.45fr) minmax(112px, 1fr);
+            /* Colunas flexíveis para evitar que os slots laterais invadam os painéis vizinhos em telas menores. */
+            grid-template-columns: minmax(0, .85fr) minmax(180px, 1.3fr) minmax(0, .85fr);
             grid-template-rows: 110px 125px 155px 155px;
+            min-width: 0;
             grid-template-areas:
                 "head photo vest"
                 "face photo boots"
                 "hand-main photo backpack"
                 "hand-off photo clothes";
-            gap: 12px;
+            gap: 8px;
             height: auto !important;
             min-height: 545px;
             align-items: stretch;
@@ -266,6 +268,19 @@
             color: white;
             z-index: 20;
             backdrop-filter: grayscale(100%) blur(1px);
+        }
+
+        /* Ajuste intermediário para notebooks: mantém os três painéis sem sobreposição. */
+        @media (min-width: 1025px) and (max-width: 1279px) {
+            .equip-grid {
+                grid-template-columns: minmax(0, .8fr) minmax(170px, 1.25fr) minmax(0, .8fr);
+                grid-template-rows: 100px 115px 145px 145px;
+                gap: 7px;
+                min-height: 505px;
+            }
+            .equip-grid > .foto-personagem { min-height: 505px; }
+            .equip-grid > .slot-mochila,
+            .equip-grid > .slot-roupa { min-height: 145px; }
         }
 
         @media (max-width: 1024px) {
