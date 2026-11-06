@@ -34,6 +34,7 @@ let tempoUltimoSomTecla = 0;
 let layoutAtual = "layout-quadrado";
 let camposCustomizadosGlobais = [];
 let valoresCamposCustomizados = {};
+let equipamentosGlobais = [];
 
 // AUDIO
 const audioAbertura = new Audio('abertura.mp3'); const audioTecla = new Audio('tecla.mp3'); const audioClique = new Audio('clique.mp3');
@@ -84,7 +85,7 @@ window.abrirSeletor = function(callback) {
     input.click();
 };
 
-// LOGIN E SEGURANÇA
+// LOGIN
 const forca = document.getElementById('forca'); const destreza = document.getElementById('destreza');
 const forcaAcao = document.getElementById('forca-acao'); const destrezaAcao = document.getElementById('destreza-acao');
 function calcular() { if (forca.value) forcaAcao.value = parseInt(forca.value) * 3; if (destreza.value) destrezaAcao.value = parseInt(destreza.value) * 3; }
@@ -102,12 +103,12 @@ function parametros() { return new URLSearchParams(window.location.search); }
 function ehConvite() { return parametros().get('convite') === '1'; }
 function fichaSolicitada() { return parametros().get('ficha'); }
 
-// CONFIGURAÇÕES DE LAYOUT (CSS)
+// CARREGAR CONFIGURAÇÕES (LAYOUT, CAMPOS E EQUIPAMENTOS)
 async function carregarConfiguracaoLayout() {
     try {
         const docSnap = await getDoc(doc(db, 'configuracoes', 'layout'));
         if (docSnap.exists()) { layoutAtual = docSnap.data().formato || "layout-quadrado"; }
-    } catch (e) { console.warn("Não foi possível carregar o layout:", e); }
+    } catch (e) { console.warn(e); }
     aplicarLayoutNaTela();
 }
 
@@ -120,23 +121,21 @@ function aplicarLayoutNaTela() {
 
 async function salvarConfiguracaoLayout(formato) {
     try { await setDoc(doc(db, 'configuracoes', 'layout'), { formato: formato }, { merge: true }); layoutAtual = formato; aplicarLayoutNaTela(); alert('Layout alterado com sucesso!'); } 
-    catch (e) { alert(`Erro ao salvar layout: ${e.message}`); }
+    catch (e) { alert(`Erro: ${e.message}`); }
 }
 
-// CONFIGURAÇÕES DE CAMPOS CUSTOMIZADOS
 async function carregarCamposCustomizados() {
     try {
         const docSnap = await getDoc(doc(db, 'configuracoes', 'campos_customizados'));
-        if (docSnap.exists()) { camposCustomizadosGlobais = docSnap.data().campos || []; } 
-        else { camposCustomizadosGlobais = []; }
-    } catch (e) { console.warn("Não foi possível carregar campos customizados:", e); camposCustomizadosGlobais = []; }
+        if (docSnap.exists()) { camposCustomizadosGlobais = docSnap.data().campos || []; } else { camposCustomizadosGlobais = []; }
+    } catch (e) { camposCustomizadosGlobais = []; }
     renderizarCamposCustomizadosNaFicha();
     renderizarListaCamposNoPainel();
 }
 
 async function salvarCamposCustomizadosGlobais() {
     try { await setDoc(doc(db, 'configuracoes', 'campos_customizados'), { campos: camposCustomizadosGlobais }); } 
-    catch (e) { alert(`Erro ao salvar lista de campos: ${e.message}`); }
+    catch (e) { alert(`Erro: ${e.message}`); }
 }
 
 function renderizarListaCamposNoPainel() {
@@ -148,7 +147,7 @@ function renderizarListaCamposNoPainel() {
         const linha = document.createElement('div'); linha.className = 'flex justify-between items-center bg-white/50 p-2 rounded border border-[#7a4e32]';
         const info = document.createElement('span'); info.className = 'text-[#1a110a] font-bold'; info.innerText = `${campo.nome} (${campo.posicao})`;
         const btnRemover = document.createElement('button'); btnRemover.className = 'btn-perigo px-3 py-1 rounded text-sm font-bold'; btnRemover.innerText = 'REMOVER';
-        btnRemover.onclick = () => { if(confirm('Remover este campo de todas as fichas?')) { camposCustomizadosGlobais.splice(index, 1); salvarCamposCustomizadosGlobais(); renderizarCamposCustomizadosNaFicha(); renderizarListaCamposNoPainel(); } };
+        btnRemover.onclick = () => { if(confirm('Remover este campo?')) { camposCustomizadosGlobais.splice(index, 1); salvarCamposCustomizadosGlobais(); renderizarCamposCustomizadosNaFicha(); renderizarListaCamposNoPainel(); } };
         linha.append(info, btnRemover); container.appendChild(linha);
     });
 }
@@ -159,25 +158,18 @@ function renderizarCamposCustomizadosNaFicha() {
     const containerInv = document.getElementById('campos-customizados-inventario');
     const containerFim = document.getElementById('campos-customizados-fim');
     
-    [containerCabecalho, containerEquip, containerInv, containerFim].forEach(c => { 
-        if (c) c.querySelectorAll('.campo-dinamico').forEach(el => el.remove()); 
-    });
+    [containerCabecalho, containerEquip, containerInv, containerFim].forEach(c => { if (c) c.querySelectorAll('.campo-dinamico').forEach(el => el.remove()); });
 
     camposCustomizadosGlobais.forEach(campo => {
         const wrapper = document.createElement('label');
         wrapper.className = 'campo-dinamico flex flex-col text-xs flex-1 min-w-[120px] fonte-papel font-bold text-[#1a110a] mt-2';
         if (campo.posicao === 'equipamento') wrapper.classList.add('w-full');
         wrapper.innerText = campo.nome.toUpperCase() + ':';
-        
         const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'input-campo mt-1';
-        input.dataset.campoNome = campo.nome;
+        input.type = 'text'; input.className = 'input-campo mt-1'; input.dataset.campoNome = campo.nome;
         input.value = valoresCamposCustomizados[campo.nome] || '';
         input.addEventListener('input', (e) => { valoresCamposCustomizados[campo.nome] = e.target.value; agendarAutosave(); });
-        
         wrapper.appendChild(input);
-
         if (campo.posicao === 'inicio' && containerCabecalho) containerCabecalho.appendChild(wrapper);
         else if (campo.posicao === 'equipamento' && containerEquip) containerEquip.appendChild(wrapper);
         else if (campo.posicao === 'inventario' && containerInv) containerInv.appendChild(wrapper);
@@ -189,13 +181,99 @@ function renderizarCamposCustomizadosNaFicha() {
 async function adicionarNovoCampo() {
     const nome = document.getElementById('input-novo-campo').value.trim();
     const posicao = document.getElementById('select-posicao-campo').value;
-    if (!nome) return alert('Digite um nome para o campo.');
-    if (camposCustomizadosGlobais.some(c => c.nome.toLowerCase() === nome.toLowerCase())) return alert('Já existe um campo com esse nome.');
+    if (!nome) return alert('Digite um nome.');
+    if (camposCustomizadosGlobais.some(c => c.nome.toLowerCase() === nome.toLowerCase())) return alert('Já existe.');
     camposCustomizadosGlobais.push({ nome, posicao });
     document.getElementById('input-novo-campo').value = '';
     await salvarCamposCustomizadosGlobais();
     renderizarCamposCustomizadosNaFicha(); renderizarListaCamposNoPainel();
-    alert('Campo adicionado com sucesso!');
+    alert('Campo adicionado!');
+}
+
+// EQUIPAMENTOS GLOBAIS
+async function carregarEquipamentosGlobais() {
+    try {
+        const docSnap = await getDoc(doc(db, 'configuracoes', 'equipamentos'));
+        if (docSnap.exists()) { equipamentosGlobais = docSnap.data().lista || []; } else { equipamentosGlobais = []; }
+    } catch (e) { equipamentosGlobais = []; }
+    
+    if (equipamentosGlobais.length === 0) {
+        equipamentosGlobais = [
+            { id: 'cabeca', nome: 'CABEÇA', icone: 'fa-helmet-safety' },
+            { id: 'colete', nome: 'COLETE', icone: 'fa-vest' },
+            { id: 'face', nome: 'FACE', icone: 'fa-mask-face' },
+            { id: 'roupa', nome: 'ROUPA', icone: 'fa-shirt' },
+            { id: 'mochila', nome: 'MOCHILA', icone: 'fa-bag-shopping' },
+            { id: 'mao_principal', nome: 'MÃO PRINCIPAL', icone: 'fa-gun' },
+            { id: 'mao_secundaria', nome: 'MÃO SECUNDÁRIA', icone: 'fa-gun' },
+            { id: 'botas', nome: 'BOTAS', icone: 'fa-shoe-prints' }
+        ];
+        await setDoc(doc(db, 'configuracoes', 'equipamentos'), { lista: equipamentosGlobais });
+    }
+    
+    renderizarEquipamentosNaFicha();
+    renderizarListaEquipamentosNoPainel();
+}
+
+async function salvarEquipamentosGlobais() {
+    try { await setDoc(doc(db, 'configuracoes', 'equipamentos'), { lista: equipamentosGlobais }); } 
+    catch (e) { alert(`Erro: ${e.message}`); }
+}
+
+function renderizarListaEquipamentosNoPainel() {
+    const container = document.getElementById('lista-equipamentos-customizados');
+    if (!container) return;
+    container.innerHTML = '';
+    equipamentosGlobais.forEach((eq, index) => {
+        const linha = document.createElement('div'); linha.className = 'flex justify-between items-center bg-white/50 p-2 rounded border border-[#7a4e32]';
+        const info = document.createElement('span'); info.className = 'text-[#1a110a] font-bold flex items-center gap-2'; info.innerHTML = `<i class="fa-solid ${eq.icone}"></i> ${eq.nome}`;
+        const btnRemover = document.createElement('button'); btnRemover.className = 'btn-perigo px-3 py-1 rounded text-sm font-bold'; btnRemover.innerText = 'REMOVER';
+        btnRemover.onclick = () => { if(confirm('Remover este equipamento? Os itens que estavam nele serão perdidos das fichas.')) { equipamentosGlobais.splice(index, 1); salvarEquipamentosGlobais(); renderizarEquipamentosNaFicha(); renderizarListaEquipamentosNoPainel(); } };
+        linha.append(info, btnRemover); container.appendChild(linha);
+    });
+}
+
+function renderizarEquipamentosNaFicha() {
+    const container = document.getElementById('equip-grid-container');
+    if (!container) return;
+    
+    // Remove apenas os slots de equipamento antigos (mantém a foto e os campos customizados)
+    container.querySelectorAll('.slot-vazio').forEach(el => el.remove());
+
+    equipamentosGlobais.forEach(eq => {
+        const div = document.createElement('div');
+        div.className = 'slot-vazio rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2';
+        div.setAttribute('data-slot-name', eq.nome);
+        div.setAttribute('data-slot-id', eq.id);
+        div.setAttribute('data-icone', eq.icone);
+        div.onclick = function() { upload(this); };
+        div.innerHTML = `<i class="fa-solid ${eq.icone} text-2xl mb-1 opacity-50"></i>${eq.nome}`;
+        container.appendChild(div);
+    });
+
+    // Reaplica os handlers de item
+    container.querySelectorAll('.slot-vazio').forEach(slot => {
+        slot.setAttribute('data-original', slot.innerHTML.split('<span')[0]);
+        slot.removeAttribute('onclick');
+        slot.onclick = () => {
+            if (modoAcesso === "convidado-visualizar") return;
+            if (slot.classList.contains('item-adicionado')) abrirModal(slot, JSON.parse(slot.dataset.itemData));
+            else abrirModal(slot);
+        };
+    });
+}
+
+async function adicionarNovoEquipamento() {
+    const nome = document.getElementById('input-novo-equipamento').value.trim().toUpperCase();
+    const icone = document.getElementById('input-icone-equipamento').value.trim() || 'fa-box';
+    if (!nome) return alert('Digite o nome do equipamento.');
+    const id = 'custom_' + Date.now();
+    equipamentosGlobais.push({ id, nome, icone });
+    document.getElementById('input-novo-equipamento').value = '';
+    document.getElementById('input-icone-equipamento').value = '';
+    await salvarEquipamentosGlobais();
+    renderizarEquipamentosNaFicha(); renderizarListaEquipamentosNoPainel();
+    alert('Equipamento adicionado!');
 }
 
 // INICIALIZAÇÃO
@@ -207,6 +285,7 @@ onAuthStateChanged(auth, async (user) => {
         
         await carregarConfiguracaoLayout();
         await carregarCamposCustomizados();
+        await carregarEquipamentosGlobais();
 
         const fichaId = fichaSolicitada(); const convite = ehConvite();
         telaLogin.classList.add('hidden'); sitePrincipal.classList.remove('hidden');
@@ -223,6 +302,7 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('btn-layout-retangulo-h').onclick = () => { tocarSom(audioClique); salvarConfiguracaoLayout('layout-retangulo-h'); };
             document.getElementById('btn-layout-retangulo-v').onclick = () => { tocarSom(audioClique); salvarConfiguracaoLayout('layout-retangulo-v'); };
             document.getElementById('btn-adicionar-campo').onclick = () => { tocarSom(audioClique); adicionarNovoCampo(); };
+            document.getElementById('btn-adicionar-equipamento').onclick = () => { tocarSom(audioClique); adicionarNovoEquipamento(); };
         } else {
             document.getElementById('dashboard-jogador').classList.remove('hidden');
             document.getElementById('dashboard-mestre').classList.add('hidden');
@@ -239,8 +319,8 @@ onAuthStateChanged(auth, async (user) => {
 async function abrirRotaFicha(fichaId, veioDeConvite) {
     tocarSom(audioEntrarFicha); mostrarAreaFicha(); fichaAtualId = fichaId;
     const mestreLogado = (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
-    if (mestreLogado) { modoAcesso = "mestre"; ehConvidado = false; try { await carregarFicha(); aplicarPermissoesNaTela(); configurarAutosave(); } catch (e) { alert(`Erro ao carregar ficha: ${e.message}`); } return; }
-    if (fichaId === usuarioAtual.uid) { modoAcesso = "dono"; ehConvidado = false; try { await carregarFicha(); aplicarPermissoesNaTela(); configurarAutosave(); } catch (e) { alert(`Erro ao carregar ficha: ${e.message}`); } return; }
+    if (mestreLogado) { modoAcesso = "mestre"; ehConvidado = false; try { await carregarFicha(); aplicarPermissoesNaTela(); configurarAutosave(); } catch (e) { alert(`Erro: ${e.message}`); } return; }
+    if (fichaId === usuarioAtual.uid) { modoAcesso = "dono"; ehConvidado = false; try { await carregarFicha(); aplicarPermissoesNaTela(); configurarAutosave(); } catch (e) { alert(`Erro: ${e.message}`); } return; }
     const acessoSnap = await getDoc(doc(db, 'fichas', fichaId, 'acessos', usuarioAtual.uid));
     if (acessoSnap.exists()) {
         const permissao = acessoSnap.data().permissao || "visualizar";
@@ -249,7 +329,7 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
         return;
     }
     try { const donoSnap = await getDoc(doc(db, 'fichas', fichaId)); if (donoSnap.exists() && donoSnap.data().proprietarioUid === usuarioAtual.uid) { modoAcesso = "dono"; ehConvidado = false; await carregarFicha(); aplicarPermissoesNaTela(); configurarAutosave(); return; } } catch (e) {}
-    if (veioDeConvite || ehConvidado) { modoAcesso = "convidado-pendente"; ehConvidado = true; await verificarSolicitacaoExistente(fichaId); } else { modoAcesso = "nenhum"; alert("Você não tem permissão para abrir esta ficha."); window.location.href = window.location.pathname; }
+    if (veioDeConvite || ehConvidado) { modoAcesso = "convidado-pendente"; ehConvidado = true; await verificarSolicitacaoExistente(fichaId); } else { modoAcesso = "nenhum"; alert("Você não tem permissão."); window.location.href = window.location.pathname; }
 }
 
 function monitorarRevogacao(fichaId) {
@@ -257,9 +337,9 @@ function monitorarRevogacao(fichaId) {
     intervalMonitorRevogacao = setInterval(async () => {
         try {
             const snap = await getDoc(doc(db, 'fichas', fichaId, 'acessos', usuarioAtual.uid));
-            if (!snap.exists()) { clearInterval(intervalMonitorRevogacao); desativarAutosave(); document.querySelectorAll('#area-ficha input, #area-ficha textarea').forEach(el => el.disabled = true); document.getElementById('btn-salvar-ficha').classList.add('hidden'); const banner = document.getElementById('banner-convidado'); if (banner) banner.innerHTML = '<div class="painel-papel p-3 text-[#a81c1c] font-bold text-center rounded">ACESSO REVOGADO — solicite novamente ao mestre.</div>'; alert('Seu acesso foi revogado.'); return; }
+            if (!snap.exists()) { clearInterval(intervalMonitorRevogacao); desativarAutosave(); document.querySelectorAll('#area-ficha input, #area-ficha textarea').forEach(el => el.disabled = true); document.getElementById('btn-salvar-ficha').classList.add('hidden'); const banner = document.getElementById('banner-convidado'); if (banner) banner.innerHTML = '<div class="painel-papel p-3 text-[#a81c1c] font-bold text-center rounded">ACESSO REVOGADO.</div>'; alert('Seu acesso foi revogado.'); return; }
             const novaPermissao = snap.data().permissao || "visualizar"; const permissaoAtualMapeada = modoAcesso === "convidado-editar" ? "editar" : "visualizar";
-            if (novaPermissao !== permissaoAtualMapeada) { clearInterval(intervalMonitorRevogacao); alert(`O mestre alterou sua permissão para ${novaPermissao.toUpperCase()}. A página será recarregada.`); window.location.reload(); }
+            if (novaPermissao !== permissaoAtualMapeada) { clearInterval(intervalMonitorRevogacao); alert(`Permissão alterada para ${novaPermissao.toUpperCase()}.`); window.location.reload(); }
         } catch (e) {}
     }, 5000);
 }
@@ -268,7 +348,7 @@ async function verificarSolicitacaoExistente(fichaId) {
     try {
         const solSnap = await getDoc(doc(db, 'fichas', fichaId, 'solicitacoes', usuarioAtual.uid));
         if (solSnap.exists()) { const status = solSnap.data().status; if (status === 'recusado') { modoAcesso = "convidado-recusado"; mostrarTelaSolicitacao('recusado'); } else { mostrarTelaSolicitacao('pendente'); } } else { mostrarTelaSolicitacao('sem-solicitacao'); }
-    } catch (e) { console.warn(e); mostrarTelaSolicitacao('sem-solicitacao'); }
+    } catch (e) { mostrarTelaSolicitacao('sem-solicitacao'); }
 }
 
 function mostrarTelaSolicitacao(estado) {
@@ -276,22 +356,22 @@ function mostrarTelaSolicitacao(estado) {
     if (!painel) { painel = document.createElement('div'); painel.id = 'painel-solicitacao'; painel.className = 'fixed inset-0 bg-black/90 z-40 flex justify-center items-center p-4'; area.appendChild(painel); }
     painel.classList.remove('hidden');
     if (estado === 'sem-solicitacao') {
-        painel.innerHTML = `<div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4"><h2 class="fonte-titulo text-3xl text-[#111] text-center">ACESSO À FICHA</h2><p class="text-[#111] text-center font-bold">Você está abrindo esta ficha como <b>convidado</b>. É necessário solicitar autorização ao mestre.</p><p class="text-[#111] text-center font-bold">Seu UID: ${usuarioAtual.uid}</p><button id="btn-solicitar-acesso" class="w-full btn-perigo p-3 rounded font-bold">SOLICITAR ACESSO</button><button id="btn-voltar-login" class="w-full btn-metal p-3 rounded font-bold">VOLTAR</button></div>`;
+        painel.innerHTML = `<div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4"><h2 class="fonte-titulo text-3xl text-[#111] text-center">ACESSO À FICHA</h2><p class="text-[#111] text-center font-bold">Solicite autorização ao mestre.</p><p class="text-[#111] text-center font-bold">UID: ${usuarioAtual.uid}</p><button id="btn-solicitar-acesso" class="w-full btn-perigo p-3 rounded font-bold">SOLICITAR ACESSO</button><button id="btn-voltar-login" class="w-full btn-metal p-3 rounded font-bold">VOLTAR</button></div>`;
         document.getElementById('btn-solicitar-acesso').onclick = () => { tocarSom(audioClique); solicitarAcesso(); };
         document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioSairFicha); window.location.href = window.location.pathname; };
     } else if (estado === 'pendente') {
-        painel.innerHTML = `<div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4"><h2 class="fonte-titulo text-3xl text-[#111] text-center">AGUARDANDO APROVAÇÃO</h2><p class="text-[#111] text-center font-bold">Sua solicitação foi enviada ao mestre.</p><p class="text-[#111] text-center font-bold">Seu UID: ${usuarioAtual.uid}</p><button id="btn-verificar" class="w-full btn-perigo p-3 rounded font-bold">VERIFICAR NOVAMENTE</button><button id="btn-voltar-login" class="w-full btn-metal p-3 rounded font-bold">SAIR</button></div>`;
+        painel.innerHTML = `<div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4"><h2 class="fonte-titulo text-3xl text-[#111] text-center">AGUARDANDO</h2><p class="text-[#111] text-center font-bold">Aguarde aprovação.</p><p class="text-[#111] text-center font-bold">UID: ${usuarioAtual.uid}</p><button id="btn-verificar" class="w-full btn-perigo p-3 rounded font-bold">VERIFICAR NOVAMENTE</button><button id="btn-voltar-login" class="w-full btn-metal p-3 rounded font-bold">SAIR</button></div>`;
         document.getElementById('btn-verificar').onclick = () => { tocarSom(audioClique); window.location.reload(); };
         document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioSairFicha); signOut(auth).then(() => window.location.reload()); };
     } else if (estado === 'recusado') {
-        painel.innerHTML = `<div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4"><h2 class="fonte-titulo text-3xl text-[#111] text-center">ACESSO RECUSADO</h2><p class="text-[#111] text-center font-bold">O mestre recusou sua solicitação.</p><button id="btn-voltar-login" class="w-full btn-metal p-3 rounded font-bold">SAIR</button></div>`;
+        painel.innerHTML = `<div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4"><h2 class="fonte-titulo text-3xl text-[#111] text-center">RECUSADO</h2><p class="text-[#111] text-center font-bold">O mestre recusou sua solicitação.</p><button id="btn-voltar-login" class="w-full btn-metal p-3 rounded font-bold">SAIR</button></div>`;
         document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioSairFicha); signOut(auth).then(() => window.location.reload()); };
     }
 }
 
 async function solicitarAcesso() {
     if (!usuarioAtual || !fichaAtualId) return; const btn = document.getElementById('btn-solicitar-acesso'); if (btn) { btn.disabled = true; btn.innerText = "ENVIANDO..."; }
-    try { await setDoc(doc(db, 'fichas', fichaAtualId, 'solicitacoes', usuarioAtual.uid), { uidConvidado: usuarioAtual.uid, fichaId: fichaAtualId, status: 'pendente', criadoEm: new Date().toISOString() }); mostrarTelaSolicitacao('pendente'); } catch (e) { alert(`Não foi possível enviar: ${e.message}`); if (btn) { btn.disabled = false; btn.innerText = "SOLICITAR ACESSO"; } }
+    try { await setDoc(doc(db, 'fichas', fichaAtualId, 'solicitacoes', usuarioAtual.uid), { uidConvidado: usuarioAtual.uid, fichaId: fichaAtualId, status: 'pendente', criadoEm: new Date().toISOString() }); mostrarTelaSolicitacao('pendente'); } catch (e) { alert(`Erro: ${e.message}`); if (btn) { btn.disabled = false; btn.innerText = "SOLICITAR ACESSO"; } }
 }
 
 function aplicarPermissoesNaTela() {
@@ -443,9 +523,6 @@ function atualizarEstadoMochila() {
 
 if (gridInv) { for (let i = 0; i < 16; i++) { const q = document.createElement('div'); q.id = `inv-${i}`; q.className = 'slot-vazio rounded aspect-square flex flex-col justify-center items-center relative text-center p-1 overflow-hidden group'; q.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>'; q.onclick = () => { if (q.classList.contains('item-adicionado')) abrirModal(q, JSON.parse(q.dataset.itemData)); else abrirModal(q); }; gridInv.appendChild(q); } }
 
-const slotsEquipamento = document.querySelectorAll('.slot-vazio:not(#inventario .slot-vazio)');
-slotsEquipamento.forEach(slot => { if (!slot.classList.contains('foto-personagem')) { slot.setAttribute('data-original', slot.innerHTML.split('<span')[0]); slot.removeAttribute('onclick'); slot.onclick = () => { if (slot.classList.contains('item-adicionado')) abrirModal(slot, JSON.parse(slot.dataset.itemData)); else abrirModal(slot); }; } });
-
 const listaT = document.getElementById('talentos');
 if (listaT) { for (let i = 1; i <= 20; i++) { const l = document.createElement('div'); l.className = 'flex items-center gap-2 border-b border-black/20 pb-1'; l.innerHTML = `<span class="font-bold w-5 text-right text-[#111] text-sm">${i}.</span><input type="text" class="bg-transparent border-none outline-none font-semibold text-[#111] text-base w-full">`; listaT.appendChild(l); } }
 
@@ -468,10 +545,14 @@ async function salvarFicha(opcoes = {}) {
 
     const todosSlots = Array.from(document.querySelectorAll('.slot-vazio')); const itensEquipamento = document.querySelectorAll('.slot-vazio.item-adicionado');
     for (const el of itensEquipamento) {
-        if (el.id === 'foto-personagem') continue; const dados = JSON.parse(el.dataset.itemData); const indice = todosSlots.indexOf(el); const imagemId = `equipamento_${indice}`; if (dados.img) imagensAtivas[imagemId] = dados.img;
+        if (el.id === 'foto-personagem') continue; 
+        const dados = JSON.parse(el.dataset.itemData); 
+        const indice = todosSlots.indexOf(el); 
+        const imagemId = `equipamento_${indice}`; 
+        if (dados.img) imagensAtivas[imagemId] = dados.img;
         const dadosSalvar = { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" };
         if (dados.tipo === 'mochila') { dadosSalvar.tipo = 'mochila'; dadosSalvar.mochilaCapacidade = dados.mochilaCapacidade; dadosSalvar.mochilaAtiva = dados.mochilaAtiva; }
-        dadosFicha.itensEquipamento.push({ dados: dadosSalvar, imagemId, posicao: el.getAttribute('data-original') });
+        dadosFicha.itensEquipamento.push({ dados: dadosSalvar, imagemId, posicao: el.getAttribute('data-original'), slotId: el.getAttribute('data-slot-id') });
     }
 
     if (modoAcesso === "mestre") { dadosFicha.tipo = fichaAtualTipo; dadosFicha.proprietarioUid = fichaAtualProprietarioUid; dadosFicha.criadoPor = fichaAtualCriadoPor || usuarioAtual.uid; }
@@ -501,9 +582,9 @@ document.getElementById('btn-salvar-ficha').onclick = () => salvarFicha({ silenc
 async function carregarFicha() {
     if (!usuarioAtual || !fichaAtualId) return; let docSnap = await getDoc(doc(db, "fichas", fichaAtualId)); const mestreLogado = (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
     if (!docSnap.exists() && fichaAtualId === usuarioAtual.uid) { const vinculadas = await getDocs(query(collection(db, 'fichas'), where('proprietarioUid', '==', usuarioAtual.uid), limit(1))); if (!vinculadas.empty) { docSnap = vinculadas.docs[0]; fichaAtualId = docSnap.id; } }
-    if (!docSnap.exists()) { if (fichaAtualId !== usuarioAtual.uid) { alert("Esta ficha não foi encontrada ou você não tem acesso a ela."); window.location.href = window.location.pathname; } return; }
+    if (!docSnap.exists()) { if (fichaAtualId !== usuarioAtual.uid) { alert("Ficha não encontrada."); window.location.href = window.location.pathname; } return; }
     const d = docSnap.data();
-    if (!mestreLogado && fichaAtualId !== usuarioAtual.uid && d.proprietarioUid !== usuarioAtual.uid && modoAcesso !== "convidado-editar" && modoAcesso !== "convidado-visualizar") { alert('Você não tem permissão para abrir esta ficha.'); window.location.href = window.location.pathname; return; }
+    if (!mestreLogado && fichaAtualId !== usuarioAtual.uid && d.proprietarioUid !== usuarioAtual.uid && modoAcesso !== "convidado-editar" && modoAcesso !== "convidado-visualizar") { alert('Sem permissão.'); window.location.href = window.location.pathname; return; }
 
     fichaAtualTipo = d.tipo || "jogador"; fichaAtualProprietarioUid = d.proprietarioUid || (fichaAtualTipo === "jogador" ? fichaAtualId : null); fichaAtualCriadoPor = d.criadoPor || fichaAtualProprietarioUid || usuarioAtual.uid;
     const imagensSeparadas = await carregarImagensSeparadas();
@@ -517,7 +598,25 @@ async function carregarFicha() {
     document.querySelectorAll('.item-adicionado').forEach(el => { el.classList.remove('item-adicionado'); el.removeAttribute('data-itemData'); el.removeAttribute('data-peso'); el.removeAttribute('data-qtd'); });
 
     if (d.itensMochila) { d.itensMochila.forEach(item => { const el = document.getElementById(item.posicao); if (el) { const dados = { ...item.dados }; if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId]; if (!dados.img && item.dados.img) dados.img = item.dados.img; renderizarItem(el, dados); } }); }
-    if (d.itensEquipamento) { d.itensEquipamento.forEach(item => { const el = Array.from(document.querySelectorAll('.slot-vazio')).find(e => e.getAttribute('data-original') === item.posicao); if (el) { const dados = { ...item.dados }; if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId]; if (!dados.img && item.dados.img) dados.img = item.dados.img; renderizarItem(el, dados); } }); }
+    if (d.itensEquipamento) { 
+        d.itensEquipamento.forEach(item => { 
+            // Busca o slot pelo ID (mais seguro) ou pelo original (legado)
+            let el = null;
+            if (item.slotId) {
+                el = document.querySelector(`.slot-vazio[data-slot-id="${item.slotId}"]`);
+            }
+            if (!el && item.posicao) {
+                el = Array.from(document.querySelectorAll('.slot-vazio')).find(e => e.getAttribute('data-original') === item.posicao);
+            }
+            
+            if (el) { 
+                const dados = { ...item.dados }; 
+                if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId]; 
+                if (!dados.img && item.dados.img) dados.img = item.dados.img; 
+                renderizarItem(el, dados); 
+            } 
+        }); 
+    }
 
     if (d.camposExtras) {
         valoresCamposCustomizados = { ...d.camposExtras };
@@ -558,7 +657,7 @@ async function carregarContasJogadores() {
             acoes.append(criarBotaoPainel('BANIR', 'btn-perigo', () => { tocarSom(audioClique); banirConta(conta.uid || conta.id); }));
             linha.append(dados, acoes); lista.appendChild(linha);
         });
-    } catch (erro) { console.error('Erro ao carregar contas:', erro); lista.innerHTML = `<p class="text-red-800 font-bold text-lg">Não foi possível carregar as contas (${erro.code || 'erro'}): ${erro.message}.</p>`; if (contador) contador.textContent = 'Contas: erro'; }
+    } catch (erro) { lista.innerHTML = `<p class="text-red-800 font-bold text-lg">Erro ao carregar contas (${erro.code || 'erro'}): ${erro.message}.</p>`; if (contador) contador.textContent = 'Contas: erro'; }
 }
 
 async function banirConta(uid) { if (!confirm("Tem certeza que deseja BANIR esta conta? O jogador perderá o acesso e o perfil será deletado do banco de dados.")) return; try { await deleteDoc(doc(db, 'usuarios', uid)); alert('Conta banida e removida do banco de dados.'); carregarContasJogadores(); } catch (e) { alert(`Erro ao banir: ${e.message}`); } }
