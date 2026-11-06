@@ -96,11 +96,16 @@ function tocarSomTecla() {
 }
 
 // ==========================================
-// COMPRESSÃO DE IMAGEM
+// COMPRESSÃO E LEITURA DE IMAGEM/GIF
 // ==========================================
 function comprimirImagem(file) {
     return new Promise((resolve, reject) => {
         if (file.type === 'image/gif') {
+            // PROTEÇÃO PARA GIF: Não pode passar de 700KB para não estourar o Firestore
+            if (file.size > 700 * 1024) {
+                reject(new Error("Este GIF é muito grande. O limite para GIFs animados é de 700KB para caber no banco de dados."));
+                return;
+            }
             const reader = new FileReader();
             reader.onload = (e) => resolve(e.target.result);
             reader.onerror = () => reject(new Error("Erro ao ler o GIF"));
@@ -140,7 +145,10 @@ window.abrirSeletor = function(callback) {
         try {
             const imagemComprimida = await comprimirImagem(file);
             callback(imagemComprimida);
-        } catch (erro) { console.error(erro); alert("Não foi possível preparar a imagem."); }
+        } catch (erro) { 
+            console.error(erro); 
+            alert(erro.message || "Não foi possível preparar a imagem."); 
+        }
     };
     input.click();
 };
@@ -581,7 +589,7 @@ function abrirModalFoto(elemento) {
 
 function atualizarPreviewFoto() {
     if (imagemFotoBase64) {
-        previewFoto.innerHTML = `<img src="${imagemFotoBase64}" style="width:100%;height:100%;object-fit:cover;object-position:top center;">
+        previewFoto.innerHTML = `<img src="${imagemFotoBase64}" style="width:100%;height:100%;object-fit:contain;object-position:center;">
             <button id="btn-remover-img-foto" class="absolute top-1 right-1 bg-red-800 text-white rounded-full w-5 h-5 flex items-center justify-center cursor-pointer z-20 text-[10px] font-bold">X</button>`;
         previewFoto.classList.remove('border-dashed');
         previewFoto.classList.add('border-solid');
@@ -763,7 +771,7 @@ btnSalvarFoto.onclick = () => {
     if (!quadradoFotoAtual) return;
     if (!imagemFotoBase64) return alert("Escolha uma imagem.");
     tocarSom(audioClique);
-    quadradoFotoAtual.innerHTML = `<img src="${imagemFotoBase64}" style="width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;top:0;left:0;z-index:1;pointer-events:none;">`;
+    quadradoFotoAtual.innerHTML = `<img src="${imagemFotoBase64}" style="width:100%;height:100%;object-fit:contain;object-position:center;position:absolute;top:0;left:0;z-index:1;pointer-events:none;">`;
     quadradoFotoAtual.setAttribute('data-nome-foto', inputFotoNome.value || '');
     quadradoFotoAtual.setAttribute('data-desc-foto', inputFotoDesc.value || '');
     modalFoto.classList.add('hidden');
