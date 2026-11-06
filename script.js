@@ -131,6 +131,11 @@ function comprimirImagem(file) {
     });
 }
 
+// O Firestore aceita documentos de até 1 MiB. Como cada imagem é guardada
+// como uma string em um documento separado, usamos 900 KiB para deixar margem
+// para os metadados e evitar falhas no salvamento.
+const LIMITE_IMAGEM_FIRESTORE = 900 * 1024;
+
 window.abrirSeletor = function(callback) {
     const input = document.createElement('input');
     input.type = 'file'; input.accept = 'image/*';
@@ -138,9 +143,21 @@ window.abrirSeletor = function(callback) {
         const file = e.target.files[0]; if (!file) return;
         if (!file.type.startsWith('image/')) { alert("Selecione um arquivo de imagem."); return; }
         try {
+            // A compressão existente continua sendo executada sem alterações.
+            // GIF passa pelo fluxo original, sem ser convertido em imagem estática.
             const imagemComprimida = await comprimirImagem(file);
+            const tamanhoFinalBytes = new Blob([imagemComprimida]).size;
+
+            if (tamanhoFinalBytes > LIMITE_IMAGEM_FIRESTORE) {
+                alert("Arquivo muito grande para salvar na ficha! Escolha uma imagem menor e tente novamente.");
+                return;
+            }
+
             callback(imagemComprimida);
-        } catch (erro) { console.error(erro); alert("Não foi possível preparar a imagem."); }
+        } catch (erro) {
+            console.error(erro);
+            alert("Não foi possível preparar a imagem.");
+        }
     };
     input.click();
 };
