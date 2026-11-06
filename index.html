@@ -200,7 +200,7 @@
         }
 
         /* ==================================================== */
-        /* LAYOUT DO EQUIPAMENTO (CELULAR) - CORRIGIDO           */
+        /* LAYOUT DO EQUIPAMENTO (CELULAR) - BLOCÃO JUNTO       */
         /* ==================================================== */
         @media (max-width: 1024px) {
             header .flex-wrap {
@@ -213,27 +213,30 @@
 
             .equip-grid {
                 display: grid !important;
-                grid-template-columns: 1fr 1fr !important; /* Duas colunas iguais */
-                grid-auto-rows: auto !important; /* Não força a altura da tela */
+                /* Cria 2 colunas de tamanhos iguais */
+                grid-template-columns: 1fr 1fr !important; 
+                /* O grid vai criar linhas automaticamente baseado no tamanho dos itens */
+                grid-auto-rows: min-content !important; 
                 height: auto !important;
                 min-height: 0 !important;
                 gap: 10px !important;
-                align-content: start !important;
+                align-content: start !important; /* Cola tudo no topo */
             }
 
-            /* Foto do Personagem (ocupa as duas colunas, no topo) */
+            /* FOTO DO PERSONAGEM: Ocupa as duas colunas, tem tamanho fixo */
             .equip-grid > .foto-personagem {
                 grid-column: 1 / -1 !important;
-                grid-row: 1 !important;
-                height: 350px !important;
+                grid-row: 1 !important; /* Sempre na primeira linha */
+                height: 320px !important; 
                 width: 100% !important;
+                margin-bottom: 10px;
             }
 
-            /* Aqui a gente trava o formato quadrado de verdade usando aspect-ratio */
+            /* TODOS OS QUADRADOS: TRAVA A PROPORÇÃO PARA NÃO ESTICAR */
             .equip-grid > .slot-vazio {
-                aspect-ratio: 1 / 1 !important; /* QUADRADO PERFEITO */
                 width: 100% !important;
                 height: auto !important;
+                aspect-ratio: 1 / 1 !important; /* QUADRADO PERFEITO */
                 font-size: .9rem !important; 
                 padding: 5px; 
                 display: flex; 
@@ -242,29 +245,18 @@
                 align-items: center; 
             }
 
-            /* CABEÇA (Coluna 1, Linha 2) */
-            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; }
+            /* DEFINE A POSIÇÃO DE CADA UM NO GRID */
+            /* Coluna 1 (Esquerda) */
+            .equip-grid > .slot-vazio:nth-child(1) { grid-column: 1; grid-row: 2; } /* CABEÇA */
+            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 1; grid-row: 3; } /* FACE */
+            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 4; } /* ROUPA */
+            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1; grid-row: 5; } /* MOCHILA */
 
-            /* FACE (Coluna 1, Linha 3) */
-            .equip-grid > .slot-vazio:nth-child(3) { grid-column: 1; grid-row: 3; }
-
-            /* ROUPA (Coluna 1, Linha 4) */
-            .equip-grid > .slot-vazio:nth-child(4) { grid-column: 1; grid-row: 4; }
-
-            /* MOCHILA (Coluna 1, Linha 5) */
-            .equip-grid > .slot-vazio:nth-child(5) { grid-column: 1; grid-row: 5; }
-
-            /* COLETE (Coluna 2, Linha 2) */
-            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; }
-
-            /* MÃO PRINCIPAL (Coluna 2, Linha 3) */
-            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 2; grid-row: 3; }
-
-            /* MÃO SECUNDÁRIA (Coluna 2, Linha 4) */
-            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 2; grid-row: 4; }
-
-            /* BOTAS (Coluna 2, Linha 5) */
-            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 5; }
+            /* Coluna 2 (Direita) */
+            .equip-grid > .slot-vazio:nth-child(2) { grid-column: 2; grid-row: 2; } /* COLETE */
+            .equip-grid > .slot-vazio:nth-child(6) { grid-column: 2; grid-row: 3; } /* MÃO PRINCIPAL */
+            .equip-grid > .slot-vazio:nth-child(8) { grid-column: 2; grid-row: 4; } /* MÃO SECUNDÁRIA */
+            .equip-grid > .slot-vazio:nth-child(7) { grid-column: 2; grid-row: 5; } /* BOTAS */
 
             .equip-grid > .slot-vazio i { font-size: 1.8rem; margin-bottom: 6px; }
             .equip-grid > .slot-vazio img { padding: 2px; }
