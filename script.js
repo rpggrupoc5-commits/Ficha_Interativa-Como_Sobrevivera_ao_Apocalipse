@@ -103,34 +103,68 @@ function tocarSomTecla() {
 // ==========================================
 window.gerarLoot = function(categoria) {
     tocarSom(audioClique);
-    const lista = bancoDeItens[categoria];
-    
-    if (!lista || lista.length === 0) {
-        alert("Nenhum item encontrado nesta categoria.");
+
+    const listasCategorias = {
+        comida: bancoDeItens.comida,
+        bebida: bancoDeItens.bebida,
+        remedio: bancoDeItens.remedio,
+        arma_branca: bancoDeItens.arma_branca,
+        arma_de_fogo: bancoDeItens.arma_de_fogo
+    };
+    const nomesCategorias = {
+        item_aleatorio: "ITEM ALEATÓRIO",
+        comida: "COMIDA",
+        bebida: "BEBIDA",
+        remedio: "REMÉDIO",
+        arma_branca: "ARMA BRANCA",
+        arma_de_fogo: "ARMA DE FOGO"
+    };
+
+    const lista = categoria === 'item_aleatorio'
+        ? bancoDeItens.item_aleatorio
+        : listasCategorias[categoria];
+
+    if (!Array.isArray(lista) || lista.length === 0) {
+        alert("Esta categoria ainda não possui itens cadastrados.");
         return;
     }
 
-    // Sorteia um item da categoria
     const itemSorteado = lista[Math.floor(Math.random() * lista.length)];
-    
-    // Sorteia a quantidade baseada no Min e Max do item
-    const qtdSorteada = Math.floor(Math.random() * (itemSorteado.qtdMax - itemSorteado.qtdMin + 1)) + itemSorteado.qtdMin;
-    
-    // Calcula o peso total
-    const pesoTotal = (qtdSorteada * itemSorteado.peso).toFixed(2);
+    const qtdMin = Number.isFinite(Number(itemSorteado.qtdMin)) ? Number(itemSorteado.qtdMin) : 1;
+    const qtdMax = Number.isFinite(Number(itemSorteado.qtdMax)) ? Number(itemSorteado.qtdMax) : qtdMin;
+    const qtdSorteada = Math.floor(Math.random() * (Math.max(qtdMin, qtdMax) - qtdMin + 1)) + qtdMin;
+    const pesoUnitario = Number(itemSorteado.peso) || 0;
+    const pesoTotal = (qtdSorteada * pesoUnitario).toFixed(2);
 
-    // Mostra o resultado no HTML
+    // O item aleatório também informa de qual categoria ele veio.
+    let categoriaReal = categoria;
+    if (categoria === 'item_aleatorio') {
+        categoriaReal = Object.keys(listasCategorias).find(chave => listasCategorias[chave]?.includes(itemSorteado)) || 'item_aleatorio';
+    }
+
+    // Variações cosméticas: não alteram dano, movimento ou qualquer regra de combate.
+    const estadosArmas = [
+        "Bem conservada", "Desgastada", "Antiga", "Danificada", "Enferrujada",
+        "Improvisada", "Reparada", "Com marcas de uso", "Rara", "Em ótimo estado"
+    ];
+    const estado = ['arma_branca', 'arma_de_fogo'].includes(categoriaReal)
+        ? estadosArmas[Math.floor(Math.random() * estadosArmas.length)]
+        : null;
+
     const painelLoot = document.getElementById('resultado-loot');
     const conteudoLoot = document.getElementById('loot-conteudo');
-    
+    if (!painelLoot || !conteudoLoot) return;
+
+    const tituloCategoria = nomesCategorias[categoria] || nomesCategorias[categoriaReal] || categoria.replaceAll('_', ' ').toUpperCase();
     conteudoLoot.innerHTML = `
-        <div class="text-2xl font-bold text-[#8a1313] mb-2 border-b-2 border-[#5c3a21] pb-2 uppercase">${categoria.replace('_', ' ')}</div>
+        <div class="text-2xl font-bold text-[#d8a45c] mb-2 border-b-2 border-[#5c3a21] pb-2 uppercase">${tituloCategoria}</div>
         <p class="mb-1 text-3xl font-bold">${itemSorteado.nome}</p>
+        ${estado ? `<p class="mb-2 text-base text-[#d8c3a5]">Estado: <span class="font-bold text-[#fbbf24]">${estado}</span></p>` : ''}
         <p>Quantidade: <span class="text-xl font-bold text-[#22c55e]">${qtdSorteada}</span></p>
-        <p>Peso Unitário: <span class="font-bold text-[#3b82f6]">${itemSorteado.peso} kg</span></p>
+        <p>Peso Unitário: <span class="font-bold text-[#3b82f6]">${pesoUnitario.toFixed(2)} kg</span></p>
         <p class="mt-2 text-xl border-t-2 border-[#5c3a21] pt-2">Peso Total: <span class="text-[#fbbf24]">${pesoTotal} kg</span></p>
     `;
-    
+
     painelLoot.classList.remove('hidden');
 };
 
