@@ -190,10 +190,7 @@
         /* Painel de equipamento: visual tático contemporâneo */
         .equip-grid {
             display: grid !important;
-            /* Colunas flexíveis para evitar que os slots laterais invadam os painéis vizinhos em telas menores. */
             grid-template-columns: minmax(0, .85fr) minmax(180px, 1.3fr) minmax(0, .85fr);
-            /* Mais espaço vertical para descer a MOCHILA e separar os slots.
-               O quadrado das BOTAS fica 30px menor em altura. */
             grid-template-rows: 110px 125px 185px 155px;
             min-width: 0;
             grid-template-areas:
@@ -422,6 +419,7 @@
                     <span id="contador-pdms" class="bg-black/10 px-3 py-1 rounded border border-[#3a2517]">PDMs: —</span>
                     <span id="contador-contas" class="bg-black/10 px-3 py-1 rounded border border-[#3a2517]">Contas: —</span>
                 </div>
+                
                 <section class="mb-8 rounded-lg border-2 border-[#3a2517] bg-black/5 p-3 md:p-4">
                     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-3 border-b border-[#3a2517] pb-2">
                         <div>
@@ -442,6 +440,28 @@
                         <button id="btn-atualizar-solicitacoes" class="px-4 py-2 rounded btn-metal font-bold text-base w-full md:w-auto">ATUALIZAR</button>
                     </div>
                     <div id="solicitacoes-mestre" class="flex flex-col gap-2"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando solicitações...</p></div>
+                </section>
+
+                <section class="mb-8 rounded-lg border-2 border-[#3a2517] bg-black/5 p-3 md:p-4">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-3 border-b border-[#3a2517] pb-2">
+                        <div>
+                            <h2 class="fonte-titulo text-3xl text-[#1a110a]">GERADOR DE ITENS (LOOT)</h2>
+                            <p class="text-base text-[#3a2517] font-bold fonte-papel">Clique em uma categoria para gerar um item aleatório.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <button class="btn-roxo font-bold px-4 py-2 rounded text-lg" onclick="gerarLoot('item_aleatorio')">🎲 ITEM ALEATÓRIO</button>
+                        <button class="btn-verde font-bold px-4 py-2 rounded text-lg" onclick="gerarLoot('comida')">🍎 COMIDA</button>
+                        <button class="btn-azul font-bold px-4 py-2 rounded text-lg" onclick="gerarLoot('bebida')">💧 BEBIDA</button>
+                        <button class="btn-perigo font-bold px-4 py-2 rounded text-lg" onclick="gerarLoot('remedio')">💊 REMÉDIO</button>
+                        <button class="btn-metal font-bold px-4 py-2 rounded text-lg" onclick="gerarLoot('arma')">🔫 ARMA</button>
+                    </div>
+                    
+                    <div id="resultado-loot" class="hidden bg-[#1a110a] text-[#d8c3a5] p-4 rounded-lg font-papel text-center text-xl border-4 border-[#5c3a21] shadow-lg relative">
+                        <button onclick="document.getElementById('resultado-loot').classList.add('hidden')" class="absolute top-2 right-2 text-red-500 hover:text-red-700 text-lg font-bold">X</button>
+                        <div id="loot-conteudo"></div>
+                    </div>
                 </section>
 
                 <div class="mb-3 border-b-2 border-[#3a2517] pb-2"><h2 class="fonte-titulo text-4xl text-[#1a110a]">FICHAS E PDMs</h2></div>
@@ -521,7 +541,6 @@
                     
                     <section class="painel-papel flex flex-col">
                         <h3 class="titulo-painel">EQUIPAMENTO</h3>
-                        <!-- Adicionado o slot 5 da Mochila -->
                         <div class="equip-grid p-3 md:p-4 flex-1">
                             <div class="slot-vazio slot-cabeca rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-helmet-safety text-2xl mb-1 opacity-50"></i>CABEÇA</div>
                             <div class="slot-vazio slot-colete rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-vest text-2xl mb-1 opacity-50"></i>COLETE</div>
@@ -531,7 +550,6 @@
                             
                             <div class="slot-vazio slot-roupa rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-shirt text-2xl mb-1 opacity-50"></i>ROUPA</div>
                             
-                            <!-- NOVO SLOT MOCHILA -->
                             <div class="slot-vazio slot-mochila rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-bag-shopping text-2xl mb-1 opacity-50"></i>MOCHILA</div>
                             
                             <div class="slot-vazio slot-mao-principal rounded text-xs font-bold text-[#1a110a] text-center flex flex-col justify-end pb-2" onclick="upload(this)"><i class="fa-solid fa-gun text-2xl mb-1 opacity-50"></i>MÃO PRINCIPAL</div>
