@@ -65,7 +65,7 @@ export const bancoDeItens = {
 bancoDeItens.item_aleatorio = [
     ...bancoDeItens.comida,
     ...bancoDeItens.bebida,
-    ...bancoDeItens.remedio,
+    ...bancoDeItens.medicina,
     ...bancoDeItens.arma_branca,
     ...bancoDeItens.arma_fogo
 ];
