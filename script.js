@@ -408,6 +408,16 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
     }
 }
 
+// Limpa a trava de abertura quando a página for fechada
+window.addEventListener('beforeunload', () => {
+    if (fichaAtualId) {
+        const chaveAbertura = `ficha_aberta_${fichaAtualId}`;
+        if (localStorage.getItem(chaveAbertura) === usuarioAtual?.uid) {
+            localStorage.removeItem(chaveAbertura);
+        }
+    }
+});
+
 function monitorarRevogacao(fichaId) {
     if (intervalMonitorRevogacao) clearInterval(intervalMonitorRevogacao);
     intervalMonitorRevogacao = setInterval(async () => {
@@ -985,7 +995,6 @@ function renderizarItem(q, dados) {
     const pesoUnit = parseFloat(pesoStr) || 0;
     const pesoTotal = (qtd * pesoUnit).toFixed(2);
 
-    // CORREÇÃO: Limpa o conteúdo do slot antes de adicionar o novo item, evitando duplicação visual
     q.innerHTML = '';
 
     q.innerHTML = `
@@ -1281,8 +1290,6 @@ async function carregarFicha() {
         document.getElementById('foto-personagem').setAttribute('data-desc-foto', d.fotoPersonagemDesc || '');
     }
 
-    // --- CORREÇÃO DA LIMPEZA ---
-    // Limpa apenas os itens, sem apagar o HTML interno de forma agressiva
     document.querySelectorAll('.item-adicionado').forEach(el => {
         el.classList.remove('item-adicionado');
         el.removeAttribute('data-itemData');
