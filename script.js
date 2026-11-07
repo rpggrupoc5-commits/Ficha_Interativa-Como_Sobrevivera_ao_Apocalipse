@@ -23,6 +23,7 @@ import {
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// IMPORTANDO O BANCO DE ITENS
 import { bancoDeItens } from './itens.js';
 
 const firebaseConfig = {
@@ -78,7 +79,7 @@ audioSalvarManual.volume = 0.9;
 audioEntrarFicha.volume = 0.8;
 audioSairFicha.volume = 0.8;
 audioEntrarPainel.volume = 0.8;
-audioSairPainel.volume = 1.0;
+audioSairPainel.volume = 1.0; // Aumentado em 20% conforme solicitado
 audioCancelarItem.volume = 0.8;
 
 function tocarSom(audio, pausarAnterior = true) {
@@ -109,10 +110,16 @@ window.gerarLoot = function(categoria) {
         return;
     }
 
+    // Sorteia um item da categoria
     const itemSorteado = lista[Math.floor(Math.random() * lista.length)];
+    
+    // Sorteia a quantidade baseada no Min e Max do item
     const qtdSorteada = Math.floor(Math.random() * (itemSorteado.qtdMax - itemSorteado.qtdMin + 1)) + itemSorteado.qtdMin;
+    
+    // Calcula o peso total
     const pesoTotal = (qtdSorteada * itemSorteado.peso).toFixed(2);
 
+    // Mostra o resultado no HTML
     const painelLoot = document.getElementById('resultado-loot');
     const conteudoLoot = document.getElementById('loot-conteudo');
     
@@ -408,16 +415,6 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
     }
 }
 
-// Limpa a trava de abertura quando a página for fechada
-window.addEventListener('beforeunload', () => {
-    if (fichaAtualId) {
-        const chaveAbertura = `ficha_aberta_${fichaAtualId}`;
-        if (localStorage.getItem(chaveAbertura) === usuarioAtual?.uid) {
-            localStorage.removeItem(chaveAbertura);
-        }
-    }
-});
-
 function monitorarRevogacao(fichaId) {
     if (intervalMonitorRevogacao) clearInterval(intervalMonitorRevogacao);
     intervalMonitorRevogacao = setInterval(async () => {
@@ -671,6 +668,7 @@ let imagemAtualBase64 = null;
 let quadradoFotoAtual = null;
 let imagemFotoBase64 = null;
 
+// Controle de estado da mochila ativa
 let mochilaAtivaId = null;
 let mochilaCapacidade = 0;
 let mochilaStatus = false; 
@@ -735,6 +733,7 @@ const modalHTML = `
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg):<input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
             </div>
             
+            <!-- NOVO CAMPO: Peso Total Dinâmico -->
             <div class="text-right font-bold text-sm text-[#8a1313] mt-1">
                 Peso Total: <span id="modal-peso-total">0.00</span> kg
             </div>
@@ -798,6 +797,7 @@ const btnCancelar = document.getElementById('btn-cancelar');
 const btnSalvarItem = document.getElementById('btn-salvar-item');
 const btnUpload = document.getElementById('btn-upload');
 
+// Elementos do Peso Total Dinâmico
 const modalPesoTotalEl = document.getElementById('modal-peso-total');
 
 const modalFoto = document.getElementById('modal-foto');
@@ -860,6 +860,7 @@ function atualizarPreviewModal() {
     }
 }
 
+// Função para atualizar o cálculo do peso total no Modal em tempo real
 function atualizarPesoTotalModal() {
     const qtd = parseFloat(inputQtd.value) || 0;
     const pesoStr = inputPeso.value.replace(',', '.');
@@ -916,7 +917,7 @@ function abrirModal(q, dados = null) {
         document.querySelector('#modal-item h3').innerText = isMochilaSlot ? "EQUIPAR MOCHILA" : "NOVO ITEM";
         btnSalvarItem.innerText = "ADICIONAR";
     }
-    atualizarPesoTotalModal();
+    atualizarPesoTotalModal(); // Atualiza o cálculo ao abrir
     atualizarPreviewModal();
     modal.classList.remove('hidden');
 }
@@ -990,12 +991,11 @@ function renderizarItem(q, dados) {
     const isEquipamento = !q.id.startsWith('inv-');
     const classeTexto = isEquipamento ? 'opacity-0 group-hover:opacity-100 transition-opacity' : 'opacity-100';
     
+    // Calcula o peso total deste item (Quantidade x Peso Unitário)
     const qtd = parseFloat(dados.qtd) || 1;
     const pesoStr = (dados.peso || "0").toString().replace(',', '.');
     const pesoUnit = parseFloat(pesoStr) || 0;
     const pesoTotal = (qtd * pesoUnit).toFixed(2);
-
-    q.innerHTML = '';
 
     q.innerHTML = `
         ${dados.img ? `<img src="${dados.img}" style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;padding:4px;z-index:1;">` : ''}
@@ -1290,7 +1290,7 @@ async function carregarFicha() {
         document.getElementById('foto-personagem').setAttribute('data-desc-foto', d.fotoPersonagemDesc || '');
     }
 
-    document.querySelectorAll('.item-adicionado').forEach(el => {
+    document.querySelectorAll('.slot-vazio, .foto-personagem').forEach(el => {
         el.classList.remove('item-adicionado');
         el.removeAttribute('data-itemData');
         el.removeAttribute('data-peso');
@@ -1298,38 +1298,33 @@ async function carregarFicha() {
         
         if (el.id.startsWith('inv-')) {
             el.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
-        } else if (el.classList.contains('slot-vazio')) {
+        } 
+        else if (el.classList.contains('slot-vazio')) {
             const original = el.getAttribute('data-original') || '';
             el.innerHTML = original + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
         }
     });
 
     if (d.itensMochila) {
-        const posicoesCarregadas = new Set();
         d.itensMochila.forEach(item => {
-            if (posicoesCarregadas.has(item.posicao)) return; 
             const el = document.getElementById(item.posicao);
             if (el) {
                 const dados = { ...item.dados };
                 if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId];
                 if (!dados.img && item.dados.img) dados.img = item.dados.img;
                 renderizarItem(el, dados);
-                posicoesCarregadas.add(item.posicao);
             }
         });
     }
 
     if (d.itensEquipamento) {
-        const posicoesCarregadas = new Set();
         d.itensEquipamento.forEach(item => {
-            if (posicoesCarregadas.has(item.posicao)) return;
             const el = Array.from(document.querySelectorAll('.slot-vazio')).find(e => e.getAttribute('data-original') === item.posicao);
             if (el) {
                 const dados = { ...item.dados };
                 if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId];
                 if (!dados.img && item.dados.img) dados.img = item.dados.img;
                 renderizarItem(el, dados);
-                posicoesCarregadas.add(item.posicao);
             }
         });
     }
@@ -1526,6 +1521,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
     
+    // Correção: Transformando o botão em um link real (Tag <a>) para não ser bloqueado pelo navegador
     const linkFicha = document.createElement('a');
     linkFicha.href = `${window.location.pathname}?ficha=${idFicha}`;
     linkFicha.target = '_blank';
