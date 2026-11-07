@@ -23,7 +23,6 @@ import {
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// IMPORTANDO O BANCO DE ITENS
 import { bancoDeItens } from './itens.js';
 
 const firebaseConfig = {
@@ -662,7 +661,6 @@ let imagemAtualBase64 = null;
 let quadradoFotoAtual = null;
 let imagemFotoBase64 = null;
 
-// Controle de estado da mochila ativa
 let mochilaAtivaId = null;
 let mochilaCapacidade = 0;
 let mochilaStatus = false; 
@@ -790,7 +788,6 @@ const btnCancelar = document.getElementById('btn-cancelar');
 const btnSalvarItem = document.getElementById('btn-salvar-item');
 const btnUpload = document.getElementById('btn-upload');
 
-// Elementos do Peso Total Dinâmico
 const modalPesoTotalEl = document.getElementById('modal-peso-total');
 
 const modalFoto = document.getElementById('modal-foto');
@@ -853,7 +850,6 @@ function atualizarPreviewModal() {
     }
 }
 
-// Função para atualizar o cálculo do peso total no Modal em tempo real
 function atualizarPesoTotalModal() {
     const qtd = parseFloat(inputQtd.value) || 0;
     const pesoStr = inputPeso.value.replace(',', '.');
@@ -910,7 +906,7 @@ function abrirModal(q, dados = null) {
         document.querySelector('#modal-item h3').innerText = isMochilaSlot ? "EQUIPAR MOCHILA" : "NOVO ITEM";
         btnSalvarItem.innerText = "ADICIONAR";
     }
-    atualizarPesoTotalModal(); // Atualiza o cálculo ao abrir
+    atualizarPesoTotalModal();
     atualizarPreviewModal();
     modal.classList.remove('hidden');
 }
@@ -984,15 +980,13 @@ function renderizarItem(q, dados) {
     const isEquipamento = !q.id.startsWith('inv-');
     const classeTexto = isEquipamento ? 'opacity-0 group-hover:opacity-100 transition-opacity' : 'opacity-100';
     
-    // Calcula o peso total deste item (Quantidade x Peso Unitário)
     const qtd = parseFloat(dados.qtd) || 1;
     const pesoStr = (dados.peso || "0").toString().replace(',', '.');
     const pesoUnit = parseFloat(pesoStr) || 0;
     const pesoTotal = (qtd * pesoUnit).toFixed(2);
 
-    // CORREÇÃO: Zera o innerHTML antes de desenhar o item para não empilhar visualmente
+    // CORREÇÃO: Limpa o conteúdo do slot antes de adicionar o novo item, evitando duplicação visual
     q.innerHTML = '';
-    q.classList.remove('slot-bloqueado'); // Garante que o quadrado não fique com o cadeado por cima
 
     q.innerHTML = `
         ${dados.img ? `<img src="${dados.img}" style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;padding:4px;z-index:1;">` : ''}
@@ -1028,7 +1022,6 @@ function atualizarEstadoMochila() {
 
     const slotsInv = document.querySelectorAll('#inventario .slot-vazio');
     slotsInv.forEach((slot, index) => {
-        // Correção: Se o slot já tem item, mantém desbloqueado para poder editar
         if (mochilaStatus && index < mochilaCapacidade) {
             slot.classList.remove('slot-bloqueado');
             slot.onclick = () => {
@@ -1288,14 +1281,13 @@ async function carregarFicha() {
         document.getElementById('foto-personagem').setAttribute('data-desc-foto', d.fotoPersonagemDesc || '');
     }
 
-    // --- INÍCIO DA CORREÇÃO DA DUPLICAÇÃO ---
-    // 1. Força a limpeza de TODOS os slots, apagando qualquer HTML ou imagem antiga que tenha ficado "presa"
-    document.querySelectorAll('.slot-vazio, .foto-personagem').forEach(el => {
+    // --- CORREÇÃO DA LIMPEZA ---
+    // Limpa apenas os itens, sem apagar o HTML interno de forma agressiva
+    document.querySelectorAll('.item-adicionado').forEach(el => {
         el.classList.remove('item-adicionado');
         el.removeAttribute('data-itemData');
         el.removeAttribute('data-peso');
         el.removeAttribute('data-qtd');
-        el.innerHTML = ''; // Esvazia o conteúdo para não empilhar
         
         if (el.id.startsWith('inv-')) {
             el.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
@@ -1304,13 +1296,11 @@ async function carregarFicha() {
             el.innerHTML = original + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
         }
     });
-    // --- FIM DA CORREÇÃO DA DUPLICAÇÃO ---
 
     if (d.itensMochila) {
-        // Cria um Set para evitar que a mesma posição seja carregada duas vezes se houver bug no banco
         const posicoesCarregadas = new Set();
         d.itensMochila.forEach(item => {
-            if (posicoesCarregadas.has(item.posicao)) return; // Se já carregou esse slot, pula
+            if (posicoesCarregadas.has(item.posicao)) return; 
             const el = document.getElementById(item.posicao);
             if (el) {
                 const dados = { ...item.dados };
@@ -1529,7 +1519,6 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
     
-    // Correção: Transformando o botão em um link real (Tag <a>) para não ser bloqueado pelo navegador
     const linkFicha = document.createElement('a');
     linkFicha.href = `${window.location.pathname}?ficha=${idFicha}`;
     linkFicha.target = '_blank';
