@@ -23,7 +23,7 @@ import {
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// IMPORTANDO O BANCO DE ITENS
+// IMPORTANDO O BANCO DE ITENS (Caminho corrigido)
 import { bancoDeItens } from './itens.js';
 
 const firebaseConfig = {
@@ -1515,7 +1515,6 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
     
-    // Correção: Transformando o botão em um link real (Tag <a>) para não ser bloqueado pelo navegador
     const linkFicha = document.createElement('a');
     linkFicha.href = `${window.location.pathname}?ficha=${idFicha}`;
     linkFicha.target = '_blank';
@@ -1800,4 +1799,49 @@ async function duplicarFicha(idFicha, ficha) {
     try {
         const imagensOrigem = await getDocs(collection(db, 'fichas', idFicha, 'imagens'));
         const novaRef = doc(collection(db, 'fichas'));
-        const copia = { ...ficha, nome: novoNome.trim() || `${ficha.nome || 'Personagem'} (Cópia)`, tipo: 'pdm', proprietarioUid:
+        const copia = { ...ficha, nome: novoNome.trim() || `${ficha.nome || 'Personagem'} (Cópia)`, tipo: 'pdm', proprietarioUid: null, proprietarioNome: '', proprietarioEmail: '', criadoPor: usuarioAtual.uid };
+        delete copia.fotoPersonagem;
+        await setDoc(novaRef, copia);
+        const lote = writeBatch(db);
+        imagensOrigem.forEach(item => lote.set(doc(db, 'fichas', novaRef.id, 'imagens', item.id), item.data()));
+        if (!imagensOrigem.empty) await lote.commit();
+        await atualizarPainelMestre(); alert('Cópia criada como PDM independente.');
+    } catch (e) { console.error(e); alert(`Erro ao duplicar ficha: ${e.message}`); }
+}
+
+async function vincularJogador(idFicha, ficha) {
+    const uid = prompt('UID da conta Firebase do jogador:', ficha.proprietarioUid || ''); if (uid === null) return;
+    const uidLimpo = uid.trim();
+    if (!uidLimpo || uidLimpo.length < 10) return alert('Informe o UID completo da conta Firebase.');
+    const nomeJogador = prompt('Nome do jogador (opcional):', ficha.proprietarioNome || ''); if (nomeJogador === null) return;
+    
+    try {
+        let emailEncontrado = '';
+        const userSnap = await getDoc(doc(db, 'usuarios', uidLimpo));
+        if (userSnap.exists()) {
+            emailEncontrado = userSnap.data().email || '';
+        }
+
+        await setDoc(doc(db, 'fichas', idFicha), { 
+            proprietarioUid: uidLimpo, 
+            proprietarioNome: nomeJogador.trim(), 
+            proprietarioEmail: emailEncontrado,
+            tipo: 'jogador' 
+        }, { merge: true });
+        
+        await atualizarPainelMestre(); 
+        alert('Jogador vinculado com sucesso!');
+    } catch (e) { 
+        console.error(e); 
+        alert(`Erro ao vincular jogador: ${e.message}`); 
+    }
+}
+
+async function desvincularJogador(idFicha, ficha) {
+    if (!ficha.proprietarioUid) return alert('Esta ficha não possui jogador vinculado.');
+    if (!confirm(`Desvincular o jogador desta ficha (${ficha.nome || 'Sem nome'})?`)) return;
+    try {
+        await setDoc(doc(db, 'fichas', idFicha), { proprietarioUid: null, proprietarioNome: '', proprietarioEmail: '', tipo: 'pdm' }, { merge: true });
+        await atualizarPainelMestre(); alert('Jogador desvinculado. A ficha agora é um PDM.');
+    } catch (e) { console.error(e); alert(`Erro ao desvincular: ${e.message}`); }
+}
