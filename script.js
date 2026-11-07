@@ -636,8 +636,9 @@ let mochilaStatus = false;
 
 function recalcularPesoGeral() {
     let pesoItens = 0;
-    document.querySelectorAll('.item-adicionado').forEach(item => {
-        if (item.id.startsWith('inv-') && item.classList.contains('slot-bloqueado')) return;
+    // Calcula APENAS os itens do inventário da mochila
+    document.querySelectorAll('#inventario .item-adicionado').forEach(item => {
+        if (item.classList.contains('slot-bloqueado')) return;
         const qtd = parseFloat(item.dataset.qtd) || 1;
         const pesoStr = (item.dataset.peso || "0").toString().replace(',', '.');
         pesoItens += qtd * (parseFloat(pesoStr) || 0);
@@ -645,9 +646,12 @@ function recalcularPesoGeral() {
     if (pesoEl) pesoEl.innerText = pesoItens.toFixed(2);
 
     let pesoEquip = 0;
+    // Calcula APENAS os itens de equipamento (ignora foto e inventário)
     document.querySelectorAll('.slot-vazio.item-adicionado').forEach(item => {
         if (item.id === 'foto-personagem') return;
+        if (item.id.startsWith('inv-')) return; // CORREÇÃO AQUI: Impede a contagem dupla da mochila
         if (item.classList.contains('slot-bloqueado')) return;
+        
         const qtd = parseFloat(item.dataset.qtd) || 1;
         const pesoStr = (item.dataset.peso || "0").toString().replace(',', '.');
         pesoEquip += qtd * (parseFloat(pesoStr) || 0);
@@ -664,6 +668,7 @@ function recalcularPesoGeral() {
     }
 
     const pesoPers = parseFloat((pesoPersonagemInput?.value || '0').toString().replace(',', '.')) || 0;
+    
     if (pesoPersonagemEl) pesoPersonagemEl.innerText = (pesoPers + pesoEquip + pesoMochila).toFixed(2);
     if (pesoTotalGeralEl) pesoTotalGeralEl.innerText = (pesoPers + pesoEquip + pesoMochila + pesoItens).toFixed(2);
     
