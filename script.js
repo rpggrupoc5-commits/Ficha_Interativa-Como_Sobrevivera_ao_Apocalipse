@@ -23,6 +23,9 @@ import {
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// IMPORTANDO O BANCO DE ITENS
+import { bancoDeItens } from './itens.js';
+
 const firebaseConfig = {
     apiKey: "AIzaSyAdjZy-eaJmeGlvvEMTQXDZmy5WOOKNoGg",
     authDomain: "painel-ficha-apocalipse.firebaseapp.com",
@@ -94,6 +97,42 @@ function tocarSomTecla() {
         tempoUltimoSomTecla = agora;
     }
 }
+
+// ==========================================
+// LÓGICA DO GERADOR DE ITENS (LOOT)
+// ==========================================
+window.gerarLoot = function(categoria) {
+    tocarSom(audioClique);
+    const lista = bancoDeItens[categoria];
+    
+    if (!lista || lista.length === 0) {
+        alert("Nenhum item encontrado nesta categoria.");
+        return;
+    }
+
+    // Sorteia um item da categoria
+    const itemSorteado = lista[Math.floor(Math.random() * lista.length)];
+    
+    // Sorteia a quantidade baseada no Min e Max do item
+    const qtdSorteada = Math.floor(Math.random() * (itemSorteado.qtdMax - itemSorteado.qtdMin + 1)) + itemSorteado.qtdMin;
+    
+    // Calcula o peso total
+    const pesoTotal = (qtdSorteada * itemSorteado.peso).toFixed(2);
+
+    // Mostra o resultado no HTML
+    const painelLoot = document.getElementById('resultado-loot');
+    const conteudoLoot = document.getElementById('loot-conteudo');
+    
+    conteudoLoot.innerHTML = `
+        <div class="text-2xl font-bold text-[#8a1313] mb-2 border-b-2 border-[#5c3a21] pb-2 uppercase">${categoria.replace('_', ' ')}</div>
+        <p class="mb-1 text-3xl font-bold">${itemSorteado.nome}</p>
+        <p>Quantidade: <span class="text-xl font-bold text-[#22c55e]">${qtdSorteada}</span></p>
+        <p>Peso Unitário: <span class="font-bold text-[#3b82f6]">${itemSorteado.peso} kg</span></p>
+        <p class="mt-2 text-xl border-t-2 border-[#5c3a21] pt-2">Peso Total: <span class="text-[#fbbf24]">${pesoTotal} kg</span></p>
+    `;
+    
+    painelLoot.classList.remove('hidden');
+};
 
 // ==========================================
 // COMPRESSÃO DE IMAGEM
@@ -636,7 +675,6 @@ let mochilaStatus = false;
 
 function recalcularPesoGeral() {
     let pesoItens = 0;
-    // Calcula APENAS os itens do inventário da mochila
     document.querySelectorAll('#inventario .item-adicionado').forEach(item => {
         if (item.classList.contains('slot-bloqueado')) return;
         const qtd = parseFloat(item.dataset.qtd) || 1;
@@ -646,10 +684,9 @@ function recalcularPesoGeral() {
     if (pesoEl) pesoEl.innerText = pesoItens.toFixed(2);
 
     let pesoEquip = 0;
-    // Calcula APENAS os itens de equipamento (ignora foto e inventário)
     document.querySelectorAll('.slot-vazio.item-adicionado').forEach(item => {
         if (item.id === 'foto-personagem') return;
-        if (item.id.startsWith('inv-')) return; // CORREÇÃO AQUI: Impede a contagem dupla da mochila
+        if (item.id.startsWith('inv-')) return; 
         if (item.classList.contains('slot-bloqueado')) return;
         
         const qtd = parseFloat(item.dataset.qtd) || 1;
@@ -1253,18 +1290,15 @@ async function carregarFicha() {
         document.getElementById('foto-personagem').setAttribute('data-desc-foto', d.fotoPersonagemDesc || '');
     }
 
-    // Limpa corretamente todos os slots (tanto equipamento quanto mochila)
     document.querySelectorAll('.slot-vazio, .foto-personagem').forEach(el => {
         el.classList.remove('item-adicionado');
         el.removeAttribute('data-itemData');
         el.removeAttribute('data-peso');
         el.removeAttribute('data-qtd');
         
-        // Se for um slot do inventário, reseta para o visual de "+"
         if (el.id.startsWith('inv-')) {
             el.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
         } 
-        // Se for slot de equipamento, restaura o ícone original
         else if (el.classList.contains('slot-vazio')) {
             const original = el.getAttribute('data-original') || '';
             el.innerHTML = original + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
@@ -1513,7 +1547,12 @@ async function carregarDashboardJogador() {
         vinculadas.forEach(d => encontrados.set(d.id, d.data()));
         lista.innerHTML = '';
         if (!encontrados.size) { 
-            lista.innerHTML = `<p class="text-[#111] text-xl font-bold col-span-full text-center py-10">Nenhum personagem encontrado nesta conta.<br><span class="text-lg font-normal mt-2 block">Sua conta foi criada com <b>SUCESSO</b>! Peça ao Mestre para vincular uma ficha ao seu UID:<br><span class="font-mono bg-black/10 px-2 py-1 rounded select-all mt-1 inline-block">${usuarioAtual.uid}</span></span></p>`; 
+            lista.innerHTML = `<p class="text-[#111] text-xl font-bold col-span-full text-center py-10">Nenhum personagem encontrado nesta conta.<br>
+            <span class="text-2xl font-bold mt-4 block text-[#8a1313] bg-[#e6d5b8]/80 p-4 rounded-lg border-2 border-[#8a1313] shadow-md">
+                ⚠️ SUA CONTA FOI CRIADA COM SUCESSO!<br>
+                <span class="text-lg font-normal mt-2 block text-[#1a110a]">Peça ao Mestre para vincular uma ficha ao seu UID:</span>
+                <span class="font-mono bg-black/20 px-3 py-1 rounded select-all mt-2 inline-block text-white shadow-inner">${usuarioAtual.uid}</span>
+            </span></p>`; 
             return; 
         }
         for (const [id, ficha] of [...encontrados.entries()].sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '', 'pt-BR'))) {
