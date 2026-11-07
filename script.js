@@ -104,7 +104,6 @@ function arquivoEhGif(file) {
 
 function comprimirImagem(file) {
     return new Promise((resolve, reject) => {
-        // GIFs são lidos diretamente para preservar todos os quadros da animação.
         if (arquivoEhGif(file)) {
             const reader = new FileReader();
             reader.onload = (e) => resolve(e.target.result);
@@ -136,15 +135,11 @@ function comprimirImagem(file) {
     });
 }
 
-// O Firestore aceita documentos de até 1 MiB. Como cada imagem é guardada
-// como uma string em um documento separado, usamos 900 KiB para deixar margem
-// para os metadados e evitar falhas no salvamento.
 const LIMITE_IMAGEM_FIRESTORE = 900 * 1024;
 
 window.abrirSeletor = function(callback) {
     const input = document.createElement('input');
     input.type = 'file';
-    // A extensão explícita ajuda navegadores que não identificam corretamente o MIME do GIF.
     input.accept = 'image/*,.gif,image/gif';
     input.onchange = async (e) => {
         const file = e.target.files[0]; if (!file) return;
@@ -153,8 +148,6 @@ window.abrirSeletor = function(callback) {
             alert("Selecione um arquivo de imagem válido."); return;
         }
         try {
-            // PNG/JPEG e demais formatos mantêm a compressão automática original.
-            // GIF é preservado como animação, sem conversão para imagem estática.
             const imagemComprimida = await comprimirImagem(file);
             const tamanhoFinalBytes = new Blob([imagemComprimida]).size;
 
@@ -698,6 +691,11 @@ const modalHTML = `
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg):<input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
             </div>
             
+            <!-- NOVO CAMPO: Peso Total Dinâmico -->
+            <div class="text-right font-bold text-sm text-[#8a1313] mt-1">
+                Peso Total: <span id="modal-peso-total">0.00</span> kg
+            </div>
+
             <div id="campos-mochila" class="hidden flex-col gap-2 border-t border-b border-[#3a2517] py-2 my-1">
                 <label class="flex flex-col text-sm font-bold text-[#111]">Capacidade (Slots):
                     <select id="modal-mochila-capacidade" class="input-campo p-2">
@@ -756,6 +754,9 @@ const btnExcluir = document.getElementById('btn-excluir');
 const btnCancelar = document.getElementById('btn-cancelar');
 const btnSalvarItem = document.getElementById('btn-salvar-item');
 const btnUpload = document.getElementById('btn-upload');
+
+// Elementos do Peso Total Dinâmico
+const modalPesoTotalEl = document.getElementById('modal-peso-total');
 
 const modalFoto = document.getElementById('modal-foto');
 const previewFoto = document.getElementById('modal-preview-foto');
@@ -817,6 +818,19 @@ function atualizarPreviewModal() {
     }
 }
 
+// Função para atualizar o cálculo do peso total no Modal em tempo real
+function atualizarPesoTotalModal() {
+    const qtd = parseFloat(inputQtd.value) || 0;
+    const pesoStr = inputPeso.value.replace(',', '.');
+    const pesoUnit = parseFloat(pesoStr) || 0;
+    const total = qtd * pesoUnit;
+    if (modalPesoTotalEl) {
+        modalPesoTotalEl.innerText = total.toFixed(2);
+    }
+}
+if (inputQtd) inputQtd.addEventListener('input', atualizarPesoTotalModal);
+if (inputPeso) inputPeso.addEventListener('input', atualizarPesoTotalModal);
+
 function abrirModal(q, dados = null) {
     if (modoAcesso === "convidado-visualizar") return;
     tocarSom(audioClique);
@@ -861,6 +875,7 @@ function abrirModal(q, dados = null) {
         document.querySelector('#modal-item h3').innerText = isMochilaSlot ? "EQUIPAR MOCHILA" : "NOVO ITEM";
         btnSalvarItem.innerText = "ADICIONAR";
     }
+    atualizarPesoTotalModal(); // Atualiza o cálculo ao abrir
     atualizarPreviewModal();
     modal.classList.remove('hidden');
 }
