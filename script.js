@@ -79,7 +79,7 @@ audioSalvarManual.volume = 0.9;
 audioEntrarFicha.volume = 0.8;
 audioSairFicha.volume = 0.8;
 audioEntrarPainel.volume = 0.8;
-audioSairPainel.volume = 1.0; // Aumentado em 20% conforme solicitado
+audioSairPainel.volume = 1.0;
 audioCancelarItem.volume = 0.8;
 
 function tocarSom(audio, pausarAnterior = true) {
@@ -110,16 +110,10 @@ window.gerarLoot = function(categoria) {
         return;
     }
 
-    // Sorteia um item da categoria
     const itemSorteado = lista[Math.floor(Math.random() * lista.length)];
-    
-    // Sorteia a quantidade baseada no Min e Max do item
     const qtdSorteada = Math.floor(Math.random() * (itemSorteado.qtdMax - itemSorteado.qtdMin + 1)) + itemSorteado.qtdMin;
-    
-    // Calcula o peso total
     const pesoTotal = (qtdSorteada * itemSorteado.peso).toFixed(2);
 
-    // Mostra o resultado no HTML
     const painelLoot = document.getElementById('resultado-loot');
     const conteudoLoot = document.getElementById('loot-conteudo');
     
@@ -1806,49 +1800,4 @@ async function duplicarFicha(idFicha, ficha) {
     try {
         const imagensOrigem = await getDocs(collection(db, 'fichas', idFicha, 'imagens'));
         const novaRef = doc(collection(db, 'fichas'));
-        const copia = { ...ficha, nome: novoNome.trim() || `${ficha.nome || 'Personagem'} (Cópia)`, tipo: 'pdm', proprietarioUid: null, proprietarioNome: '', proprietarioEmail: '', criadoPor: usuarioAtual.uid };
-        delete copia.fotoPersonagem;
-        await setDoc(novaRef, copia);
-        const lote = writeBatch(db);
-        imagensOrigem.forEach(item => lote.set(doc(db, 'fichas', novaRef.id, 'imagens', item.id), item.data()));
-        if (!imagensOrigem.empty) await lote.commit();
-        await atualizarPainelMestre(); alert('Cópia criada como PDM independente.');
-    } catch (e) { console.error(e); alert(`Erro ao duplicar ficha: ${e.message}`); }
-}
-
-async function vincularJogador(idFicha, ficha) {
-    const uid = prompt('UID da conta Firebase do jogador:', ficha.proprietarioUid || ''); if (uid === null) return;
-    const uidLimpo = uid.trim();
-    if (!uidLimpo || uidLimpo.length < 10) return alert('Informe o UID completo da conta Firebase.');
-    const nomeJogador = prompt('Nome do jogador (opcional):', ficha.proprietarioNome || ''); if (nomeJogador === null) return;
-    
-    try {
-        let emailEncontrado = '';
-        const userSnap = await getDoc(doc(db, 'usuarios', uidLimpo));
-        if (userSnap.exists()) {
-            emailEncontrado = userSnap.data().email || '';
-        }
-
-        await setDoc(doc(db, 'fichas', idFicha), { 
-            proprietarioUid: uidLimpo, 
-            proprietarioNome: nomeJogador.trim(), 
-            proprietarioEmail: emailEncontrado,
-            tipo: 'jogador' 
-        }, { merge: true });
-        
-        await atualizarPainelMestre(); 
-        alert('Jogador vinculado com sucesso!');
-    } catch (e) { 
-        console.error(e); 
-        alert(`Erro ao vincular jogador: ${e.message}`); 
-    }
-}
-
-async function desvincularJogador(idFicha, ficha) {
-    if (!ficha.proprietarioUid) return alert('Esta ficha não possui jogador vinculado.');
-    if (!confirm(`Desvincular o jogador desta ficha (${ficha.nome || 'Sem nome'})?`)) return;
-    try {
-        await setDoc(doc(db, 'fichas', idFicha), { proprietarioUid: null, proprietarioNome: '', proprietarioEmail: '', tipo: 'pdm' }, { merge: true });
-        await atualizarPainelMestre(); alert('Jogador desvinculado. A ficha agora é um PDM.');
-    } catch (e) { console.error(e); alert(`Erro ao desvincular: ${e.message}`); }
-}
+        const copia = { ...ficha, nome: novoNome.trim() || `${ficha.nome || 'Personagem'} (Cópia)`, tipo: 'pdm', proprietarioUid:
