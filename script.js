@@ -1520,7 +1520,16 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     }
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
-    acoes.append(criarBotaoPainel(modoMestre ? 'ABRIR / EDITAR' : 'ABRIR FICHA', 'btn-perigo', () => abrirFichaEmNovaAba(idFicha)));
+    
+    // Correção: Transformando o botão em um link real (Tag <a>) para não ser bloqueado pelo navegador
+    const linkFicha = document.createElement('a');
+    linkFicha.href = `${window.location.pathname}?ficha=${idFicha}`;
+    linkFicha.target = '_blank';
+    linkFicha.rel = 'noopener';
+    linkFicha.textContent = modoMestre ? 'ABRIR / EDITAR' : 'ABRIR FICHA';
+    linkFicha.className = 'px-4 py-3 rounded text-sm md:text-base font-bold text-white tracking-wide shadow-md hover:brightness-110 active:scale-[.98] transition btn-perigo inline-block text-center cursor-pointer';
+    linkFicha.onclick = () => tocarSom(audioClique);
+    acoes.append(linkFicha);
 
     if (modoMestre) {
         acoes.append(criarBotaoPainel('CONVIDAR POR LINK', 'btn-roxo', () => { tocarSom(audioClique); gerarLinkConvite(idFicha); }));
