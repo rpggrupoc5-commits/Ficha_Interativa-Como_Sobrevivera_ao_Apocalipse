@@ -947,7 +947,9 @@ btnExcluir.onclick = () => {
         quadradoAtual.innerHTML = original + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
     }
     quadradoAtual.classList.remove('item-adicionado');
-    quadradoAtual.removeAttribute('data-itemData');
+    // Remove os dados vinculados ao slot. dataset.itemData corresponde a data-item-data.
+    delete quadradoAtual.dataset.itemData;
+    quadradoAtual.removeAttribute('data-itemdata'); // limpa também o atributo legado, se existir
     quadradoAtual.removeAttribute('data-peso');
     quadradoAtual.removeAttribute('data-qtd');
     
@@ -1153,7 +1155,12 @@ async function salvarFicha(opcoes = {}) {
     }
 
     const todosSlots = Array.from(document.querySelectorAll('.slot-vazio'));
-    const itensEquipamento = document.querySelectorAll('.slot-vazio.item-adicionado');
+    // Os slots do inventário também possuem a classe .slot-vazio.
+    // Excluí-los aqui evita gravar cada item da mochila novamente em itensEquipamento.
+    const itensEquipamento = Array.from(
+        document.querySelectorAll('.slot-vazio.item-adicionado')
+    ).filter(el => !el.closest('#inventario'));
+
     for (const el of itensEquipamento) {
         if (el.id === 'foto-personagem') continue;
         const dados = JSON.parse(el.dataset.itemData);
@@ -1292,7 +1299,8 @@ async function carregarFicha() {
 
     document.querySelectorAll('.slot-vazio, .foto-personagem').forEach(el => {
         el.classList.remove('item-adicionado');
-        el.removeAttribute('data-itemData');
+        delete el.dataset.itemData;
+        el.removeAttribute('data-itemdata'); // compatibilidade com fichas que tenham o atributo antigo
         el.removeAttribute('data-peso');
         el.removeAttribute('data-qtd');
         
@@ -1318,12 +1326,23 @@ async function carregarFicha() {
     }
 
     if (d.itensEquipamento) {
+        const posicoesEquipamentoCarregadas = new Set();
+
         d.itensEquipamento.forEach(item => {
-            const el = Array.from(document.querySelectorAll('.slot-vazio')).find(e => e.getAttribute('data-original') === item.posicao);
+            // Registros antigos criados pelo seletor incorreto podem ter posicao nula.
+            // Eles eram cópias de itens da mochila e não devem ocupar slots de equipamento.
+            if (!item || typeof item.posicao !== 'string' || !item.posicao.trim()) return;
+            if (posicoesEquipamentoCarregadas.has(item.posicao)) return;
+
+            const el = Array.from(
+                document.querySelectorAll('.slot-vazio')
+            ).find(e => !e.closest('#inventario') && e.getAttribute('data-original') === item.posicao);
+
             if (el) {
+                posicoesEquipamentoCarregadas.add(item.posicao);
                 const dados = { ...item.dados };
                 if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId];
-                if (!dados.img && item.dados.img) dados.img = item.dados.img;
+                if (!dados.img && item.dados && item.dados.img) dados.img = item.dados.img;
                 renderizarItem(el, dados);
             }
         });
