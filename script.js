@@ -23,7 +23,7 @@ import {
     writeBatch
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// IMPORTANDO O BANCO DE ITENS (Caminho corrigido)
+// IMPORTANDO O BANCO DE ITENS
 import { bancoDeItens } from './itens.js';
 
 const firebaseConfig = {
@@ -727,7 +727,6 @@ const modalHTML = `
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg):<input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
             </div>
             
-            <!-- NOVO CAMPO: Peso Total Dinâmico -->
             <div class="text-right font-bold text-sm text-[#8a1313] mt-1">
                 Peso Total: <span id="modal-peso-total">0.00</span> kg
             </div>
@@ -991,6 +990,10 @@ function renderizarItem(q, dados) {
     const pesoUnit = parseFloat(pesoStr) || 0;
     const pesoTotal = (qtd * pesoUnit).toFixed(2);
 
+    // CORREÇÃO: Zera o innerHTML antes de desenhar o item para não empilhar visualmente
+    q.innerHTML = '';
+    q.classList.remove('slot-bloqueado'); // Garante que o quadrado não fique com o cadeado por cima
+
     q.innerHTML = `
         ${dados.img ? `<img src="${dados.img}" style="width:100%;height:100%;object-fit:contain;position:absolute;top:0;left:0;padding:4px;z-index:1;">` : ''}
         <div class="text-[10px] font-bold bg-black/40 text-white px-1 rounded leading-tight w-full absolute bottom-0 left-0 z-10 text-center ${classeTexto}">
@@ -1025,6 +1028,7 @@ function atualizarEstadoMochila() {
 
     const slotsInv = document.querySelectorAll('#inventario .slot-vazio');
     slotsInv.forEach((slot, index) => {
+        // Correção: Se o slot já tem item, mantém desbloqueado para poder editar
         if (mochilaStatus && index < mochilaCapacidade) {
             slot.classList.remove('slot-bloqueado');
             slot.onclick = () => {
@@ -1284,41 +1288,51 @@ async function carregarFicha() {
         document.getElementById('foto-personagem').setAttribute('data-desc-foto', d.fotoPersonagemDesc || '');
     }
 
+    // --- INÍCIO DA CORREÇÃO DA DUPLICAÇÃO ---
+    // 1. Força a limpeza de TODOS os slots, apagando qualquer HTML ou imagem antiga que tenha ficado "presa"
     document.querySelectorAll('.slot-vazio, .foto-personagem').forEach(el => {
         el.classList.remove('item-adicionado');
         el.removeAttribute('data-itemData');
         el.removeAttribute('data-peso');
         el.removeAttribute('data-qtd');
+        el.innerHTML = ''; // Esvazia o conteúdo para não empilhar
         
         if (el.id.startsWith('inv-')) {
             el.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
-        } 
-        else if (el.classList.contains('slot-vazio')) {
+        } else if (el.classList.contains('slot-vazio')) {
             const original = el.getAttribute('data-original') || '';
             el.innerHTML = original + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
         }
     });
+    // --- FIM DA CORREÇÃO DA DUPLICAÇÃO ---
 
     if (d.itensMochila) {
+        // Cria um Set para evitar que a mesma posição seja carregada duas vezes se houver bug no banco
+        const posicoesCarregadas = new Set();
         d.itensMochila.forEach(item => {
+            if (posicoesCarregadas.has(item.posicao)) return; // Se já carregou esse slot, pula
             const el = document.getElementById(item.posicao);
             if (el) {
                 const dados = { ...item.dados };
                 if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId];
                 if (!dados.img && item.dados.img) dados.img = item.dados.img;
                 renderizarItem(el, dados);
+                posicoesCarregadas.add(item.posicao);
             }
         });
     }
 
     if (d.itensEquipamento) {
+        const posicoesCarregadas = new Set();
         d.itensEquipamento.forEach(item => {
+            if (posicoesCarregadas.has(item.posicao)) return;
             const el = Array.from(document.querySelectorAll('.slot-vazio')).find(e => e.getAttribute('data-original') === item.posicao);
             if (el) {
                 const dados = { ...item.dados };
                 if (item.imagemId && imagensSeparadas[item.imagemId]) dados.img = imagensSeparadas[item.imagemId];
                 if (!dados.img && item.dados.img) dados.img = item.dados.img;
                 renderizarItem(el, dados);
+                posicoesCarregadas.add(item.posicao);
             }
         });
     }
@@ -1515,6 +1529,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
     
+    // Correção: Transformando o botão em um link real (Tag <a>) para não ser bloqueado pelo navegador
     const linkFicha = document.createElement('a');
     linkFicha.href = `${window.location.pathname}?ficha=${idFicha}`;
     linkFicha.target = '_blank';
