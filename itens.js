@@ -65,17 +65,9 @@ export const bancoDeItens = {
         { nome: "Xarope para Tosse", qtdMin: 1, qtdMax: 1, peso: 0.20 },
         { nome: "Colírio", qtdMin: 1, qtdMax: 2, peso: 0.02 }
     ],
-    arma: [
+    arma_branca: [
+        // Itens que já existiam no banco original
         { nome: "Faca de Combate", qtdMin: 1, qtdMax: 1, peso: 0.50 },
-        { nome: "Pistola 9mm", qtdMin: 1, qtdMax: 1, peso: 1.20 },
-        { nome: "Revólver .38", qtdMin: 1, qtdMax: 1, peso: 1.00 },
-        { nome: "Rifle de Caça", qtdMin: 1, qtdMax: 1, peso: 3.50 },
-        { nome: "Espingarda", qtdMin: 1, qtdMax: 1, peso: 3.80 },
-        { nome: "Fuzil de Assalto", qtdMin: 1, qtdMax: 1, peso: 4.00 },
-        { nome: "Submetralhadora", qtdMin: 1, qtdMax: 1, peso: 2.80 },
-        { nome: "Metralhadora Leve", qtdMin: 1, qtdMax: 1, peso: 7.50 },
-        { nome: "Granada de Fragmentação", qtdMin: 1, qtdMax: 2, peso: 0.45 },
-        { nome: "Lança-Granada", qtdMin: 1, qtdMax: 1, peso: 2.50 },
         { nome: "Canivete Suíço", qtdMin: 1, qtdMax: 1, peso: 0.10 },
         { nome: "Soco-Inglês", qtdMin: 1, qtdMax: 1, peso: 0.30 },
         { nome: "Bastão Retrátil", qtdMin: 1, qtdMax: 1, peso: 0.60 },
@@ -83,17 +75,98 @@ export const bancoDeItens = {
         { nome: "Spray de Pimenta", qtdMin: 1, qtdMax: 1, peso: 0.15 },
         { nome: "Faca de Arremesso", qtdMin: 1, qtdMax: 3, peso: 0.25 },
         { nome: "Foice", qtdMin: 1, qtdMax: 1, peso: 1.50 },
-        { nome: "Arco e Flecha", qtdMin: 1, qtdMax: 1, peso: 1.80 },
-        { nome: "Besta", qtdMin: 1, qtdMax: 1, peso: 2.50 },
-        { nome: "Munição 9mm", qtdMin: 5, qtdMax: 20, peso: 0.01 }
+        { nome: "Arco Leve", qtdMin: 1, qtdMax: 1, peso: 0.90 },
+        { nome: "Arco Pesado", qtdMin: 1, qtdMax: 1, peso: 1.40 },
+        { nome: "Besta Leve", qtdMin: 1, qtdMax: 1, peso: 1.80 },
+        { nome: "Besta Pesada", qtdMin: 1, qtdMax: 1, peso: 2.50 },
+
+        // Armas simples e improvisadas do universo do livro
+        { nome: "Clava", qtdMin: 1, qtdMax: 1, peso: 1.50 },
+        { nome: "Cutelo", qtdMin: 1, qtdMax: 1, peso: 1.00 },
+        { nome: "Faca de Sobrevivência", qtdMin: 1, qtdMax: 1, peso: 0.45 },
+        { nome: "Bastão de Metal", qtdMin: 1, qtdMax: 1, peso: 1.00 },
+        { nome: "Porrete", qtdMin: 1, qtdMax: 1, peso: 1.50 },
+        { nome: "Tonfa", qtdMin: 1, qtdMax: 1, peso: 1.00 },
+        { nome: "Baioneta", qtdMin: 1, qtdMax: 1, peso: 0.50 },
+        { nome: "Machadinha", qtdMin: 1, qtdMax: 1, peso: 2.00 },
+        { nome: "Machado de Bombeiro", qtdMin: 1, qtdMax: 1, peso: 2.80 },
+        { nome: "Espada Longa", qtdMin: 1, qtdMax: 1, peso: 2.00 },
+        { nome: "Machete", qtdMin: 1, qtdMax: 1, peso: 1.00 },
+        { nome: "Sabre", qtdMin: 1, qtdMax: 1, peso: 1.50 },
+        { nome: "Lança", qtdMin: 1, qtdMax: 1, peso: 4.50 },
+        { nome: "Lança Pesada", qtdMin: 1, qtdMax: 1, peso: 4.80 },
+        { nome: "Navalha", qtdMin: 1, qtdMax: 1, peso: 0.25 },
+        { nome: "Bengala-Espada", qtdMin: 1, qtdMax: 1, peso: 1.50 },
+        { nome: "Corrente", qtdMin: 1, qtdMax: 1, peso: 2.50 },
+        { nome: "Mangual", qtdMin: 1, qtdMax: 1, peso: 2.00 },
+        { nome: "Katana", qtdMin: 1, qtdMax: 1, peso: 3.00 },
+        { nome: "Kukri", qtdMin: 1, qtdMax: 1, peso: 0.50 },
+        { nome: "Kama", qtdMin: 1, qtdMax: 1, peso: 1.00 },
+        { nome: "Nunchaku", qtdMin: 1, qtdMax: 1, peso: 1.00 },
+        { nome: "San-chaku", qtdMin: 1, qtdMax: 1, peso: 1.50 },
+        { nome: "Picareta", qtdMin: 1, qtdMax: 1, peso: 2.50 },
+        { nome: "Marreta", qtdMin: 1, qtdMax: 1, peso: 3.50 },
+        { nome: "Motosserra Pequena", qtdMin: 1, qtdMax: 1, peso: 3.50 },
+        { nome: "Motosserra Grande", qtdMin: 1, qtdMax: 1, peso: 5.00 },
+        { nome: "Arma Improvisada", qtdMin: 1, qtdMax: 1, peso: 1.00 },
+        { nome: "Ferramenta Adaptada", qtdMin: 1, qtdMax: 1, peso: 1.20 },
+        { nome: "Bastão de Madeira", qtdMin: 1, qtdMax: 1, peso: 0.80 },
+        { nome: "Pé de Cabra", qtdMin: 1, qtdMax: 1, peso: 1.80 },
+        { nome: "Chave Inglesa Pesada", qtdMin: 1, qtdMax: 1, peso: 1.60 },
+        { nome: "Taco de Beisebol", qtdMin: 1, qtdMax: 1, peso: 1.00 },
+        { nome: "Taco de Hóquei", qtdMin: 1, qtdMax: 1, peso: 0.70 },
+        { nome: "Remo", qtdMin: 1, qtdMax: 1, peso: 1.40 }
     ],
+    arma_de_fogo: [
+        // Armas de fogo do banco original e categorias do livro
+        { nome: "Pistola 9mm", qtdMin: 1, qtdMax: 1, peso: 1.20 },
+        { nome: "Pistola .45", qtdMin: 1, qtdMax: 1, peso: 1.30 },
+        { nome: "Pistola Compacta", qtdMin: 1, qtdMax: 1, peso: 0.90 },
+        { nome: "Revólver .38", qtdMin: 1, qtdMax: 1, peso: 1.00 },
+        { nome: "Revólver .357", qtdMin: 1, qtdMax: 1, peso: 1.10 },
+        { nome: "Revólver de Grande Porte", qtdMin: 1, qtdMax: 1, peso: 1.40 },
+        { nome: "Pistola Semiautomática", qtdMin: 1, qtdMax: 1, peso: 1.10 },
+        { nome: "Pistola Antiga", qtdMin: 1, qtdMax: 1, peso: 1.20 },
+        { nome: "Submetralhadora", qtdMin: 1, qtdMax: 1, peso: 2.80 },
+        { nome: "Submetralhadora Compacta", qtdMin: 1, qtdMax: 1, peso: 2.50 },
+        { nome: "Espingarda", qtdMin: 1, qtdMax: 1, peso: 3.80 },
+        { nome: "Espingarda de Cano Duplo", qtdMin: 1, qtdMax: 1, peso: 3.60 },
+        { nome: "Carabina", qtdMin: 1, qtdMax: 1, peso: 3.20 },
+        { nome: "Carabina de Caça", qtdMin: 1, qtdMax: 1, peso: 3.40 },
+        { nome: "Rifle de Caça", qtdMin: 1, qtdMax: 1, peso: 3.50 },
+        { nome: "Rifle Semiautomático", qtdMin: 1, qtdMax: 1, peso: 3.80 },
+        { nome: "Rifle de Precisão", qtdMin: 1, qtdMax: 1, peso: 4.80 },
+        { nome: "Rifle Antigo", qtdMin: 1, qtdMax: 1, peso: 4.00 },
+        { nome: "Fuzil de Assalto", qtdMin: 1, qtdMax: 1, peso: 4.00 },
+        { nome: "Fuzil Militar", qtdMin: 1, qtdMax: 1, peso: 4.20 },
+        { nome: "Fuzil de Batalha", qtdMin: 1, qtdMax: 1, peso: 4.30 },
+        { nome: "Fuzil de Precisão", qtdMin: 1, qtdMax: 1, peso: 5.00 },
+        { nome: "Metralhadora Leve", qtdMin: 1, qtdMax: 1, peso: 7.50 },
+        { nome: "Metralhadora Pesada", qtdMin: 1, qtdMax: 1, peso: 12.00 },
+        { nome: "Arma de Fogo Improvisada", qtdMin: 1, qtdMax: 1, peso: 2.00 },
+        { nome: "Munição 9mm", qtdMin: 5, qtdMax: 20, peso: 0.01 },
+        { nome: "Munição de Revólver", qtdMin: 5, qtdMax: 12, peso: 0.02 },
+        { nome: "Munição de Espingarda", qtdMin: 2, qtdMax: 10, peso: 0.04 },
+        { nome: "Munição de Rifle", qtdMin: 5, qtdMax: 20, peso: 0.02 },
+        { nome: "Munição de Fuzil", qtdMin: 5, qtdMax: 30, peso: 0.02 },
+        { nome: "Caixa de Munição Variada", qtdMin: 1, qtdMax: 1, peso: 1.00 }
+    ],
+    // Compatibilidade: chamadas antigas à categoria "arma" continuam funcionando.
+    arma: [] ,
     item_aleatorio: [] // O código vai preencher isso automaticamente juntando todas as categorias
 };
 
-// Função que junta tudo para o botão de Item Aleatório
+// Mantém a categoria antiga disponível para compatibilidade com versões anteriores.
+bancoDeItens.arma = [
+    ...bancoDeItens.arma_branca,
+    ...bancoDeItens.arma_de_fogo
+];
+
+// O botão Item Aleatório reúne todas as categorias visíveis, sem duplicar armas.
 bancoDeItens.item_aleatorio = [
     ...bancoDeItens.comida,
     ...bancoDeItens.bebida,
     ...bancoDeItens.remedio,
-    ...bancoDeItens.arma
+    ...bancoDeItens.arma_branca,
+    ...bancoDeItens.arma_de_fogo
 ];
