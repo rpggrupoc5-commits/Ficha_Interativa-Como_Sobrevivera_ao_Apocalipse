@@ -190,7 +190,6 @@
             flex-shrink: 0;
         }
 
-        /* Painel de equipamento: visual tático contemporâneo */
         .equip-grid {
             display: grid !important;
             grid-template-columns: minmax(0, .85fr) minmax(180px, 1.3fr) minmax(0, .85fr);
@@ -261,7 +260,6 @@
             min-height: 545px;
         }
 
-        /* Slot Bloqueado */
         .slot-bloqueado {
             position: relative;
             pointer-events: none;
@@ -280,7 +278,6 @@
             backdrop-filter: grayscale(100%) blur(1px);
         }
 
-        /* Ajuste intermediário para notebooks: mantém os três painéis sem sobreposição. */
         @media (min-width: 1025px) and (max-width: 1279px) {
             .equip-grid {
                 grid-template-columns: minmax(0, .8fr) minmax(170px, 1.25fr) minmax(0, .8fr);
@@ -310,7 +307,6 @@
             }
             header h1, header .border-4 { margin-bottom: 10px; }
 
-            /* No celular/tablet, a ficha ganha uma composição vertical própria. */
             .equip-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                 grid-template-rows: 280px 125px 135px 145px 170px 170px;
