@@ -297,7 +297,6 @@ document.getElementById('btn-esqueci-senha').onclick = () => {
 
 document.getElementById('btn-entrar').onclick = () => {
     tocarSom(audioAbertura);
-    // Destrava o áudio do rádio no navegador do usuário
     commRadioAudio.play().then(() => { commRadioAudio.pause(); commRadioAudio.currentTime = 0; }).catch(() => {});
     
     const email = document.getElementById('login-email').value;
@@ -1977,18 +1976,47 @@ function commIniciarAlerta(mensagem) {
     commTocarCicloRadio(fim);
 }
 function commFormatarHora(ms) { try { return new Date(ms).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch(e) { return ''; } }
+
+// MONTAGEM DOS BALÕES DE MENSAGEM
 function commCriarElementoMensagem(m, paraMestre=false) {
     const div = document.createElement('article');
-    div.className = 'comm-message' + (m.senderUid === (usuarioAtual?.uid || '') ? ' mine' : '');
-    const meta = document.createElement('div'); meta.className = 'comm-message-meta';
-    meta.textContent = `${m.senderName || (m.senderUid === 'MESTRE' ? 'Mestre' : 'Jogador')} · ${commFormatarHora(Number(m.criadoEmMs || Date.now()))}${paraMestre ? ` · Para: ${m.recipientName || m.recipientUid}` : ''}`;
+    const isMine = m.senderUid === (usuarioAtual?.uid || '') || (m.senderUid === 'MESTRE' && commEhMestre());
+    
+    // Define a classe CSS do balão (minha ou de outro)
+    div.className = 'comm-message ' + (isMine ? 'mine' : 'other');
+    
+    const meta = document.createElement('div'); 
+    meta.className = 'comm-message-meta';
+    
+    // No chat do jogador, quem envia não precisa ver o próprio nome destacado grande
+    let nomeExibir = m.senderName || (m.senderUid === 'MESTRE' ? 'Mestre' : 'Jogador');
+    if (isMine && !paraMestre) nomeExibir = 'Você';
+    
+    // Se for o mestre olhando, mostra o destinatário
+    let destinatarioTxt = paraMestre ? ` ➔ ${m.recipientName || m.recipientUid}` : '';
+    
+    meta.innerHTML = `<span>${nomeExibir}${destinatarioTxt}</span> <span>${commFormatarHora(Number(m.criadoEmMs || Date.now()))}</span>`;
+    
     div.appendChild(meta);
-    if (m.texto) { const txt = document.createElement('div'); txt.className='comm-message-text'; txt.textContent=m.texto; div.appendChild(txt); }
+    
+    if (m.texto) { 
+        const txt = document.createElement('div'); 
+        txt.className='comm-message-text'; 
+        txt.textContent=m.texto; 
+        div.appendChild(txt); 
+    }
+    
     if (paraMestre) {
-        const apagar=document.createElement('button'); apagar.type='button'; apagar.className='block text-red-300'; apagar.textContent='Excluir mensagem'; apagar.onclick=()=>commExcluirMensagem(m); div.appendChild(apagar);
+        const apagar = document.createElement('button'); 
+        apagar.type='button'; 
+        apagar.className='block text-red-300 hover:text-red-100'; 
+        apagar.textContent='Excluir mensagem'; 
+        apagar.onclick=()=>commExcluirMensagem(m); 
+        div.appendChild(apagar);
     }
     return div;
 }
+
 function commRenderizarHistoricoJogador() {
     const alvo=document.getElementById('comm-jogador-historico'); if(!alvo) return;
     const lista=[...commMensagens.values()].sort((a,b)=>Number(a.criadoEmMs||0)-Number(b.criadoEmMs||0));
@@ -2003,10 +2031,14 @@ function commRenderizarHistoricoMestre() {
     let lista=[...commMensagens.values()];
     if(filtro==='grupo_geral') lista=lista.filter(m=>m.grupoId==='grupo_geral');
     else if(filtro!=='todas') lista=lista.filter(m=>m.recipientUid===filtro || m.senderUid===filtro);
-    lista.sort((a,b)=>Number(b.criadoEmMs||0)-Number(a.criadoEmMs||0));
+    
+    // Mais antigas primeiro para o chat fluir melhor
+    lista.sort((a,b)=>Number(a.criadoEmMs||0)-Number(b.criadoEmMs||0));
+    
     alvo.innerHTML='';
     if(!lista.length){alvo.innerHTML='<p class="text-slate-400 text-sm">Nenhuma comunicação enviada ou recebida.</p>';return;}
     lista.slice(0,100).forEach(m=>alvo.appendChild(commCriarElementoMensagem(m,true)));
+    alvo.scrollTop = alvo.scrollHeight;
 }
 async function commCarregarJogadores() {
     if(!commEhMestre()) return;
