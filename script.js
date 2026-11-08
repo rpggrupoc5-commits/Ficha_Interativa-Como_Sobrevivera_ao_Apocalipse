@@ -297,7 +297,12 @@ document.getElementById('btn-esqueci-senha').onclick = () => {
 
 document.getElementById('btn-entrar').onclick = () => {
     tocarSom(audioAbertura);
-    commRadioAudio.play().then(() => { commRadioAudio.pause(); commRadioAudio.currentTime = 0; }).catch(() => {});
+    
+    // DESBLOQUEIO DO ÁUDIO (Libera o rádio no login)
+    commRadioAudio.play().then(() => { 
+        commRadioAudio.pause(); 
+        commRadioAudio.currentTime = 0; 
+    }).catch(() => {});
     
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
@@ -1950,12 +1955,9 @@ function commTocarCicloRadio(fim) {
     
     commRadioAudio.onended = proximaPausa;
     
-    commRadioAudio.play().then(() => {
-        // Tudo certo, o áudio tocou
-    }).catch(() => { 
-        // O navegador bloqueou. Avisa o jogador na telinha do rádio.
-        const tela = document.getElementById('walkie-screen-main');
-        if (tela) tela.textContent = "CLIQUE NA TELA PARA OUVIR O ÁUDIO";
+    // Tenta tocar o áudio do rádio
+    commRadioAudio.play().catch((e) => {
+        console.warn("Áudio bloqueado pelo navegador. Aguardando interação.", e);
         commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000); 
     });
 }
@@ -1977,26 +1979,18 @@ function commIniciarAlerta(mensagem) {
 }
 function commFormatarHora(ms) { try { return new Date(ms).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch(e) { return ''; } }
 
-// MONTAGEM DOS BALÕES DE MENSAGEM
 function commCriarElementoMensagem(m, paraMestre=false) {
     const div = document.createElement('article');
     const isMine = m.senderUid === (usuarioAtual?.uid || '') || (m.senderUid === 'MESTRE' && commEhMestre());
-    
-    // Define a classe CSS do balão (minha ou de outro)
     div.className = 'comm-message ' + (isMine ? 'mine' : 'other');
     
     const meta = document.createElement('div'); 
     meta.className = 'comm-message-meta';
-    
-    // No chat do jogador, quem envia não precisa ver o próprio nome destacado grande
     let nomeExibir = m.senderName || (m.senderUid === 'MESTRE' ? 'Mestre' : 'Jogador');
     if (isMine && !paraMestre) nomeExibir = 'Você';
-    
-    // Se for o mestre olhando, mostra o destinatário
     let destinatarioTxt = paraMestre ? ` ➔ ${m.recipientName || m.recipientUid}` : '';
     
     meta.innerHTML = `<span>${nomeExibir}${destinatarioTxt}</span> <span>${commFormatarHora(Number(m.criadoEmMs || Date.now()))}</span>`;
-    
     div.appendChild(meta);
     
     if (m.texto) { 
@@ -2032,7 +2026,6 @@ function commRenderizarHistoricoMestre() {
     if(filtro==='grupo_geral') lista=lista.filter(m=>m.grupoId==='grupo_geral');
     else if(filtro!=='todas') lista=lista.filter(m=>m.recipientUid===filtro || m.senderUid===filtro);
     
-    // Mais antigas primeiro para o chat fluir melhor
     lista.sort((a,b)=>Number(a.criadoEmMs||0)-Number(b.criadoEmMs||0));
     
     alvo.innerHTML='';
@@ -2104,6 +2097,9 @@ async function commExcluirMensagem(m) {
     catch(e){console.error(e);alert('Não foi possível excluir a mensagem: '+e.message);}
 }
 function commAbrirModalJogador() {
+    // Força o navegador a liberar o áudio no clique do botão ATENDER
+    commRadioAudio.play().then(() => { commRadioAudio.pause(); commRadioAudio.currentTime = 0; }).catch(() => {});
+
     commPararAlerta();
     const modal=document.getElementById('comm-modal-jogador');if(modal)modal.classList.remove('hidden');
     const tela=document.getElementById('walkie-screen-main');if(tela)tela.textContent='CANAL DE COMUNICAÇÃO';
