@@ -66,7 +66,6 @@ export const bancoDeItens = {
         { nome: "Colírio", qtdMin: 1, qtdMax: 2, peso: 0.02 }
     ],
     arma_branca: [
-        // Itens que já existiam no banco original
         { nome: "Faca de Combate", qtdMin: 1, qtdMax: 1, peso: 0.50 },
         { nome: "Canivete Suíço", qtdMin: 1, qtdMax: 1, peso: 0.10 },
         { nome: "Soco-Inglês", qtdMin: 1, qtdMax: 1, peso: 0.30 },
@@ -79,8 +78,6 @@ export const bancoDeItens = {
         { nome: "Arco Pesado", qtdMin: 1, qtdMax: 1, peso: 1.40 },
         { nome: "Besta Leve", qtdMin: 1, qtdMax: 1, peso: 1.80 },
         { nome: "Besta Pesada", qtdMin: 1, qtdMax: 1, peso: 2.50 },
-
-        // Armas simples e improvisadas do universo do livro
         { nome: "Clava", qtdMin: 1, qtdMax: 1, peso: 1.50 },
         { nome: "Cutelo", qtdMin: 1, qtdMax: 1, peso: 1.00 },
         { nome: "Faca de Sobrevivência", qtdMin: 1, qtdMax: 1, peso: 0.45 },
@@ -118,7 +115,6 @@ export const bancoDeItens = {
         { nome: "Remo", qtdMin: 1, qtdMax: 1, peso: 1.40 }
     ],
     arma_de_fogo: [
-        // Armas de fogo do banco original e categorias do livro
         { nome: "Pistola 9mm", qtdMin: 1, qtdMax: 1, peso: 1.20 },
         { nome: "Pistola .45", qtdMin: 1, qtdMax: 1, peso: 1.30 },
         { nome: "Pistola Compacta", qtdMin: 1, qtdMax: 1, peso: 0.90 },
@@ -151,18 +147,15 @@ export const bancoDeItens = {
         { nome: "Munição de Fuzil", qtdMin: 5, qtdMax: 30, peso: 0.02 },
         { nome: "Caixa de Munição Variada", qtdMin: 1, qtdMax: 1, peso: 1.00 }
     ],
-    // Compatibilidade: chamadas antigas à categoria "arma" continuam funcionando.
     arma: [] ,
-    item_aleatorio: [] // O código vai preencher isso automaticamente juntando todas as categorias
+    item_aleatorio: []
 };
 
-// Mantém a categoria antiga disponível para compatibilidade com versões anteriores.
 bancoDeItens.arma = [
     ...bancoDeItens.arma_branca,
     ...bancoDeItens.arma_de_fogo
 ];
 
-// O botão Item Aleatório reúne todas as categorias visíveis, sem duplicar armas.
 bancoDeItens.item_aleatorio = [
     ...bancoDeItens.comida,
     ...bancoDeItens.bebida,
