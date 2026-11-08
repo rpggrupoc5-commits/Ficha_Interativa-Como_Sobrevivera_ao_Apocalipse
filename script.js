@@ -27,13 +27,6 @@ import {
     arrayUnion,
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import {
-    getStorage,
-    ref as storageRef,
-    uploadBytes,
-    getDownloadURL,
-    deleteObject
-} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
 // IMPORTANDO O BANCO DE ITENS
 import { bancoDeItens } from './itens.js';
@@ -50,7 +43,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-const storage = getStorage(app);
 
 const DEBOUNCE_AUTOSAVE_MS = 30 * 1000;
 
@@ -1979,7 +1971,7 @@ function commIniciarAlerta(mensagem) {
     if (fim <= Date.now()) return;
     commMensagemAlerta = mensagem;
     const tela = document.getElementById('walkie-screen-main');
-    if (tela) tela.textContent = mensagem.tipo === 'audio' ? 'ÁUDIO RECEBIDO! PRESSIONE ATENDER' : (mensagem.texto || 'NOVA COMUNICAÇÃO').slice(0, 65);
+    if (tela) tela.textContent = (mensagem.texto || 'NOVA COMUNICAÇÃO').slice(0, 65);
     const led = document.getElementById('walkie-led'); if (led) led.classList.add('ativo');
     if (commAlertaAtivo) {
         if (commAlertaTimer) clearTimeout(commAlertaTimer);
@@ -1998,26 +1990,6 @@ function commCriarElementoMensagem(m, paraMestre=false) {
     meta.textContent = `${m.senderName || (m.senderUid === 'MESTRE' ? 'Mestre' : 'Jogador')} · ${commFormatarHora(Number(m.criadoEmMs || Date.now()))}${paraMestre ? ` · Para: ${m.recipientName || m.recipientUid}` : ''}`;
     div.appendChild(meta);
     if (m.texto) { const txt = document.createElement('div'); txt.className='comm-message-text'; txt.textContent=m.texto; div.appendChild(txt); }
-    const expirou = m.tipo === 'audio' && m.senderUid !== usuarioAtual?.uid && !(Array.isArray(m.audioAbertoPor) && m.audioAbertoPor.includes(usuarioAtual?.uid)) && Number(m.alertaAteMs || 0) <= Date.now();
-    if (m.mediaPath && !expirou) {
-        const abrirMidia = async () => {
-            try {
-                if (m.tipo === 'audio' && m.senderUid !== usuarioAtual?.uid && Number(m.alertaAteMs || 0) > Date.now()) {
-                    await updateDoc(doc(db,'comunicacoes',m.id), { audioAbertoPor: arrayUnion(usuarioAtual.uid) });
-                    m.audioAbertoPor = [...(m.audioAbertoPor || []), usuarioAtual.uid];
-                }
-                const url = await getDownloadURL(storageRef(storage, m.mediaPath));
-                if (m.tipo === 'imagem') {
-                    const img = document.createElement('img'); img.src=url; img.alt='Imagem recebida'; img.loading='lazy'; div.appendChild(img);
-                } else {
-                    const audio = document.createElement('audio'); audio.controls=true; audio.preload='metadata'; audio.src=url; div.appendChild(audio);
-                }
-            } catch(erro) { console.error('Falha ao abrir mídia da comunicação:',erro); const aviso=document.createElement('p');aviso.className='comm-expired';aviso.textContent='Arquivo indisponível ou expirado.';div.appendChild(aviso); }
-        };
-        const btn=document.createElement('button'); btn.type='button'; btn.textContent=m.tipo==='imagem'?'VER IMAGEM':'▶ OUVIR ÁUDIO'; btn.onclick=abrirMidia; div.appendChild(btn);
-    } else if (expirou) {
-        const aviso=document.createElement('p');aviso.className='comm-expired';aviso.textContent='Áudio expirado: a mensagem não foi aberta durante o alerta. Peça ao Mestre para reenviar.';div.appendChild(aviso);
-    }
     if (paraMestre) {
         const apagar=document.createElement('button'); apagar.type='button'; apagar.className='block text-red-300'; apagar.textContent='Excluir mensagem'; apagar.onclick=()=>commExcluirMensagem(m); div.appendChild(apagar);
     }
@@ -2060,103 +2032,55 @@ async function commCarregarJogadores() {
         if(filtro){const valorAtual=filtro.value;filtro.querySelectorAll('option[data-jogador]').forEach(o=>o.remove());commJogadores.forEach(u=>{const op=document.createElement('option');op.value=u.uid;op.dataset.jogador='1';op.textContent=u.nome||u.email||'Jogador';filtro.appendChild(op);});if([...filtro.options].some(o=>o.value===valorAtual))filtro.value=valorAtual;}
     } catch(e) { console.error(e); alvo.innerHTML='<p class="text-red-300 text-sm">Não foi possível carregar a lista de jogadores.</p>'; }
 }
-function commObterArquivo(tipo) {
-    const input=document.getElementById(tipo==='mestre'?'comm-master-arquivo':'comm-jogador-arquivo');
-    return input?.files?.[0] || null;
-}
-async function commEnviarPara(destinatario, nomeDestinatario, texto, arquivo, grupoId) {
-    const tipo = arquivo ? (arquivo.type.startsWith('image/') ? 'imagem' : (arquivo.type.startsWith('audio/') ? 'audio' : '')) : 'texto';
-    if (arquivo && !tipo) throw new Error('Escolha somente uma imagem ou um arquivo de áudio.');
-    if (arquivo && arquivo.size > COMM_LIMITE_ARQUIVO) throw new Error('Arquivo muito grande. Escolha um arquivo de até 10 MB.');
+async function commEnviarPara(destinatario, nomeDestinatario, texto, grupoId) {
     const agora=Date.now();
     const remetenteMestre=commEhMestre();
     const remetenteUid=remetenteMestre?'MESTRE':usuarioAtual.uid;
     const remetenteNome=remetenteMestre?'Mestre':(usuarioAtual.displayName || usuarioAtual.email?.split('@')[0] || 'Jogador');
-    const refMsg=await addDoc(collection(db,'comunicacoes'),{
+    await addDoc(collection(db,'comunicacoes'),{
         senderUid:remetenteUid, senderName:remetenteNome,
         recipientUid:destinatario, recipientName:nomeDestinatario,
         grupoId:grupoId || (destinatario==='MESTRE'?'privado_mestre':`privado_${destinatario}`),
-        tipo:tipo || 'texto', texto:texto || '', mediaPath:null,
+        tipo:'texto', texto:texto, mediaPath:null,
         criadoEm:serverTimestamp(), criadoEmMs:agora,
-        alertaAteMs:agora+30000, audioAbertoPor:[],
-        statusArquivo:arquivo?'enviando':'pronto'
+        alertaAteMs:agora+30000, audioAbertoPor:[], statusArquivo:'pronto'
     });
-    if (arquivo) {
-        const nomeSeguro=(arquivo.name||'arquivo').replace(/[^a-zA-Z0-9._-]/g,'_').slice(-90);
-        const caminho=`comunicacoes/${refMsg.id}/${remetenteUid}/${nomeSeguro}`;
-        await uploadBytes(storageRef(storage,caminho),arquivo,{contentType:arquivo.type});
-        await updateDoc(refMsg,{mediaPath:caminho,statusArquivo:'pronto'});
-    }
-}
-async function commAlternarGravacao(contexto) {
-    const botao=document.getElementById(contexto==='mestre'?'comm-master-gravar':'comm-jogador-gravar');
-    const input=document.getElementById(contexto==='mestre'?'comm-master-arquivo':'comm-jogador-arquivo');
-    const nome=document.getElementById(contexto==='mestre'?'comm-master-arquivo-nome':'comm-jogador-arquivo-nome');
-    if(commGravador && commGravador.state==='recording') {
-        if(commGravadorContexto!==contexto){alert('Finalize primeiro a gravação atual.');return;}
-        commGravador.stop(); if(botao)botao.textContent='🎙 GRAVAR ÁUDIO'; return;
-    }
-    if(!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined') {alert('Este navegador não oferece suporte à gravação de áudio.');return;}
-    try {
-        const stream=await navigator.mediaDevices.getUserMedia({audio:true});
-        commGravadorChunks=[];commGravadorContexto=contexto;
-        const mime=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].find(t=>MediaRecorder.isTypeSupported(t));
-        commGravador=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
-        commGravador.ondataavailable=e=>{if(e.data&&e.data.size)commGravadorChunks.push(e.data);};
-        commGravador.onstop=()=>{
-            const tipo=commGravador.mimeType||'audio/webm';
-            const blob=new Blob(commGravadorChunks,{type:tipo});
-            const extensao=tipo.includes('ogg')?'ogg':'webm';
-            const arquivo=new File([blob],`gravacao_${Date.now()}.${extensao}`,{type:tipo});
-            const transfer=new DataTransfer();transfer.items.add(arquivo);input.files=transfer.files;
-            if(nome)nome.textContent=arquivo.name;
-            stream.getTracks().forEach(track=>track.stop());
-            if(botao)botao.textContent='🎙 GRAVAR ÁUDIO';
-            commGravador=null;commGravadorContexto=null;commGravadorChunks=[];
-        };
-        commGravador.start();if(botao)botao.textContent='■ PARAR GRAVAÇÃO';
-    } catch(e) {console.error(e);alert('Não foi possível acessar o microfone. Verifique a permissão do navegador.');}
 }
 
 async function commEnviarMestre() {
     const texto=document.getElementById('comm-master-texto')?.value.trim()||'';
-    const arquivo=commObterArquivo('mestre');
     const geral=document.getElementById('comm-grupo-geral')?.checked;
     let destinos=[...document.querySelectorAll('.comm-destinatario:checked')].map(el=>el.value);
     if(geral) destinos=commJogadores.map(u=>u.uid);
     destinos=[...new Set(destinos)];
     if(!destinos.length){alert('Selecione ao menos um jogador ou marque GRUPO GERAL.');return;}
-    if(!texto&&!arquivo){alert('Digite uma mensagem ou escolha um arquivo.');return;}
+    if(!texto){alert('Digite uma mensagem antes de transmitir.');return;}
     const btn=document.getElementById('comm-master-enviar');btn.disabled=true;btn.textContent='TRANSMITINDO...';
     try {
         const grupoId=geral?'grupo_geral':(destinos.length>1?`grupo_${Date.now()}`:`privado_${destinos[0]}`);
-        for(const uid of destinos){const u=commJogadores.find(x=>x.uid===uid);await commEnviarPara(uid,u?.nome||u?.email||'Jogador',texto,arquivo,grupoId);}
-        document.getElementById('comm-master-texto').value='';document.getElementById('comm-master-arquivo').value='';document.getElementById('comm-master-arquivo-nome').textContent='Nenhum arquivo selecionado';
+        for(const uid of destinos){const u=commJogadores.find(x=>x.uid===uid);await commEnviarPara(uid,u?.nome||u?.email||'Jogador',texto,grupoId);}
+        document.getElementById('comm-master-texto').value='';
         document.querySelectorAll('.comm-destinatario').forEach(el=>el.checked=false);document.getElementById('comm-grupo-geral').checked=false;
     } catch(e){console.error(e);alert(e.message||'Não foi possível transmitir a mensagem.');}
     finally{btn.disabled=false;btn.textContent='TRANSMITIR';}
 }
 async function commEnviarJogador() {
     const texto=document.getElementById('comm-jogador-texto')?.value.trim()||'';
-    const arquivo=commObterArquivo('jogador');
-    if(!texto&&!arquivo){alert('Digite uma mensagem ou escolha um arquivo.');return;}
+    if(!texto){alert('Digite uma mensagem antes de enviar.');return;}
     const btn=document.getElementById('comm-jogador-enviar');btn.disabled=true;btn.textContent='ENVIANDO...';
-    try{await commEnviarPara('MESTRE','Mestre',texto,arquivo,'privado_mestre');document.getElementById('comm-jogador-texto').value='';document.getElementById('comm-jogador-arquivo').value='';document.getElementById('comm-jogador-arquivo-nome').textContent='Nenhum arquivo';}
+    try{await commEnviarPara('MESTRE','Mestre',texto,'privado_mestre');document.getElementById('comm-jogador-texto').value='';}
     catch(e){console.error(e);alert(e.message||'Não foi possível enviar.');}
     finally{btn.disabled=false;btn.textContent='ENVIAR';}
 }
 async function commExcluirMensagem(m) {
     if(!commEhMestre()||!confirm('Excluir esta mensagem para o destinatário?')) return;
-    try{if(m.mediaPath){try{await deleteObject(storageRef(storage,m.mediaPath));}catch(e){console.warn('Arquivo já indisponível:',e);}}await deleteDoc(doc(db,'comunicacoes',m.id));}
+    try{await deleteDoc(doc(db,'comunicacoes',m.id));}
     catch(e){console.error(e);alert('Não foi possível excluir a mensagem: '+e.message);}
 }
 function commAbrirModalJogador() {
     commPararAlerta();
     const modal=document.getElementById('comm-modal-jogador');if(modal)modal.classList.remove('hidden');
     const tela=document.getElementById('walkie-screen-main');if(tela)tela.textContent='CANAL DE COMUNICAÇÃO';
-    // Ao atender dentro dos 30 segundos, os áudios recebidos ficam preservados para este jogador.
-    const agora=Date.now();
-    [...commMensagens.values()].filter(m=>m.recipientUid===usuarioAtual?.uid && m.tipo==='audio' && Number(m.alertaAteMs||0)>agora).forEach(m=>updateDoc(doc(db,'comunicacoes',m.id),{audioAbertoPor:arrayUnion(usuarioAtual.uid)}).catch(console.error));
     commRenderizarHistoricoJogador();
 }
 function commFecharModalJogador(){document.getElementById('comm-modal-jogador')?.classList.add('hidden');}
@@ -2165,7 +2089,6 @@ function commProcessarMensagensJogador(lista) {
     commMensagens=new Map(lista.map(m=>[m.id,m]));
     const recebidas=lista.filter(m=>m.recipientUid===usuarioAtual?.uid);
     const modalAberto=!document.getElementById('comm-modal-jogador')?.classList.contains('hidden');
-    if(modalAberto) recebidas.filter(m=>m.tipo==='audio' && Number(m.alertaAteMs||0)>Date.now() && !(m.audioAbertoPor||[]).includes(usuarioAtual.uid)).forEach(m=>updateDoc(doc(db,'comunicacoes',m.id),{audioAbertoPor:arrayUnion(usuarioAtual.uid)}).catch(console.error));
     const pendente=recebidas.filter(m=>Number(m.alertaAteMs||0)>Date.now()).sort((a,b)=>Number(b.criadoEmMs||0)-Number(a.criadoEmMs||0))[0];
     if(pendente && (!anteriores.has(pendente.id) || !commAlertaAtivo)) commIniciarAlerta(pendente);
     commRenderizarHistoricoJogador();
@@ -2196,7 +2119,3 @@ document.getElementById('comm-master-filtro')?.addEventListener('change',commRen
 document.getElementById('walkie-atender')?.addEventListener('click',commAbrirModalJogador);
 document.getElementById('comm-fechar-modal')?.addEventListener('click',commFecharModalJogador);
 document.getElementById('comm-modal-jogador')?.addEventListener('click',e=>{if(e.target.id==='comm-modal-jogador')commFecharModalJogador();});
-document.getElementById('comm-master-arquivo')?.addEventListener('change',e=>{document.getElementById('comm-master-arquivo-nome').textContent=e.target.files?.[0]?.name||'Nenhum arquivo selecionado';});
-document.getElementById('comm-jogador-arquivo')?.addEventListener('change',e=>{document.getElementById('comm-jogador-arquivo-nome').textContent=e.target.files?.[0]?.name||'Nenhum arquivo';});
-document.getElementById('comm-master-gravar')?.addEventListener('click',()=>commAlternarGravacao('mestre'));
-document.getElementById('comm-jogador-gravar')?.addEventListener('click',()=>commAlternarGravacao('jogador'));
