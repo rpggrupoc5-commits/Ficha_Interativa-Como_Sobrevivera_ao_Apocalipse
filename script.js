@@ -1625,7 +1625,7 @@ async function carregarDashboardJogador() {
             <span class="text-2xl font-bold mt-4 block text-[#8a1313] bg-[#e6d5b8]/80 p-4 rounded-lg border-2 border-[#8a1313] shadow-md">
                 ⚠️ SUA CONTA FOI CRIADA COM SUCESSO!<br>
                 <span class="text-lg font-normal mt-2 block text-[#1a110a]">Peça ao Mestre para vincular uma ficha ao seu UID:</span>
-                <span class="font-mono bg-black/20 px-3 py-1 rounded select-all mt-2 inline-block text-white shadow-inner">${usuarioAtual.uid}</span>
+                <span class="font-mono bg-black/20 px-3 py-1 rounded select-all mt-2 inline-block text-white shadow-inner text-sm break-all w-full">${usuarioAtual.uid}</span>
             </span></p>`; 
             return; 
         }
@@ -1955,7 +1955,6 @@ function commTocarCicloRadio(fim) {
     
     commRadioAudio.onended = proximaPausa;
     
-    // Tenta tocar o áudio do rádio
     commRadioAudio.play().catch((e) => {
         console.warn("Áudio bloqueado pelo navegador. Aguardando interação.", e);
         commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000); 
@@ -2110,9 +2109,17 @@ function commProcessarMensagensJogador(lista) {
     const anteriores=new Set(commMensagens.keys());
     commMensagens=new Map(lista.map(m=>[m.id,m]));
     const recebidas=lista.filter(m=>m.recipientUid===usuarioAtual?.uid);
+    
+    // Verifica se o modal do chat está aberto
     const modalAberto=!document.getElementById('comm-modal-jogador')?.classList.contains('hidden');
+    
     const pendente=recebidas.filter(m=>Number(m.alertaAteMs||0)>Date.now()).sort((a,b)=>Number(b.criadoEmMs||0)-Number(a.criadoEmMs||0))[0];
-    if(pendente && (!anteriores.has(pendente.id) || !commAlertaAtivo)) commIniciarAlerta(pendente);
+    
+    // Só toca o som se houver mensagem pendente E o modal estiver fechado
+    if(pendente && (!anteriores.has(pendente.id) || !commAlertaAtivo) && !modalAberto) {
+        commIniciarAlerta(pendente);
+    }
+    
     commRenderizarHistoricoJogador();
 }
 function iniciarComunicacaoMestre() {
