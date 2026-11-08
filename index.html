@@ -269,7 +269,7 @@
         ::-webkit-scrollbar-thumb:hover { background: #8a1313; }
 
         /* =====================================================
-           NOVO VISUAL DO CHAT (CENTRAL DE COMUNICAÇÃO)
+           VISUAL DO CHAT E RÁDIO
         ===================================================== */
         .walkie-device{width:190px;min-height:360px;background:linear-gradient(145deg,#3b4146,#11161b 45%,#292e32);border:5px solid #080b0d;border-radius:28px 28px 22px 22px;padding:18px 13px 14px;box-shadow:inset 2px 2px 5px #77818a,0 14px 30px #000b;position:relative;color:#dbeafe;text-align:center}
         .walkie-antena{position:absolute;width:12px;height:80px;top:-77px;left:26px;border-radius:8px 8px 2px 2px;background:linear-gradient(90deg,#111,#626a70,#171b1e);border:2px solid #080b0d;transform:rotate(-5deg)}
@@ -340,9 +340,9 @@
                         <h1 class="fonte-titulo text-4xl md:text-5xl text-[#1a110a]">PAINEL DE PERSONAGENS</h1>
                         <p class="text-[#3a2517] text-lg font-bold fonte-papel">Escolha um sobrevivente para abrir sua ficha.</p>
                     </div>
-                    <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-                        <button id="btn-recarregar-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-azul w-full md:w-auto">RECARREGAR</button>
-                        <button id="btn-sair-jogador" class="fonte-titulo text-xl px-5 py-2 rounded btn-metal w-full md:w-auto">SAIR</button>
+                    <div class="flex flex-row gap-2 w-full md:w-auto">
+                        <button id="btn-recarregar-jogador" class="fonte-titulo text-lg md:text-xl px-2 md:px-5 py-2 rounded btn-azul flex-1 md:flex-none">RECARREGAR</button>
+                        <button id="btn-sair-jogador" class="fonte-titulo text-lg md:text-xl px-2 md:px-5 py-2 rounded btn-metal flex-1 md:flex-none">SAIR</button>
                     </div>
                 </div>
                 <div id="cards-jogador" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando personagens...</p></div>
