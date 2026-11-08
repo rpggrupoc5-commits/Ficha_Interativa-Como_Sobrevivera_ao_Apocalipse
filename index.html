@@ -471,12 +471,9 @@
                                 <h3 class="font-bold text-lg text-sky-100 mb-2">TRANSMITIR MENSAGEM</h3>
                                 <textarea id="comm-master-texto" rows="3" maxlength="3000" placeholder="Digite sua mensagem para os sobreviventes..." class="w-full rounded bg-slate-900 border border-slate-600 p-3 text-white placeholder-slate-500 outline-none focus:border-sky-400"></textarea>
                                 <div class="flex flex-wrap items-center gap-2 mt-2">
-                                    <label class="btn-metal rounded px-3 py-2 cursor-pointer text-sm">📎 IMAGEM / ÁUDIO <input id="comm-master-arquivo" type="file" accept="image/*,audio/*" class="hidden"></label>
-                                    <button id="comm-master-gravar" type="button" class="rounded border border-red-700 bg-red-950 px-3 py-2 text-sm">🎙 GRAVAR ÁUDIO</button>
-                                    <span id="comm-master-arquivo-nome" class="text-xs text-slate-400">Nenhum arquivo selecionado</span>
                                     <button id="comm-master-enviar" class="ml-auto rounded bg-sky-700 hover:bg-sky-600 px-5 py-2 font-bold">TRANSMITIR</button>
                                 </div>
-                                <p class="text-xs text-slate-400 mt-2">Áudio não aberto pelo jogador em 30 segundos expira somente para aquele destinatário.</p>
+                                <p class="text-xs text-slate-400 mt-2">Nesta versão gratuita, a central transmite mensagens de texto. Os alertas sonoros do rádio funcionam normalmente.</p>
                             </div>
                             <div class="rounded border border-slate-700 bg-black/30 p-3">
                                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2"><h3 class="font-bold text-lg text-sky-100">REGISTRO DE COMUNICAÇÕES</h3><div class="flex gap-2 items-center"><select id="comm-master-filtro" class="rounded bg-slate-900 border border-slate-600 p-2 text-xs text-white"><option value="todas">Todas as conversas</option><option value="grupo_geral">Grupo Geral</option></select><button id="comm-master-atualizar" class="text-xs underline text-sky-300">Atualizar</button></div></div>
@@ -641,7 +638,7 @@
         <div class="comm-modal-card">
             <div class="flex justify-between items-center gap-3 border-b border-slate-700 pb-3"><div><h2 id="comm-modal-titulo" class="fonte-titulo text-2xl text-sky-200">CANAL DE COMUNICAÇÃO</h2><p class="text-xs text-slate-400">Mensagens recebidas e enviadas</p></div><button id="comm-fechar-modal" class="text-2xl text-slate-300 hover:text-white" aria-label="Fechar">×</button></div>
             <div id="comm-jogador-historico" class="comm-chat-list"></div>
-            <div class="border-t border-slate-700 pt-3"><textarea id="comm-jogador-texto" rows="2" maxlength="3000" placeholder="Digite uma resposta para o Mestre..." class="w-full rounded bg-slate-900 border border-slate-600 p-3 text-white"></textarea><div class="flex flex-wrap items-center gap-2 mt-2"><label class="btn-metal rounded px-3 py-2 cursor-pointer text-sm">📎 ARQUIVO <input id="comm-jogador-arquivo" type="file" accept="image/*,audio/*" class="hidden"></label><button id="comm-jogador-gravar" type="button" class="rounded border border-red-700 bg-red-950 px-3 py-2 text-sm">🎙 GRAVAR ÁUDIO</button><span id="comm-jogador-arquivo-nome" class="text-xs text-slate-400">Nenhum arquivo</span><button id="comm-jogador-enviar" class="ml-auto rounded bg-sky-700 hover:bg-sky-600 px-5 py-2 font-bold">ENVIAR</button></div></div>
+            <div class="border-t border-slate-700 pt-3"><textarea id="comm-jogador-texto" rows="2" maxlength="3000" placeholder="Digite uma resposta para o Mestre..." class="w-full rounded bg-slate-900 border border-slate-600 p-3 text-white"></textarea><div class="flex justify-end mt-2"><button id="comm-jogador-enviar" class="rounded bg-sky-700 hover:bg-sky-600 px-5 py-2 font-bold">ENVIAR</button></div></div>
         </div>
     </div>
 
