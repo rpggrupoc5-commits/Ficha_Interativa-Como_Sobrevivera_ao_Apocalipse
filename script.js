@@ -297,6 +297,9 @@ document.getElementById('btn-esqueci-senha').onclick = () => {
 
 document.getElementById('btn-entrar').onclick = () => {
     tocarSom(audioAbertura);
+    // Destrava o áudio do rádio no navegador do usuário
+    commRadioAudio.play().then(() => { commRadioAudio.pause(); commRadioAudio.currentTime = 0; }).catch(() => {});
+    
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
     mensagemErro.classList.add('hidden');
@@ -1939,13 +1942,23 @@ function commPararAlerta() {
 function commTocarCicloRadio(fim) {
     if (!commAlertaAtivo || Date.now() >= fim) { commPararAlerta(); return; }
     try { commRadioAudio.currentTime = 0; } catch(e) {}
+    
     const proximaPausa = () => {
         if (!commAlertaAtivo) return;
         if (Date.now() >= fim) { commPararAlerta(); return; }
         commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000);
     };
+    
     commRadioAudio.onended = proximaPausa;
-    commRadioAudio.play().then(() => {}).catch(() => { commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000); });
+    
+    commRadioAudio.play().then(() => {
+        // Tudo certo, o áudio tocou
+    }).catch(() => { 
+        // O navegador bloqueou. Avisa o jogador na telinha do rádio.
+        const tela = document.getElementById('walkie-screen-main');
+        if (tela) tela.textContent = "CLIQUE NA TELA PARA OUVIR O ÁUDIO";
+        commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000); 
+    });
 }
 function commIniciarAlerta(mensagem) {
     const fim = Number(mensagem.alertaAteMs || (Number(mensagem.criadoEmMs || Date.now()) + 30000));
