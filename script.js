@@ -2084,8 +2084,7 @@ async function commEnviarMestre() {
     try {
         const grupoId=geral?'grupo_geral':(destinos.length>1?`grupo_${Date.now()}`:`privado_${destinos[0]}`);
         for(const uid of destinos){const u=commJogadores.find(x=>x.uid===uid);await commEnviarPara(uid,u?.nome||u?.email||'Jogador',texto,grupoId);}
-        document.getElementById('comm-master-texto').value='';
-        document.querySelectorAll('.comm-destinatario').forEach(el=>el.checked=false);document.getElementById('comm-grupo-geral').checked=false;
+        document.getElementById('comm-master-texto').value = '';
     } catch(e){console.error(e);alert(e.message||'Não foi possível transmitir a mensagem.');}
     finally{btn.disabled=false;btn.textContent='TRANSMITIR';}
 }
@@ -2113,12 +2112,28 @@ function commAbrirModalJogador() {
 }
 function commFecharModalJogador(){document.getElementById('comm-modal-jogador')?.classList.add('hidden');}
 function commProcessarMensagensJogador(lista) {
-    const anteriores=new Set(commMensagens.keys());
-    commMensagens=new Map(lista.map(m=>[m.id,m]));
-    const recebidas=lista.filter(m=>m.recipientUid===usuarioAtual?.uid);
-    const modalAberto=!document.getElementById('comm-modal-jogador')?.classList.contains('hidden');
-    const pendente=recebidas.filter(m=>Number(m.alertaAteMs||0)>Date.now()).sort((a,b)=>Number(b.criadoEmMs||0)-Number(a.criadoEmMs||0))[0];
-    if(pendente && (!anteriores.has(pendente.id) || !commAlertaAtivo)) commIniciarAlerta(pendente);
+    const anteriores = new Set(commMensagens.keys());
+
+    commMensagens = new Map(lista.map(m => [m.id, m]));
+
+    const recebidas = lista.filter(m => m.recipientUid === usuarioAtual?.uid);
+
+    const modalAberto = !document.getElementById('comm-modal-jogador')?.classList.contains('hidden');
+
+    const novasRecebidas = recebidas.filter(m => !anteriores.has(m.id));
+
+    if (modalAberto && novasRecebidas.length > 0) {
+        tocarSom(audioClique);
+    }
+
+    const pendente = recebidas
+        .filter(m => Number(m.alertaAteMs || 0) > Date.now())
+        .sort((a, b) => Number(b.criadoEmMs || 0) - Number(a.criadoEmMs || 0))[0];
+
+    if (pendente && !modalAberto && (!anteriores.has(pendente.id) || !commAlertaAtivo)) {
+        commIniciarAlerta(pendente);
+    }
+
     commRenderizarHistoricoJogador();
 }
 function iniciarComunicacaoMestre() {
@@ -2140,6 +2155,20 @@ function iniciarComunicacaoJogador() {
 
 const btnCommEnviarMestre=document.getElementById('comm-master-enviar');if(btnCommEnviarMestre)btnCommEnviarMestre.addEventListener('click',commEnviarMestre);
 const btnCommEnviarJogador=document.getElementById('comm-jogador-enviar');if(btnCommEnviarJogador)btnCommEnviarJogador.addEventListener('click',commEnviarJogador);
+
+// SOM DAS TECLAS NA CENTRAL DE COMUNICAÇÃO
+['comm-master-texto', 'comm-jogador-texto'].forEach(id => {
+    const campo = document.getElementById(id);
+
+    if (campo) {
+        campo.addEventListener('keydown', e => {
+            if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete') {
+                tocarSomTecla();
+            }
+        });
+    }
+});
+
 document.getElementById('comm-selecionar-todos')?.addEventListener('click',()=>document.querySelectorAll('.comm-destinatario').forEach(el=>el.checked=true));
 document.getElementById('comm-master-atualizar')?.addEventListener('click',()=>{commCarregarJogadores();});
 document.getElementById('comm-master-filtro')?.addEventListener('change',commRenderizarHistoricoMestre);
