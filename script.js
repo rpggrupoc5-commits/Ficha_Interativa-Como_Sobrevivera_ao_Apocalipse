@@ -20,14 +20,10 @@ import {
     where,
     limit,
     deleteDoc,
-    writeBatch,
-    addDoc,
-    onSnapshot,
-    updateDoc,
-    arrayUnion,
-    serverTimestamp
+    writeBatch
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+// IMPORTANDO O BANCO DE ITENS
 import { bancoDeItens } from './itens.js';
 
 const firebaseConfig = {
@@ -83,19 +79,8 @@ audioSalvarManual.volume = 0.9;
 audioEntrarFicha.volume = 0.8;
 audioSairFicha.volume = 0.8;
 audioEntrarPainel.volume = 0.8;
-audioSairPainel.volume = 1.0;
+audioSairPainel.volume = 1.0; // Aumentado em 20% conforme solicitado
 audioCancelarItem.volume = 0.8;
-
-const sonsDados = [new Audio('dados1.mp3'), new Audio('dados2.mp3'), new Audio('dados3.mp3')];
-sonsDados.forEach(som => { som.preload = 'auto'; som.volume = 0.9; });
-let ultimoSomDado = -1;
-function tocarSomDado() {
-    if (!sonsDados.length) return;
-    let indice = Math.floor(Math.random() * sonsDados.length);
-    if (sonsDados.length > 1 && indice === ultimoSomDado) indice = (indice + 1 + Math.floor(Math.random() * (sonsDados.length - 1))) % sonsDados.length;
-    ultimoSomDado = indice;
-    tocarSom(sonsDados[indice], true);
-}
 
 function tocarSom(audio, pausarAnterior = true) {
     if (!audio) return;
@@ -117,7 +102,7 @@ function tocarSomTecla() {
 // LÓGICA DO GERADOR DE ITENS (LOOT)
 // ==========================================
 window.gerarLoot = function(categoria) {
-    tocarSomDado();
+    tocarSom(audioClique);
 
     const listasCategorias = {
         comida: bancoDeItens.comida,
@@ -151,11 +136,13 @@ window.gerarLoot = function(categoria) {
     const pesoUnitario = Number(itemSorteado.peso) || 0;
     const pesoTotal = (qtdSorteada * pesoUnitario).toFixed(2);
 
+    // O item aleatório também informa de qual categoria ele veio.
     let categoriaReal = categoria;
     if (categoria === 'item_aleatorio') {
         categoriaReal = Object.keys(listasCategorias).find(chave => listasCategorias[chave]?.includes(itemSorteado)) || 'item_aleatorio';
     }
 
+    // Variações cosméticas: não alteram dano, movimento ou qualquer regra de combate.
     const estadosArmas = [
         "Bem conservada", "Desgastada", "Antiga", "Danificada", "Enferrujada",
         "Improvisada", "Reparada", "Com marcas de uso", "Rara", "Em ótimo estado"
@@ -297,9 +284,6 @@ document.getElementById('btn-esqueci-senha').onclick = () => {
 
 document.getElementById('btn-entrar').onclick = () => {
     tocarSom(audioAbertura);
-    // Destrava o áudio do rádio no navegador do usuário
-    commRadioAudio.play().then(() => { commRadioAudio.pause(); commRadioAudio.currentTime = 0; }).catch(() => {});
-    
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
     mensagemErro.classList.add('hidden');
@@ -370,7 +354,6 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('area-ficha').classList.add('hidden');
             tocarSom(audioEntrarPainel);
             carregarDashboardMestre();
-            iniciarComunicacaoMestre();
         } else {
             document.getElementById('dashboard-jogador').classList.remove('hidden');
             document.getElementById('dashboard-mestre').classList.add('hidden');
@@ -420,7 +403,6 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
             await carregarFicha();
             aplicarPermissoesNaTela();
             configurarAutosave();
-            iniciarComunicacaoJogador();
         } catch (e) {
             alert(`Erro ao carregar ficha (${e.code || 'desconhecido'}): ${e.message}`);
         }
@@ -435,7 +417,6 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
         try {
             await carregarFicha();
             aplicarPermissoesNaTela();
-            iniciarComunicacaoJogador();
             mostrarBannerConvidado(`Acesso como <b>${permissao === 'editar' ? 'EDITOR' : 'VISUALIZADOR'}</b>.<br><span class="text-sm">Seu UID: ${usuarioAtual.uid}</span>`);
             if (modoAcesso === "convidado-editar") configurarAutosave();
             monitorarRevogacao(fichaId);
@@ -721,6 +702,7 @@ let imagemAtualBase64 = null;
 let quadradoFotoAtual = null;
 let imagemFotoBase64 = null;
 
+// Controle de estado da mochila ativa
 let mochilaAtivaId = null;
 let mochilaCapacidade = 0;
 let mochilaStatus = false; 
@@ -785,6 +767,7 @@ const modalHTML = `
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg):<input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
             </div>
             
+            <!-- NOVO CAMPO: Peso Total Dinâmico -->
             <div class="text-right font-bold text-sm text-[#8a1313] mt-1">
                 Peso Total: <span id="modal-peso-total">0.00</span> kg
             </div>
@@ -848,6 +831,7 @@ const btnCancelar = document.getElementById('btn-cancelar');
 const btnSalvarItem = document.getElementById('btn-salvar-item');
 const btnUpload = document.getElementById('btn-upload');
 
+// Elementos do Peso Total Dinâmico
 const modalPesoTotalEl = document.getElementById('modal-peso-total');
 
 const modalFoto = document.getElementById('modal-foto');
@@ -910,6 +894,7 @@ function atualizarPreviewModal() {
     }
 }
 
+// Função para atualizar o cálculo do peso total no Modal em tempo real
 function atualizarPesoTotalModal() {
     const qtd = parseFloat(inputQtd.value) || 0;
     const pesoStr = inputPeso.value.replace(',', '.');
@@ -966,7 +951,7 @@ function abrirModal(q, dados = null) {
         document.querySelector('#modal-item h3').innerText = isMochilaSlot ? "EQUIPAR MOCHILA" : "NOVO ITEM";
         btnSalvarItem.innerText = "ADICIONAR";
     }
-    atualizarPesoTotalModal();
+    atualizarPesoTotalModal(); // Atualiza o cálculo ao abrir
     atualizarPreviewModal();
     modal.classList.remove('hidden');
 }
@@ -996,8 +981,9 @@ btnExcluir.onclick = () => {
         quadradoAtual.innerHTML = original + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
     }
     quadradoAtual.classList.remove('item-adicionado');
+    // Remove os dados vinculados ao slot. dataset.itemData corresponde a data-item-data.
     delete quadradoAtual.dataset.itemData;
-    quadradoAtual.removeAttribute('data-itemdata');
+    quadradoAtual.removeAttribute('data-itemdata'); // limpa também o atributo legado, se existir
     quadradoAtual.removeAttribute('data-peso');
     quadradoAtual.removeAttribute('data-qtd');
     
@@ -1041,6 +1027,7 @@ function renderizarItem(q, dados) {
     const isEquipamento = !q.id.startsWith('inv-');
     const classeTexto = isEquipamento ? 'opacity-0 group-hover:opacity-100 transition-opacity' : 'opacity-100';
     
+    // Calcula o peso total deste item (Quantidade x Peso Unitário)
     const qtd = parseFloat(dados.qtd) || 1;
     const pesoStr = (dados.peso || "0").toString().replace(',', '.');
     const pesoUnit = parseFloat(pesoStr) || 0;
@@ -1202,6 +1189,8 @@ async function salvarFicha(opcoes = {}) {
     }
 
     const todosSlots = Array.from(document.querySelectorAll('.slot-vazio'));
+    // Os slots do inventário também possuem a classe .slot-vazio.
+    // Excluí-los aqui evita gravar cada item da mochila novamente em itensEquipamento.
     const itensEquipamento = Array.from(
         document.querySelectorAll('.slot-vazio.item-adicionado')
     ).filter(el => !el.closest('#inventario'));
@@ -1345,7 +1334,7 @@ async function carregarFicha() {
     document.querySelectorAll('.slot-vazio, .foto-personagem').forEach(el => {
         el.classList.remove('item-adicionado');
         delete el.dataset.itemData;
-        el.removeAttribute('data-itemdata');
+        el.removeAttribute('data-itemdata'); // compatibilidade com fichas que tenham o atributo antigo
         el.removeAttribute('data-peso');
         el.removeAttribute('data-qtd');
         
@@ -1374,6 +1363,8 @@ async function carregarFicha() {
         const posicoesEquipamentoCarregadas = new Set();
 
         d.itensEquipamento.forEach(item => {
+            // Registros antigos criados pelo seletor incorreto podem ter posicao nula.
+            // Eles eram cópias de itens da mochila e não devem ocupar slots de equipamento.
             if (!item || typeof item.posicao !== 'string' || !item.posicao.trim()) return;
             if (posicoesEquipamentoCarregadas.has(item.posicao)) return;
 
@@ -1583,6 +1574,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
     
+    // Correção: Transformando o botão em um link real (Tag <a>) para não ser bloqueado pelo navegador
     const linkFicha = document.createElement('a');
     linkFicha.href = `${window.location.pathname}?ficha=${idFicha}`;
     linkFicha.target = '_blank';
@@ -1913,202 +1905,3 @@ async function desvincularJogador(idFicha, ficha) {
         await atualizarPainelMestre(); alert('Jogador desvinculado. A ficha agora é um PDM.');
     } catch (e) { console.error(e); alert(`Erro ao desvincular: ${e.message}`); }
 }
-
-// =====================================================
-// CENTRAL DE COMUNICAÇÃO / RÁDIO PORTÁTIL
-// =====================================================
-let commUnsubscribers = [];
-let commJogadores = [];
-let commMensagens = new Map();
-let commAlertaAtivo = false;
-let commAlertaTimer = null;
-let commPausaTimer = null;
-let commMensagemAlerta = null;
-const commRadioAudio = new Audio('radio_alerta.mp3');
-commRadioAudio.preload = 'auto';
-commRadioAudio.volume = 0.85;
-const COMM_LIMITE_ARQUIVO = 10 * 1024 * 1024;
-
-function commEhMestre() { return !!usuarioAtual && (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase(); }
-function commLimparListeners() { commUnsubscribers.forEach(fn => { try { fn(); } catch(e) {} }); commUnsubscribers = []; }
-function commPararAlerta() {
-    commAlertaAtivo = false;
-    if (commAlertaTimer) clearTimeout(commAlertaTimer);
-    if (commPausaTimer) clearTimeout(commPausaTimer);
-    commAlertaTimer = null; commPausaTimer = null;
-    try { commRadioAudio.pause(); commRadioAudio.currentTime = 0; } catch(e) {}
-    const led = document.getElementById('walkie-led'); if (led) led.classList.remove('ativo');
-}
-function commTocarCicloRadio(fim) {
-    if (!commAlertaAtivo || Date.now() >= fim) { commPararAlerta(); return; }
-    try { commRadioAudio.currentTime = 0; } catch(e) {}
-    
-    const proximaPausa = () => {
-        if (!commAlertaAtivo) return;
-        if (Date.now() >= fim) { commPararAlerta(); return; }
-        commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000);
-    };
-    
-    commRadioAudio.onended = proximaPausa;
-    
-    commRadioAudio.play().then(() => {
-        // Tudo certo, o áudio tocou
-    }).catch(() => { 
-        // O navegador bloqueou. Avisa o jogador na telinha do rádio.
-        const tela = document.getElementById('walkie-screen-main');
-        if (tela) tela.textContent = "CLIQUE NA TELA PARA OUVIR O ÁUDIO";
-        commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000); 
-    });
-}
-function commIniciarAlerta(mensagem) {
-    const fim = Number(mensagem.alertaAteMs || (Number(mensagem.criadoEmMs || Date.now()) + 30000));
-    if (fim <= Date.now()) return;
-    commMensagemAlerta = mensagem;
-    const tela = document.getElementById('walkie-screen-main');
-    if (tela) tela.textContent = (mensagem.texto || 'NOVA COMUNICAÇÃO').slice(0, 65);
-    const led = document.getElementById('walkie-led'); if (led) led.classList.add('ativo');
-    if (commAlertaAtivo) {
-        if (commAlertaTimer) clearTimeout(commAlertaTimer);
-        commAlertaTimer = setTimeout(commPararAlerta, Math.max(0, fim - Date.now()));
-        return;
-    }
-    commAlertaAtivo = true;
-    commAlertaTimer = setTimeout(commPararAlerta, Math.max(0, fim - Date.now()));
-    commTocarCicloRadio(fim);
-}
-function commFormatarHora(ms) { try { return new Date(ms).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch(e) { return ''; } }
-function commCriarElementoMensagem(m, paraMestre=false) {
-    const div = document.createElement('article');
-    div.className = 'comm-message' + (m.senderUid === (usuarioAtual?.uid || '') ? ' mine' : '');
-    const meta = document.createElement('div'); meta.className = 'comm-message-meta';
-    meta.textContent = `${m.senderName || (m.senderUid === 'MESTRE' ? 'Mestre' : 'Jogador')} · ${commFormatarHora(Number(m.criadoEmMs || Date.now()))}${paraMestre ? ` · Para: ${m.recipientName || m.recipientUid}` : ''}`;
-    div.appendChild(meta);
-    if (m.texto) { const txt = document.createElement('div'); txt.className='comm-message-text'; txt.textContent=m.texto; div.appendChild(txt); }
-    if (paraMestre) {
-        const apagar=document.createElement('button'); apagar.type='button'; apagar.className='block text-red-300'; apagar.textContent='Excluir mensagem'; apagar.onclick=()=>commExcluirMensagem(m); div.appendChild(apagar);
-    }
-    return div;
-}
-function commRenderizarHistoricoJogador() {
-    const alvo=document.getElementById('comm-jogador-historico'); if(!alvo) return;
-    const lista=[...commMensagens.values()].sort((a,b)=>Number(a.criadoEmMs||0)-Number(b.criadoEmMs||0));
-    alvo.innerHTML='';
-    if(!lista.length){alvo.innerHTML='<p class="text-slate-400 text-center py-8">Nenhuma comunicação registrada.</p>';return;}
-    lista.forEach(m=>alvo.appendChild(commCriarElementoMensagem(m,false)));
-    alvo.scrollTop=alvo.scrollHeight;
-}
-function commRenderizarHistoricoMestre() {
-    const alvo=document.getElementById('comm-master-historico'); if(!alvo) return;
-    const filtro=document.getElementById('comm-master-filtro')?.value || 'todas';
-    let lista=[...commMensagens.values()];
-    if(filtro==='grupo_geral') lista=lista.filter(m=>m.grupoId==='grupo_geral');
-    else if(filtro!=='todas') lista=lista.filter(m=>m.recipientUid===filtro || m.senderUid===filtro);
-    lista.sort((a,b)=>Number(b.criadoEmMs||0)-Number(a.criadoEmMs||0));
-    alvo.innerHTML='';
-    if(!lista.length){alvo.innerHTML='<p class="text-slate-400 text-sm">Nenhuma comunicação enviada ou recebida.</p>';return;}
-    lista.slice(0,100).forEach(m=>alvo.appendChild(commCriarElementoMensagem(m,true)));
-}
-async function commCarregarJogadores() {
-    if(!commEhMestre()) return;
-    const alvo=document.getElementById('comm-master-lista-jogadores'); if(!alvo) return;
-    try {
-        const snap=await getDocs(collection(db,'usuarios'));
-        commJogadores=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(u=>(u.email||'').toLowerCase()!==emailMestre.toLowerCase());
-        alvo.innerHTML='';
-        if(!commJogadores.length){alvo.innerHTML='<p class="text-sm text-slate-400">Nenhuma conta de jogador cadastrada.</p>';return;}
-        commJogadores.sort((a,b)=>(a.nome||a.email||'').localeCompare(b.nome||b.email||'','pt-BR')).forEach(u=>{
-            const label=document.createElement('label');label.className='flex items-center gap-2 rounded p-2 bg-slate-900/80 hover:bg-slate-800 text-sm';
-            const input=document.createElement('input');input.type='checkbox';input.className='comm-destinatario accent-sky-500';input.value=u.uid;
-            const span=document.createElement('span');span.textContent=`${u.nome||u.email||'Jogador'}${u.email?' · '+u.email:''}`;
-            label.append(input,span);alvo.appendChild(label);
-        });
-        const filtro=document.getElementById('comm-master-filtro');
-        if(filtro){const valorAtual=filtro.value;filtro.querySelectorAll('option[data-jogador]').forEach(o=>o.remove());commJogadores.forEach(u=>{const op=document.createElement('option');op.value=u.uid;op.dataset.jogador='1';op.textContent=u.nome||u.email||'Jogador';filtro.appendChild(op);});if([...filtro.options].some(o=>o.value===valorAtual))filtro.value=valorAtual;}
-    } catch(e) { console.error(e); alvo.innerHTML='<p class="text-red-300 text-sm">Não foi possível carregar a lista de jogadores.</p>'; }
-}
-async function commEnviarPara(destinatario, nomeDestinatario, texto, grupoId) {
-    const agora=Date.now();
-    const remetenteMestre=commEhMestre();
-    const remetenteUid=remetenteMestre?'MESTRE':usuarioAtual.uid;
-    const remetenteNome=remetenteMestre?'Mestre':(usuarioAtual.displayName || usuarioAtual.email?.split('@')[0] || 'Jogador');
-    await addDoc(collection(db,'comunicacoes'),{
-        senderUid:remetenteUid, senderName:remetenteNome,
-        recipientUid:destinatario, recipientName:nomeDestinatario,
-        grupoId:grupoId || (destinatario==='MESTRE'?'privado_mestre':`privado_${destinatario}`),
-        tipo:'texto', texto:texto, mediaPath:null,
-        criadoEm:serverTimestamp(), criadoEmMs:agora,
-        alertaAteMs:agora+30000, audioAbertoPor:[], statusArquivo:'pronto'
-    });
-}
-
-async function commEnviarMestre() {
-    const texto=document.getElementById('comm-master-texto')?.value.trim()||'';
-    const geral=document.getElementById('comm-grupo-geral')?.checked;
-    let destinos=[...document.querySelectorAll('.comm-destinatario:checked')].map(el=>el.value);
-    if(geral) destinos=commJogadores.map(u=>u.uid);
-    destinos=[...new Set(destinos)];
-    if(!destinos.length){alert('Selecione ao menos um jogador ou marque GRUPO GERAL.');return;}
-    if(!texto){alert('Digite uma mensagem antes de transmitir.');return;}
-    const btn=document.getElementById('comm-master-enviar');btn.disabled=true;btn.textContent='TRANSMITINDO...';
-    try {
-        const grupoId=geral?'grupo_geral':(destinos.length>1?`grupo_${Date.now()}`:`privado_${destinos[0]}`);
-        for(const uid of destinos){const u=commJogadores.find(x=>x.uid===uid);await commEnviarPara(uid,u?.nome||u?.email||'Jogador',texto,grupoId);}
-        document.getElementById('comm-master-texto').value='';
-        document.querySelectorAll('.comm-destinatario').forEach(el=>el.checked=false);document.getElementById('comm-grupo-geral').checked=false;
-    } catch(e){console.error(e);alert(e.message||'Não foi possível transmitir a mensagem.');}
-    finally{btn.disabled=false;btn.textContent='TRANSMITIR';}
-}
-async function commEnviarJogador() {
-    const texto=document.getElementById('comm-jogador-texto')?.value.trim()||'';
-    if(!texto){alert('Digite uma mensagem antes de enviar.');return;}
-    const btn=document.getElementById('comm-jogador-enviar');btn.disabled=true;btn.textContent='ENVIANDO...';
-    try{await commEnviarPara('MESTRE','Mestre',texto,'privado_mestre');document.getElementById('comm-jogador-texto').value='';}
-    catch(e){console.error(e);alert(e.message||'Não foi possível enviar.');}
-    finally{btn.disabled=false;btn.textContent='ENVIAR';}
-}
-async function commExcluirMensagem(m) {
-    if(!commEhMestre()||!confirm('Excluir esta mensagem para o destinatário?')) return;
-    try{await deleteDoc(doc(db,'comunicacoes',m.id));}
-    catch(e){console.error(e);alert('Não foi possível excluir a mensagem: '+e.message);}
-}
-function commAbrirModalJogador() {
-    commPararAlerta();
-    const modal=document.getElementById('comm-modal-jogador');if(modal)modal.classList.remove('hidden');
-    const tela=document.getElementById('walkie-screen-main');if(tela)tela.textContent='CANAL DE COMUNICAÇÃO';
-    commRenderizarHistoricoJogador();
-}
-function commFecharModalJogador(){document.getElementById('comm-modal-jogador')?.classList.add('hidden');}
-function commProcessarMensagensJogador(lista) {
-    const anteriores=new Set(commMensagens.keys());
-    commMensagens=new Map(lista.map(m=>[m.id,m]));
-    const recebidas=lista.filter(m=>m.recipientUid===usuarioAtual?.uid);
-    const modalAberto=!document.getElementById('comm-modal-jogador')?.classList.contains('hidden');
-    const pendente=recebidas.filter(m=>Number(m.alertaAteMs||0)>Date.now()).sort((a,b)=>Number(b.criadoEmMs||0)-Number(a.criadoEmMs||0))[0];
-    if(pendente && (!anteriores.has(pendente.id) || !commAlertaAtivo)) commIniciarAlerta(pendente);
-    commRenderizarHistoricoJogador();
-}
-function iniciarComunicacaoMestre() {
-    commLimparListeners();commMensagens=new Map();
-    commCarregarJogadores();
-    const unsub=onSnapshot(collection(db,'comunicacoes'),snap=>{
-        commMensagens=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));commRenderizarHistoricoMestre();
-    },e=>console.error('Falha ao ouvir central de comunicação:',e));
-    commUnsubscribers.push(unsub);
-}
-function iniciarComunicacaoJogador() {
-    if(!usuarioAtual||commEhMestre()) return;
-    commLimparListeners();commMensagens=new Map();
-    let recebidas=[],enviadas=[];
-    const atualizar=()=>commProcessarMensagensJogador([...new Map([...recebidas,...enviadas].map(m=>[m.id,m])).values()]);
-    commUnsubscribers.push(onSnapshot(query(collection(db,'comunicacoes'),where('recipientUid','==',usuarioAtual.uid)),snap=>{recebidas=snap.docs.map(d=>({id:d.id,...d.data()}));atualizar();},e=>console.error('Falha ao carregar mensagens recebidas:',e)));
-    commUnsubscribers.push(onSnapshot(query(collection(db,'comunicacoes'),where('senderUid','==',usuarioAtual.uid)),snap=>{enviadas=snap.docs.map(d=>({id:d.id,...d.data()}));atualizar();},e=>console.error('Falha ao carregar mensagens enviadas:',e)));
-}
-
-const btnCommEnviarMestre=document.getElementById('comm-master-enviar');if(btnCommEnviarMestre)btnCommEnviarMestre.addEventListener('click',commEnviarMestre);
-const btnCommEnviarJogador=document.getElementById('comm-jogador-enviar');if(btnCommEnviarJogador)btnCommEnviarJogador.addEventListener('click',commEnviarJogador);
-document.getElementById('comm-selecionar-todos')?.addEventListener('click',()=>document.querySelectorAll('.comm-destinatario').forEach(el=>el.checked=true));
-document.getElementById('comm-master-atualizar')?.addEventListener('click',()=>{commCarregarJogadores();});
-document.getElementById('comm-master-filtro')?.addEventListener('change',commRenderizarHistoricoMestre);
-document.getElementById('walkie-atender')?.addEventListener('click',commAbrirModalJogador);
-document.getElementById('comm-fechar-modal')?.addEventListener('click',commFecharModalJogador);
-document.getElementById('comm-modal-jogador')?.addEventListener('click',e=>{if(e.target.id==='comm-modal-jogador')commFecharModalJogador();});
