@@ -130,6 +130,22 @@ function tocarSomTecla() {
 }
 
 // ==========================================
+// ESTILO GLOBAL DO CHAT (AUMENTA AS FONTES)
+// ==========================================
+const estiloChat = document.createElement('style');
+estiloChat.textContent = `
+    .comm-message-meta { font-size: 13px !important; }
+    .comm-message-text { font-size: 15px !important; line-height: 1.5 !important; }
+    #comm-jogador-historico p,
+    #comm-master-historico p { font-size: 15px !important; }
+    #comm-jogador-texto,
+    #comm-master-texto { font-size: 15px !important; }
+    #comm-master-lista-jogadores label,
+    #comm-master-lista-jogadores span { font-size: 14px !important; }
+`;
+document.head.appendChild(estiloChat);
+
+// ==========================================
 // LÓGICA DO GERADOR DE ITENS (LOOT)
 // ==========================================
 window.gerarLoot = function(categoria) {
