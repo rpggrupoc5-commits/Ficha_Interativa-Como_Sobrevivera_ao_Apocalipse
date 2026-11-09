@@ -305,6 +305,31 @@
             .walkie-device{width:155px;min-height:315px;padding:14px 10px}.walkie-tela{height:120px}.walkie-screen-main{font-size:13px}.walkie-antena{height:62px;top:-60px}.comm-modal-card{padding:11px}.comm-chat-list{max-height:48vh}
             .comm-message {max-width: 95%; font-size: 15px;}
         }
+
+        /* Refinamento visual do rádio: estética de sobrevivência + chat moderno */
+        .comm-modal-card{
+            background:linear-gradient(145deg,#24251f 0%,#111510 55%,#090d0b 100%);
+            border:2px solid #725137;border-radius:16px;padding:18px;
+            box-shadow:inset 0 0 24px #0009,0 24px 80px #000e;
+        }
+        .comm-chat-list{
+            background-color:#101712;
+            background-image:radial-gradient(#78846b18 1px,transparent 1px);
+            background-size:18px 18px;border:1px solid #48523e;
+            border-radius:12px;padding:14px;min-height:280px;
+        }
+        .comm-message{max-width:min(82%,620px);padding:11px 14px;border-radius:14px;font-size:15px;box-shadow:0 2px 5px #0005;}
+        .comm-message.mine{background:linear-gradient(145deg,#45563d,#2c3c2c);border:1px solid #687a54;border-bottom-right-radius:4px;color:#f1ead8;}
+        .comm-message.other{background:linear-gradient(145deg,#332d25,#24231e);border:1px solid #5c4935;border-bottom-left-radius:4px;color:#eadcc4;}
+        .comm-message.mine .comm-message-meta{color:#c5d6a8;}
+        .comm-message.other .comm-message-meta{color:#c6aa85;}
+        .comm-message-text{white-space:pre-wrap;overflow-wrap:anywhere;}
+        #comm-modal-jogador textarea,#comm-master-texto{background:#0c120e!important;border:1px solid #59664b!important;border-radius:10px!important;color:#f0e6d2!important;}
+        #comm-modal-jogador button#comm-jogador-enviar,#comm-master-enviar{background:linear-gradient(180deg,#667a4d,#34452c)!important;border:1px solid #87966a!important;border-radius:8px!important;color:#fff!important;}
+        #comm-master-lista-jogadores label{border:1px solid #3d4937;cursor:pointer;}
+        #comm-master-lista-jogadores label:has(input:checked){background:#34452c!important;border-color:#91a66e;}
+        @media(max-width:640px){.comm-modal{padding:5px}.comm-modal-card{padding:10px;max-height:96vh}.comm-chat-list{min-height:220px;max-height:52vh;padding:9px}.comm-message{max-width:94%;font-size:14px}}
+
     </style>
 </head>
 <body>
