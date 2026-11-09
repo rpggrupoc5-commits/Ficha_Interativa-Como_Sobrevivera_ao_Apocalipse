@@ -187,7 +187,7 @@
             flex-shrink: 0;
         }
 
-        /* Painel de equipamento: visual tático contemporâneo */
+        /* Painel de equipamento */
         .equip-grid {
             display: grid !important;
             grid-template-columns: minmax(0, .85fr) minmax(180px, 1.3fr) minmax(0, .85fr);
@@ -215,126 +215,37 @@
         .equip-grid > .foto-personagem { grid-area: photo; min-width: 0; min-height: 0; }
 
         .equip-grid > .slot-vazio {
-            width: 100%;
-            height: 100%;
-            min-width: 0;
-            min-height: 0;
-            padding: 8px;
-            border: 2px solid #596451;
-            border-radius: 8px;
+            width: 100%; height: 100%; min-width: 0; min-height: 0; padding: 8px;
+            border: 2px solid #596451; border-radius: 8px;
             background: linear-gradient(145deg, rgba(43, 51, 43, .96), rgba(17, 22, 20, .98));
-            color: #f0eadb;
-            box-shadow: inset 0 0 12px rgba(0,0,0,.55), 0 3px 7px rgba(0,0,0,.35);
-            text-shadow: 1px 1px 2px rgba(0,0,0,.9);
-            font-size: .78rem;
-            letter-spacing: .04em;
+            color: #f0eadb; box-shadow: inset 0 0 12px rgba(0,0,0,.55), 0 3px 7px rgba(0,0,0,.35);
+            text-shadow: 1px 1px 2px rgba(0,0,0,.9); font-size: .78rem; letter-spacing: .04em;
         }
-        .equip-grid > .slot-vazio > i {
-            color: #c2c9ad;
-            font-size: clamp(1.35rem, 2vw, 2rem);
-            margin-bottom: 7px;
-        }
-        .equip-grid > .slot-vazio:hover {
-            border-color: #a5b18c;
-            box-shadow: inset 0 0 16px rgba(165,177,140,.18), 0 4px 10px rgba(0,0,0,.45);
-        }
-        .equip-grid > .slot-mochila {
-            min-height: 0;
-            height: 155px;
-            align-self: end;
-        }
-        .equip-grid > .slot-botas {
-            height: 125px;
-            align-self: start;
-        }
-        .equip-grid > .slot-roupa {
-            min-height: 155px;
-        }
-        .equip-grid > .foto-personagem {
-            border: 2px solid #596451;
-            border-radius: 8px;
-            background: linear-gradient(145deg, rgba(35,42,36,.85), rgba(12,16,14,.96));
-            box-shadow: inset 0 0 18px rgba(0,0,0,.45), 0 3px 8px rgba(0,0,0,.35);
-            min-height: 545px;
-        }
+        .equip-grid > .slot-vazio > i { color: #c2c9ad; font-size: clamp(1.35rem, 2vw, 2rem); margin-bottom: 7px; }
+        .equip-grid > .slot-vazio:hover { border-color: #a5b18c; box-shadow: inset 0 0 16px rgba(165,177,140,.18), 0 4px 10px rgba(0,0,0,.45); }
+        .equip-grid > .slot-mochila { min-height: 0; height: 155px; align-self: end; }
+        .equip-grid > .slot-botas { height: 125px; align-self: start; }
+        .equip-grid > .slot-roupa { min-height: 155px; }
+        .equip-grid > .foto-personagem { border: 2px solid #596451; border-radius: 8px; background: linear-gradient(145deg, rgba(35,42,36,.85), rgba(12,16,14,.96)); box-shadow: inset 0 0 18px rgba(0,0,0,.45), 0 3px 8px rgba(0,0,0,.35); min-height: 545px; }
 
-        /* Slot Bloqueado */
-        .slot-bloqueado {
-            position: relative;
-            pointer-events: none;
-        }
-        .slot-bloqueado::after {
-            content: "🔒";
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 2rem;
-            color: white;
-            z-index: 20;
-            backdrop-filter: grayscale(100%) blur(1px);
-        }
+        .slot-bloqueado { position: relative; pointer-events: none; }
+        .slot-bloqueado::after { content: "🔒"; position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; font-size: 2rem; color: white; z-index: 20; backdrop-filter: grayscale(100%) blur(1px); }
 
-        /* Ajuste intermediário para notebooks: mantém os três painéis sem sobreposição. */
         @media (min-width: 1025px) and (max-width: 1279px) {
-            .equip-grid {
-                grid-template-columns: minmax(0, .8fr) minmax(170px, 1.25fr) minmax(0, .8fr);
-                grid-template-rows: 100px 115px 175px 145px;
-                gap: 7px;
-                min-height: 505px;
-            }
+            .equip-grid { grid-template-columns: minmax(0, .8fr) minmax(170px, 1.25fr) minmax(0, .8fr); grid-template-rows: 100px 115px 175px 145px; gap: 7px; min-height: 505px; }
             .equip-grid > .foto-personagem { min-height: 505px; }
-            .equip-grid > .slot-mochila {
-                min-height: 0;
-                height: 145px;
-                align-self: end;
-            }
-            .equip-grid > .slot-botas {
-                height: 115px;
-                align-self: start;
-            }
+            .equip-grid > .slot-mochila { min-height: 0; height: 145px; align-self: end; }
+            .equip-grid > .slot-botas { height: 115px; align-self: start; }
             .equip-grid > .slot-roupa { min-height: 145px; }
         }
 
         @media (max-width: 1024px) {
-            header .flex-wrap {
-                display: grid !important;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 10px;
-                width: 100%;
-            }
+            header .flex-wrap { display: grid !important; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
             header h1, header .border-4 { margin-bottom: 10px; }
-
-            /* No celular/tablet, a ficha ganha uma composição vertical própria. */
-            .equip-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-                grid-template-rows: 280px 125px 135px 145px 170px 170px;
-                grid-template-areas:
-                    "photo photo"
-                    "head face"
-                    "vest clothes"
-                    "hand-main hand-off"
-                    "backpack backpack"
-                    "boots boots";
-                gap: 10px;
-                min-height: 0;
-                height: auto !important;
-            }
-            .equip-grid > .foto-personagem {
-                min-height: 0;
-                height: 280px;
-            }
-            .equip-grid > .slot-vazio {
-                min-height: 0;
-                padding: 7px;
-                font-size: .78rem;
-            }
-            .equip-grid > .slot-mochila,
-            .equip-grid > .slot-roupa {
-                min-height: 170px;
-            }
+            .equip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; grid-template-rows: 280px 125px 135px 145px 170px 170px; grid-template-areas: "photo photo" "head face" "vest clothes" "hand-main hand-off" "backpack backpack" "boots boots"; gap: 10px; min-height: 0; height: auto !important; }
+            .equip-grid > .foto-personagem { min-height: 0; height: 280px; }
+            .equip-grid > .slot-vazio { min-height: 0; padding: 7px; font-size: .78rem; }
+            .equip-grid > .slot-mochila, .equip-grid > .slot-roupa { min-height: 170px; }
             #peso-personagem { text-align: left !important; padding-left: 8px; }
         }
 
@@ -342,22 +253,58 @@
             header .flex-wrap { grid-template-columns: repeat(2, 1fr); }
             .equip-grid { padding: 10px !important; gap: 9px; grid-template-rows: 260px 118px 128px 138px 160px 160px; }
             .equip-grid > .foto-personagem { height: 260px; }
-            .equip-grid > .slot-mochila,
-            .equip-grid > .slot-roupa { min-height: 160px; }
+            .equip-grid > .slot-mochila, .equip-grid > .slot-roupa { min-height: 160px; }
         }
 
         @media (max-width: 380px) {
             .equip-grid { grid-template-rows: 235px 112px 122px 132px 150px 150px; }
             .equip-grid > .foto-personagem { height: 235px; }
             .equip-grid > .slot-vazio { font-size: .7rem; padding: 5px; }
-            .equip-grid > .slot-mochila,
-            .equip-grid > .slot-roupa { min-height: 150px; }
+            .equip-grid > .slot-mochila, .equip-grid > .slot-roupa { min-height: 150px; }
         }
         
         ::-webkit-scrollbar { width: 10px; }
         ::-webkit-scrollbar-track { background: #1f1814; }
         ::-webkit-scrollbar-thumb { background: #5c3a21; border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #8a1313; }
+
+        /* =====================================================
+           NOVO VISUAL DO CHAT (CENTRAL DE COMUNICAÇÃO)
+        ===================================================== */
+        .walkie-device{width:190px;min-height:360px;background:linear-gradient(145deg,#3b4146,#11161b 45%,#292e32);border:5px solid #080b0d;border-radius:28px 28px 22px 22px;padding:18px 13px 14px;box-shadow:inset 2px 2px 5px #77818a,0 14px 30px #000b;position:relative;color:#dbeafe;text-align:center}
+        .walkie-antena{position:absolute;width:12px;height:80px;top:-77px;left:26px;border-radius:8px 8px 2px 2px;background:linear-gradient(90deg,#111,#626a70,#171b1e);border:2px solid #080b0d;transform:rotate(-5deg)}
+        .walkie-led{position:absolute;right:24px;top:13px;width:12px;height:12px;border-radius:50%;background:#263238;border:2px solid #080b0d;box-shadow:0 0 0 2px #50575b}
+        .walkie-led.ativo{background:#ff2727;box-shadow:0 0 12px 5px #ff2424,0 0 0 2px #737373;animation:walkie-piscar .7s infinite alternate}
+        @keyframes walkie-piscar{from{opacity:.45}to{opacity:1}}
+        .walkie-tela{height:138px;margin-top:17px;background:linear-gradient(145deg,#0b355b,#061a2d);border:6px solid #080b0d;border-radius:12px;box-shadow:inset 0 0 15px #39a9ff66;padding:9px 7px;color:#a9ddff;display:flex;flex-direction:column;justify-content:space-between;font-family:monospace}
+        .walkie-status{font-size:9px;text-align:left;color:#8dd5ff;white-space:nowrap}.walkie-screen-main{font-size:15px;font-weight:bold;line-height:1.2;overflow:hidden;overflow-wrap:anywhere}.walkie-screen-foot{font-size:8px;letter-spacing:2px;color:#5ca9dc}
+        .walkie-atender{width:100%;margin-top:15px;background:linear-gradient(#b72c25,#67130f);border:3px solid #17100f;border-radius:12px;padding:10px 4px;color:#fff;font-weight:900;font-family:'Oswald',sans-serif;box-shadow:inset 0 1px 4px #ffb1a0;cursor:pointer}
+        .walkie-botoes{display:flex;justify-content:space-around;margin-top:12px;color:#d7dce0;font-weight:bold}.walkie-botoes span{background:linear-gradient(#444d53,#15191d);border:2px solid #090b0d;border-radius:7px;padding:5px 10px;min-width:35px}.walkie-grade{height:35px;margin:13px 8px 5px;border-radius:5px;background:repeating-linear-gradient(0deg,#080b0d 0 3px,#454d52 3px 5px);border:2px solid #080b0d}.walkie-marca{font-size:8px;letter-spacing:1px;color:#90989d;font-weight:bold}
+        
+        /* Chat Principal */
+        .comm-modal{position:fixed;inset:0;z-index:10000;background:#000c;display:flex;align-items:center;justify-content:center;padding:12px}
+        .comm-modal.hidden{display:none}
+        .comm-modal-card{width:min(900px,100%);max-height:92vh;display:flex;flex-direction:column;gap:12px;background:linear-gradient(145deg,#17212b,#080d12);border:2px solid #31516a;border-radius:12px;padding:16px;color:#e5edf5;box-shadow:0 20px 70px #000}
+        
+        .comm-chat-list{overflow-y:auto;min-height:250px;max-height:55vh;display:flex;flex-direction:column;gap:12px;padding:8px;background: #0a1015; border-radius: 8px; border: 1px solid #1c2e3d;}
+        
+        /* Os Balões de Mensagem */
+        .comm-message{max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 16px; line-height: 1.5; position: relative; word-wrap: break-word;}
+        .comm-message.mine { align-self: flex-end; background: #1e4c6e; color: #fff; border-bottom-right-radius: 2px; border: 1px solid #2b6a99;}
+        .comm-message.other { align-self: flex-start; background: #263238; color: #e0e0e0; border-bottom-left-radius: 2px; border: 1px solid #37474f;}
+        
+        .comm-message-meta{font-size:13px; font-weight:bold; margin-bottom:6px; display:flex; justify-content:space-between; gap: 10px; opacity: 0.8;}
+        .comm-message.mine .comm-message-meta { color: #9cd2ff; justify-content: flex-end;}
+        .comm-message.other .comm-message-meta { color: #b0bec5;}
+        
+        .comm-message-text{white-space:pre-wrap;}
+        .comm-message button {font-size: 12px; color: #ff8a80; text-decoration: underline; margin-top: 8px; display: block; cursor: pointer; opacity: 0.7;}
+        .comm-message button:hover {opacity: 1;}
+        
+        @media(max-width:640px){
+            .walkie-device{width:155px;min-height:315px;padding:14px 10px}.walkie-tela{height:120px}.walkie-screen-main{font-size:13px}.walkie-antena{height:62px;top:-60px}.comm-modal-card{padding:11px}.comm-chat-list{max-height:48vh}
+            .comm-message {max-width: 95%; font-size: 15px;}
+        }
     </style>
 </head>
 <body>
@@ -440,6 +387,34 @@
                         <button id="btn-atualizar-solicitacoes" class="px-4 py-2 rounded btn-metal font-bold text-base w-full md:w-auto">ATUALIZAR</button>
                     </div>
                     <div id="solicitacoes-mestre" class="flex flex-col gap-2"><p class="text-[#1a110a] text-lg fonte-papel font-bold">Carregando solicitações...</p></div>
+                </section>
+
+                <section id="central-comunicacao-mestre" class="mb-8 rounded-lg border-2 border-sky-900 bg-[#101820] p-3 md:p-4 text-slate-100 shadow-xl">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-sky-700 pb-3 mb-3">
+                        <div><h2 class="fonte-titulo text-3xl text-sky-200">CENTRAL DE COMUNICAÇÃO</h2><p class="text-sm text-slate-300">Envie mensagens privadas ou para vários sobreviventes. O histórico fica salvo.</p></div>
+                        <span class="text-xs tracking-widest text-emerald-300 border border-emerald-700 rounded px-3 py-1">● SISTEMA ONLINE</span>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-[minmax(220px,0.8fr)_minmax(0,1.6fr)] gap-4">
+                        <div class="rounded border border-slate-700 bg-black/30 p-3">
+                            <div class="flex items-center justify-between gap-2 mb-2"><h3 class="font-bold text-lg text-sky-100">DESTINATÁRIOS</h3><button id="comm-selecionar-todos" class="text-xs underline text-sky-300">Selecionar todos</button></div>
+                            <label class="flex items-center gap-2 p-2 mb-2 rounded bg-sky-950/70 font-bold"><input type="checkbox" id="comm-grupo-geral" class="accent-sky-500"> GRUPO GERAL (todos)</label>
+                            <div id="comm-master-lista-jogadores" class="flex flex-col gap-2 max-h-64 overflow-y-auto"><p class="text-sm text-slate-400">Carregando jogadores...</p></div>
+                        </div>
+                        <div class="flex flex-col gap-3">
+                            <div class="rounded border border-slate-700 bg-black/30 p-3">
+                                <h3 class="font-bold text-lg text-sky-100 mb-2">TRANSMITIR MENSAGEM</h3>
+                                <textarea id="comm-master-texto" rows="3" maxlength="3000" placeholder="Digite sua mensagem para os sobreviventes..." class="w-full rounded bg-slate-900 border border-slate-600 p-3 text-white placeholder-slate-500 outline-none focus:border-sky-400"></textarea>
+                                <div class="flex flex-wrap items-center gap-2 mt-2">
+                                    <button id="comm-master-enviar" class="ml-auto rounded bg-sky-700 hover:bg-sky-600 px-5 py-2 font-bold">TRANSMITIR</button>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-2">Nesta versão gratuita, a central transmite mensagens de texto. Os alertas sonoros do rádio funcionam normalmente.</p>
+                            </div>
+                            <div class="rounded border border-slate-700 bg-black/30 p-3">
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2"><h3 class="font-bold text-lg text-sky-100">REGISTRO DE COMUNICAÇÕES</h3><div class="flex gap-2 items-center"><select id="comm-master-filtro" class="rounded bg-slate-900 border border-slate-600 p-2 text-xs text-white"><option value="todas">Todas as conversas</option><option value="grupo_geral">Grupo Geral</option></select><button id="comm-master-atualizar" class="text-xs underline text-sky-300">Atualizar</button></div></div>
+                                <div id="comm-master-historico" class="comm-chat-list"></div>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="mb-8 rounded-lg border-2 border-[#3a2517] bg-black/5 p-3 md:p-4">
@@ -582,6 +557,22 @@
                     <section class="painel-papel flex flex-col"><h3 class="titulo-painel">DIÁRIO</h3><div class="p-3 md:p-4 flex-1"><textarea id="diario" class="input-campo w-full h-full resize-none p-2 fonte-papel text-lg border-2 border-[#3a2517]/50" placeholder="Registre sua jornada..."></textarea></div></section>
                 </div>
             </main>
+            <section id="walkie-area" class="max-w-[1500px] mx-auto px-2 mt-4 mb-8 flex justify-end">
+                <div class="walkie-device" aria-label="Rádio comunicador portátil">
+                    <div class="walkie-antena"></div><div class="walkie-led" id="walkie-led"></div>
+                    <div class="walkie-tela" id="walkie-tela"><div class="walkie-status">▮▮▮　BATERIA ▰</div><div class="walkie-screen-main" id="walkie-screen-main">SEM NOVAS<br>COMUNICAÇÕES</div><div class="walkie-screen-foot">CANAL SEGURO</div></div>
+                    <button id="walkie-atender" class="walkie-atender" type="button">◉ ATENDER</button>
+                    <div class="walkie-botoes"><span>◀</span><span>OK</span><span>▶</span></div><div class="walkie-grade"></div><div class="walkie-marca">SOBREVIVER AO APOCALIPSE</div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div id="comm-modal-jogador" class="comm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="comm-modal-titulo">
+        <div class="comm-modal-card">
+            <div class="flex justify-between items-center gap-3 border-b border-slate-700 pb-3"><div><h2 id="comm-modal-titulo" class="fonte-titulo text-2xl text-sky-200">CANAL DE COMUNICAÇÃO</h2><p class="text-xs text-slate-400">Mensagens recebidas e enviadas</p></div><button id="comm-fechar-modal" class="text-2xl text-slate-300 hover:text-white" aria-label="Fechar">×</button></div>
+            <div id="comm-jogador-historico" class="comm-chat-list"></div>
+            <div class="border-t border-slate-700 pt-3"><textarea id="comm-jogador-texto" rows="2" maxlength="3000" placeholder="Digite uma resposta para o Mestre..." class="w-full rounded bg-slate-900 border border-slate-600 p-3 text-white"></textarea><div class="flex justify-end mt-2"><button id="comm-jogador-enviar" class="rounded bg-sky-700 hover:bg-sky-600 px-5 py-2 font-bold">ENVIAR</button></div></div>
         </div>
     </div>
 
