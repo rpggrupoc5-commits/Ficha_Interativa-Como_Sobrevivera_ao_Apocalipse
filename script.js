@@ -130,22 +130,6 @@ function tocarSomTecla() {
 }
 
 // ==========================================
-// ESTILO GLOBAL DO CHAT (AUMENTA AS FONTES)
-// ==========================================
-const estiloChat = document.createElement('style');
-estiloChat.textContent = `
-    .comm-message-meta { font-size: 13px !important; }
-    .comm-message-text { font-size: 15px !important; line-height: 1.5 !important; }
-    #comm-jogador-historico p,
-    #comm-master-historico p { font-size: 15px !important; }
-    #comm-jogador-texto,
-    #comm-master-texto { font-size: 15px !important; }
-    #comm-master-lista-jogadores label,
-    #comm-master-lista-jogadores span { font-size: 14px !important; }
-`;
-document.head.appendChild(estiloChat);
-
-// ==========================================
 // LÓGICA DO GERADOR DE ITENS (LOOT)
 // ==========================================
 window.gerarLoot = function(categoria) {
@@ -1659,7 +1643,7 @@ async function carregarDashboardJogador() {
             <span class="text-2xl font-bold mt-4 block text-[#8a1313] bg-[#e6d5b8]/80 p-4 rounded-lg border-2 border-[#8a1313] shadow-md">
                 ⚠️ SUA CONTA FOI CRIADA COM SUCESSO!<br>
                 <span class="text-lg font-normal mt-2 block text-[#1a110a]">Peça ao Mestre para vincular uma ficha ao seu UID:</span>
-                <span class="font-mono bg-black/20 px-3 py-1 rounded select-all mt-2 inline-block text-white shadow-inner">${usuarioAtual.uid}</span>
+                <span class="font-mono bg-black/20 px-3 py-2 rounded select-all mt-2 block w-full max-w-full box-border text-white text-sm sm:text-base shadow-inner break-all whitespace-normal overflow-hidden">${usuarioAtual.uid}</span>
             </span></p>`;
             return;
         }
@@ -2172,14 +2156,14 @@ function iniciarComunicacaoJogador() {
 const btnCommEnviarMestre=document.getElementById('comm-master-enviar');if(btnCommEnviarMestre)btnCommEnviarMestre.addEventListener('click',commEnviarMestre);
 const btnCommEnviarJogador=document.getElementById('comm-jogador-enviar');if(btnCommEnviarJogador)btnCommEnviarJogador.addEventListener('click',commEnviarJogador);
 
-// SOM DAS TECLAS NA CENTRAL DE COMUNICAÇÃO
+// SOM DE CLIQUE EM TODAS AS TECLAS DO CHAT
 ['comm-master-texto', 'comm-jogador-texto'].forEach(id => {
     const campo = document.getElementById(id);
 
     if (campo) {
         campo.addEventListener('keydown', e => {
-            if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete') {
-                tocarSomTecla();
+            if (!['Shift', 'Control', 'Alt', 'Meta'].includes(e.key)) {
+                tocarSom(audioClique, true);
             }
         });
     }
@@ -2191,3 +2175,35 @@ document.getElementById('comm-master-filtro')?.addEventListener('change',commRen
 document.getElementById('walkie-atender')?.addEventListener('click',commAbrirModalJogador);
 document.getElementById('comm-fechar-modal')?.addEventListener('click',commFecharModalJogador);
 document.getElementById('comm-modal-jogador')?.addEventListener('click',e=>{if(e.target.id==='comm-modal-jogador')commFecharModalJogador();});
+
+// AJUSTE DO TAMANHO E DA QUEBRA DE TEXTO DO CHAT
+const estiloChat = document.createElement('style');
+estiloChat.textContent = `
+    #comm-jogador-historico .comm-message-text,
+    #comm-master-historico .comm-message-text {
+        font-size: 17px !important;
+        line-height: 1.5 !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+    }
+
+    #comm-jogador-historico .comm-message,
+    #comm-master-historico .comm-message {
+        max-width: 95%;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .comm-message-meta {
+        font-size: 13px !important;
+        overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 600px) {
+        #comm-jogador-historico .comm-message-text,
+        #comm-master-historico .comm-message-text {
+            font-size: 16px !important;
+        }
+    }
+`;
+document.head.appendChild(estiloChat);
