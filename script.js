@@ -61,6 +61,22 @@ let tempoUltimoSomTecla = 0;
 
 const emailMestre = "rpggrupoc5@gmail.com";
 
+// =====================================================
+// CENTRAL DE COMUNICAÇÃO / RÁDIO PORTÁTIL - DECLARAÇÕES
+// (movidas para o topo para evitar TDZ)
+// =====================================================
+let commUnsubscribers = [];
+let commJogadores = [];
+let commMensagens = new Map();
+let commAlertaAtivo = false;
+let commAlertaTimer = null;
+let commPausaTimer = null;
+let commMensagemAlerta = null;
+const commRadioAudio = new Audio('radio_alerta.mp3');
+commRadioAudio.preload = 'auto';
+commRadioAudio.volume = 0.85;
+const COMM_LIMITE_ARQUIVO = 10 * 1024 * 1024;
+
 // ==========================================
 // GERENCIADOR DE ÁUDIO
 // ==========================================
@@ -75,8 +91,8 @@ const audioEntrarPainel = new Audio('entrar_painel.mp3');
 const audioSairPainel = new Audio('sair_painel.mp3');
 const audioCancelarItem = new Audio('cancelar_item.mp3');
 
-audioAbertura.volume = 1.0; 
-audioTecla.volume = 0.4; 
+audioAbertura.volume = 1.0;
+audioTecla.volume = 0.4;
 audioClique.volume = 0.7;
 audioSalvarAuto.volume = 0.8;
 audioSalvarManual.volume = 0.9;
@@ -297,17 +313,17 @@ document.getElementById('btn-esqueci-senha').onclick = () => {
 
 document.getElementById('btn-entrar').onclick = () => {
     tocarSom(audioAbertura);
-    
+
     // DESBLOQUEIO DO ÁUDIO (Libera o rádio no login)
-    commRadioAudio.play().then(() => { 
-        commRadioAudio.pause(); 
-        commRadioAudio.currentTime = 0; 
+    commRadioAudio.play().then(() => {
+        commRadioAudio.pause();
+        commRadioAudio.currentTime = 0;
     }).catch(() => {});
-    
+
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
     mensagemErro.classList.add('hidden');
-    
+
     signInWithEmailAndPassword(auth, email, senha).catch((error) => {
         console.error("Falha no login Firebase:", error);
         mensagemErro.innerText = `Erro no login (${error.code || "desconhecido"}): ${error.message}`;
@@ -457,6 +473,9 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
             await carregarFicha();
             aplicarPermissoesNaTela();
             configurarAutosave();
+            // Fichas vinculadas ao UID do jogador também precisam iniciar
+            // os listeners do rádio, assim como fichas abertas por convite.
+            iniciarComunicacaoJogador();
             return;
         }
     } catch (e) {}
@@ -477,7 +496,7 @@ function monitorarRevogacao(fichaId) {
     intervalMonitorRevogacao = setInterval(async () => {
         try {
             const snap = await getDoc(doc(db, 'fichas', fichaId, 'acessos', usuarioAtual.uid));
-            
+
             if (!snap.exists()) {
                 clearInterval(intervalMonitorRevogacao);
                 desativarAutosave();
@@ -491,7 +510,7 @@ function monitorarRevogacao(fichaId) {
 
             const novaPermissao = snap.data().permissao || "visualizar";
             const permissaoAtualMapeada = modoAcesso === "convidado-editar" ? "editar" : "visualizar";
-            
+
             if (novaPermissao !== permissaoAtualMapeada) {
                 clearInterval(intervalMonitorRevogacao);
                 alert(`O mestre alterou sua permissão para ${novaPermissao.toUpperCase()}. A página será recarregada.`);
@@ -632,7 +651,7 @@ function mostrarAreaFicha() {
 function configurarAutosave() {
     if (modoAcesso === "convidado-visualizar") return;
     autosaveHabilitado = true;
-    
+
     let indicador = document.getElementById('indicador-autosave');
     if (!indicador) {
         indicador = document.createElement('div');
@@ -641,7 +660,7 @@ function configurarAutosave() {
         indicador.style.opacity = '0';
         document.body.appendChild(indicador);
     }
-    
+
     document.querySelectorAll('#area-ficha input, #area-ficha textarea, #modal-item input, #modal-item textarea, #modal-foto input, #modal-foto textarea').forEach(el => {
         el.addEventListener('input', () => {
             tocarSomTecla();
@@ -727,7 +746,7 @@ let imagemFotoBase64 = null;
 
 let mochilaAtivaId = null;
 let mochilaCapacidade = 0;
-let mochilaStatus = false; 
+let mochilaStatus = false;
 
 function recalcularPesoGeral() {
     let pesoItens = 0;
@@ -742,9 +761,9 @@ function recalcularPesoGeral() {
     let pesoEquip = 0;
     document.querySelectorAll('.slot-vazio.item-adicionado').forEach(item => {
         if (item.id === 'foto-personagem') return;
-        if (item.id.startsWith('inv-')) return; 
+        if (item.id.startsWith('inv-')) return;
         if (item.classList.contains('slot-bloqueado')) return;
-        
+
         const qtd = parseFloat(item.dataset.qtd) || 1;
         const pesoStr = (item.dataset.peso || "0").toString().replace(',', '.');
         pesoEquip += qtd * (parseFloat(pesoStr) || 0);
@@ -761,10 +780,10 @@ function recalcularPesoGeral() {
     }
 
     const pesoPers = parseFloat((pesoPersonagemInput?.value || '0').toString().replace(',', '.')) || 0;
-    
+
     if (pesoPersonagemEl) pesoPersonagemEl.innerText = (pesoPers + pesoEquip + pesoMochila).toFixed(2);
     if (pesoTotalGeralEl) pesoTotalGeralEl.innerText = (pesoPers + pesoEquip + pesoMochila + pesoItens).toFixed(2);
-    
+
     if (espacosEl) espacosEl.innerText = document.querySelectorAll('#inventario .item-adicionado').length;
 }
 
@@ -788,7 +807,7 @@ const modalHTML = `
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Quantidade:<input type="number" id="modal-qtd" value="1" class="input-campo p-2"></label>
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg):<input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
             </div>
-            
+
             <div class="text-right font-bold text-sm text-[#8a1313] mt-1">
                 Peso Total: <span id="modal-peso-total">0.00</span> kg
             </div>
@@ -865,7 +884,7 @@ const btnUploadFoto = document.getElementById('btn-upload-foto');
 
 const fotoContainer = document.getElementById('foto-personagem');
 if (fotoContainer) {
-    fotoContainer.onclick = null; 
+    fotoContainer.onclick = null;
     fotoContainer.addEventListener('click', (e) => {
         if (e.target.closest('#btn-remover-img-modal')) return;
         window.uploadFoto(fotoContainer);
@@ -930,10 +949,10 @@ function abrirModal(q, dados = null) {
     if (modoAcesso === "convidado-visualizar") return;
     tocarSom(audioClique);
     quadradoAtual = q;
-    
+
     const isMochilaSlot = (q.getAttribute('data-original') || '').includes('MOCHILA') || (q.innerText || '').includes('MOCHILA') || (dados && dados.tipo === 'mochila');
     const camposMochila = document.getElementById('campos-mochila');
-    
+
     if (isMochilaSlot) {
         camposMochila.classList.remove('hidden');
         camposMochila.classList.add('flex');
@@ -948,7 +967,7 @@ function abrirModal(q, dados = null) {
         inputPeso.value = dados.peso;
         inputDesc.value = dados.desc || "";
         imagemAtualBase64 = dados.img || null;
-        
+
         if (isMochilaSlot && dados.mochilaCapacidade) {
             document.getElementById('modal-mochila-capacidade').value = dados.mochilaCapacidade;
             document.getElementById('modal-mochila-ativa').checked = dados.mochilaAtiva;
@@ -960,7 +979,7 @@ function abrirModal(q, dados = null) {
     } else {
         inputNome.value = ""; inputQtd.value = 1; inputPeso.value = ""; inputDesc.value = "";
         imagemAtualBase64 = null;
-        
+
         if (isMochilaSlot) {
             document.getElementById('modal-mochila-capacidade').value = "16";
             document.getElementById('modal-mochila-ativa').checked = true;
@@ -1004,7 +1023,7 @@ btnExcluir.onclick = () => {
     quadradoAtual.removeAttribute('data-itemdata');
     quadradoAtual.removeAttribute('data-peso');
     quadradoAtual.removeAttribute('data-qtd');
-    
+
     atualizarEstadoMochila();
     recalcularPesoGeral();
     modal.classList.add('hidden');
@@ -1015,7 +1034,7 @@ btnSalvarItem.onclick = () => {
     const nome = inputNome.value;
     const pesoString = inputPeso.value.replace(',', '.');
     const qtd = parseInt(inputQtd.value) || 0;
-    
+
     const camposMochilaVisiveis = !document.getElementById('campos-mochila').classList.contains('hidden');
     const mochilaCap = camposMochilaVisiveis ? document.getElementById('modal-mochila-capacidade').value : null;
     const mochilaAtiva = camposMochilaVisiveis ? document.getElementById('modal-mochila-ativa').checked : null;
@@ -1024,10 +1043,10 @@ btnSalvarItem.onclick = () => {
     if (!nome.trim()) return alert("Digite o nome.");
     if (qtd <= 0) return alert("Quantidade > 0.");
     if (inputPeso.value.trim() === "") return alert("Digite o peso.");
-    
+
     tocarSom(audioEntrarPainel);
     const dados = { img: imagemAtualBase64, nome, qtd, peso: pesoString, desc: inputDesc.value };
-    
+
     if (camposMochilaVisiveis) {
         dados.tipo = 'mochila';
         dados.mochilaCapacidade = parseInt(mochilaCap);
@@ -1044,7 +1063,7 @@ btnSalvarItem.onclick = () => {
 function renderizarItem(q, dados) {
     const isEquipamento = !q.id.startsWith('inv-');
     const classeTexto = isEquipamento ? 'opacity-0 group-hover:opacity-100 transition-opacity' : 'opacity-100';
-    
+
     const qtd = parseFloat(dados.qtd) || 1;
     const pesoStr = (dados.peso || "0").toString().replace(',', '.');
     const pesoUnit = parseFloat(pesoStr) || 0;
@@ -1074,7 +1093,7 @@ function atualizarEstadoMochila() {
     mochilaStatus = false;
 
     const mochilaEl = document.querySelector('.slot-vazio.item-adicionado[data-item-data*="mochila"]');
-    
+
     if (mochilaEl) {
         const dadosMochila = JSON.parse(mochilaEl.dataset.itemData);
         mochilaAtivaId = mochilaEl.id;
@@ -1216,7 +1235,7 @@ async function salvarFicha(opcoes = {}) {
         const indice = todosSlots.indexOf(el);
         const imagemId = `equipamento_${indice}`;
         if (dados.img) imagensAtivas[imagemId] = dados.img;
-        
+
         const dadosSalvar = { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" };
         if (dados.tipo === 'mochila') {
             dadosSalvar.tipo = 'mochila';
@@ -1352,10 +1371,10 @@ async function carregarFicha() {
         el.removeAttribute('data-itemdata');
         el.removeAttribute('data-peso');
         el.removeAttribute('data-qtd');
-        
+
         if (el.id.startsWith('inv-')) {
             el.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
-        } 
+        }
         else if (el.classList.contains('slot-vazio')) {
             const original = el.getAttribute('data-original') || '';
             el.innerHTML = original + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
@@ -1445,7 +1464,6 @@ async function carregarContasJogadores() {
             const email = document.createElement('p'); email.className = 'text-sm text-[#3a2e27] break-all'; email.textContent = conta.email || 'E-mail não informado';
             const uid = document.createElement('p'); uid.className = 'uid-conta break-all mt-2'; uid.textContent = `UID: ${conta.uid || conta.id}`;
             dados.append(nome, email, uid);
-            
             const acoes = document.createElement('div');
             acoes.className = 'flex gap-2';
             acoes.append(criarBotaoPainel('COPIAR UID', 'btn-azul', () => { tocarSom(audioClique); copiarTexto(conta.uid || conta.id); }));
@@ -1512,35 +1530,35 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     });
     const conteudo = document.createElement('div');
     conteudo.className = 'p-4 flex flex-col gap-2 flex-1';
-    
+
     if (modoMestre) {
         const infoBox = document.createElement('div');
         infoBox.className = 'bg-black text-white p-3 rounded-md shadow-inner texto-card-mestre flex flex-col gap-1';
 
-        const nome = document.createElement('h3'); 
-        nome.className = 'fonte-titulo text-3xl text-[#e6d5b8]'; 
+        const nome = document.createElement('h3');
+        nome.className = 'fonte-titulo text-3xl text-[#e6d5b8]';
         nome.textContent = ficha.nome || 'Personagem sem nome';
-        
-        const nivelExp = document.createElement('p'); 
-        nivelExp.className = 'text-base font-bold text-[#d2b48c]'; 
+
+        const nivelExp = document.createElement('p');
+        nivelExp.className = 'text-base font-bold text-[#d2b48c]';
         nivelExp.textContent = `NÍVEL: ${ficha.nivel || '1'} | EXP: ${ficha.exp || '0'}`;
-        
-        const jogador = document.createElement('p'); 
+
+        const jogador = document.createElement('p');
         jogador.className = 'text-base font-bold text-white mt-2';
         const nomeDono = ficha.proprietarioNome || 'NÃO VINCULADO';
         jogador.textContent = `Jogador (Dono): ${nomeDono}`;
-        
-        const emailDono = document.createElement('p'); 
+
+        const emailDono = document.createElement('p');
         emailDono.className = 'text-base font-bold text-white';
         emailDono.textContent = `Email do Dono: ${ficha.proprietarioEmail || (ficha.tipo === 'pdm' ? 'N/A' : 'Nenhum')}`;
-        
-        const uid = document.createElement('p'); 
+
+        const uid = document.createElement('p');
         uid.className = 'text-base font-bold text-white break-all';
         uid.textContent = `UID do Dono: ${ficha.proprietarioUid || 'N/A'}`;
 
         infoBox.append(nome, nivelExp, jogador, emailDono, uid);
         conteudo.append(infoBox);
-        
+
         try {
             const acessosSnap = await getDocs(collection(db, 'fichas', idFicha, 'acessos'));
             if (!acessosSnap.empty) {
@@ -1548,19 +1566,19 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
                 tituloAcesso.className = 'text-sm font-bold text-[#f3dfc1] mt-4 mb-2 border-b border-[#7a4e32] pb-1';
                 tituloAcesso.textContent = 'CONVIDADOS COM ACESSO:';
                 conteudo.append(tituloAcesso);
-                
+
                 for (const a of acessosSnap.docs) {
                     const d = a.data();
                     const linha = document.createElement('div');
                     linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-2 bg-black/30 p-2 rounded mb-1';
-                    
+
                     const txtConvidado = document.createElement('span');
                     txtConvidado.className = 'text-sm font-bold text-[#e6d5b8] break-all texto-card-mestre';
                     txtConvidado.textContent = `UID: ${a.id} | Permissão: ${d.permissao.toUpperCase()}`;
-                    
+
                     const acoesConv = document.createElement('div');
                     acoesConv.className = 'flex gap-1 mt-2 md:mt-0';
-                    
+
                     const btnMudar = document.createElement('button');
                     btnMudar.className = 'btn-azul px-2 py-1 rounded text-xs font-bold w-full md:w-auto';
                     btnMudar.textContent = d.permissao === 'editar' ? 'MUDAR P/ VER' : 'MUDAR P/ EDITAR';
@@ -1570,7 +1588,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
                     btnRevogar.className = 'btn-perigo px-2 py-1 rounded text-xs font-bold w-full md:w-auto';
                     btnRevogar.textContent = 'REVOGAR';
                     btnRevogar.onclick = () => { tocarSom(audioClique); revogarAcesso(idFicha, a.id); };
-                    
+
                     acoesConv.append(btnMudar, btnRevogar);
                     linha.append(txtConvidado, acoesConv);
                     conteudo.append(linha);
@@ -1586,7 +1604,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     }
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
-    
+
     const linkFicha = document.createElement('a');
     linkFicha.href = `${window.location.pathname}?ficha=${idFicha}`;
     linkFicha.target = '_blank';
@@ -1620,14 +1638,14 @@ async function carregarDashboardJogador() {
         const vinculadas = await getDocs(query(collection(db, 'fichas'), where('proprietarioUid', '==', usuarioAtual.uid)));
         vinculadas.forEach(d => encontrados.set(d.id, d.data()));
         lista.innerHTML = '';
-        if (!encontrados.size) { 
+        if (!encontrados.size) {
             lista.innerHTML = `<p class="text-[#111] text-xl font-bold col-span-full text-center py-10">Nenhum personagem encontrado nesta conta.<br>
             <span class="text-2xl font-bold mt-4 block text-[#8a1313] bg-[#e6d5b8]/80 p-4 rounded-lg border-2 border-[#8a1313] shadow-md">
                 ⚠️ SUA CONTA FOI CRIADA COM SUCESSO!<br>
                 <span class="text-lg font-normal mt-2 block text-[#1a110a]">Peça ao Mestre para vincular uma ficha ao seu UID:</span>
                 <span class="font-mono bg-black/20 px-3 py-1 rounded select-all mt-2 inline-block text-white shadow-inner">${usuarioAtual.uid}</span>
-            </span></p>`; 
-            return; 
+            </span></p>`;
+            return;
         }
         for (const [id, ficha] of [...encontrados.entries()].sort((a,b) => (a[1].nome || '').localeCompare(b[1].nome || '', 'pt-BR'))) {
             lista.appendChild(await criarCardFicha(id, ficha));
@@ -1702,24 +1720,24 @@ function gerarLinkConvite(idFicha) {
 async function carregarSolicitacoesPendentes() {
     const container = document.getElementById('solicitacoes-mestre');
     if (!container) return;
-    
+
     container.innerHTML = '<p class="text-[#111] text-lg">Buscando solicitações...</p>';
-    
+
     try {
         const fichasSnap = await getDocs(collection(db, 'fichas'));
         const todas = [];
-        
+
         for (const fichaDoc of fichasSnap.docs) {
             try {
                 const solSnap = await getDocs(collection(db, 'fichas', fichaDoc.id, 'solicitacoes'));
                 solSnap.forEach(s => {
                     const data = s.data();
                     if (data.status === 'pendente') {
-                        todas.push({ 
-                            fichaId: fichaDoc.id, 
-                            fichaNome: fichaDoc.data().nome || 'Sem nome', 
-                            uidConvidado: s.id, 
-                            ...data 
+                        todas.push({
+                            fichaId: fichaDoc.id,
+                            fichaNome: fichaDoc.data().nome || 'Sem nome',
+                            uidConvidado: s.id,
+                            ...data
                         });
                     }
                 });
@@ -1727,42 +1745,42 @@ async function carregarSolicitacoesPendentes() {
                 console.warn("Erro ao ler solicitações da ficha " + fichaDoc.id, errFicha);
             }
         }
-        
+
         container.innerHTML = '';
-        
-        if (todas.length === 0) { 
-            container.innerHTML = '<p class="text-[#111] text-lg font-bold">Nenhuma solicitação pendente no momento.</p>'; 
-            return; 
+
+        if (todas.length === 0) {
+            container.innerHTML = '<p class="text-[#111] text-lg font-bold">Nenhuma solicitação pendente no momento.</p>';
+            return;
         }
-        
+
         todas.forEach(sol => {
             const linha = document.createElement('div');
             linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 rounded border-2 border-[#7a4e32] bg-white/90 p-4';
-            
+
             const dados = document.createElement('div');
             dados.className = 'min-w-0';
-            
-            const nome = document.createElement('p'); 
-            nome.className = 'font-bold text-[#211b17] text-lg'; 
+
+            const nome = document.createElement('p');
+            nome.className = 'font-bold text-[#211b17] text-lg';
             nome.textContent = `Ficha: ${sol.fichaNome}`;
-            
-            const uid = document.createElement('p'); 
-            uid.className = 'text-[#211b17] font-bold mt-1 break-all text-base'; 
+
+            const uid = document.createElement('p');
+            uid.className = 'text-[#211b17] font-bold mt-1 break-all text-base';
             uid.textContent = `UID do Convidado: ${sol.uidConvidado}`;
-            
+
             dados.append(nome, uid);
-            
-            const acoes = document.createElement('div'); 
+
+            const acoes = document.createElement('div');
             acoes.className = 'flex flex-wrap gap-2 mt-2 md:mt-0';
-            
+
             acoes.append(criarBotaoPainel('APROVAR (EDITAR)', 'btn-verde text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'editar'); }));
             acoes.append(criarBotaoPainel('APROVAR (VER)', 'btn-azul text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'visualizar'); }));
             acoes.append(criarBotaoPainel('RECUSAR', 'btn-perigo text-base', () => { tocarSom(audioSairPainel); recusarSolicitacao(sol.fichaId, sol.uidConvidado); }));
-            
+
             linha.append(dados, acoes);
             container.appendChild(linha);
         });
-        
+
     } catch (e) {
         console.error('Erro ao carregar solicitações:', e);
         container.innerHTML = `<p class="text-red-800 font-bold text-lg">Erro ao buscar solicitações (${e.code || 'erro'}): ${e.message}</p>`;
@@ -1886,7 +1904,7 @@ async function vincularJogador(idFicha, ficha) {
     const uidLimpo = uid.trim();
     if (!uidLimpo || uidLimpo.length < 10) return alert('Informe o UID completo da conta Firebase.');
     const nomeJogador = prompt('Nome do jogador (opcional):', ficha.proprietarioNome || ''); if (nomeJogador === null) return;
-    
+
     try {
         let emailEncontrado = '';
         const userSnap = await getDoc(doc(db, 'usuarios', uidLimpo));
@@ -1894,18 +1912,18 @@ async function vincularJogador(idFicha, ficha) {
             emailEncontrado = userSnap.data().email || '';
         }
 
-        await setDoc(doc(db, 'fichas', idFicha), { 
-            proprietarioUid: uidLimpo, 
-            proprietarioNome: nomeJogador.trim(), 
+        await setDoc(doc(db, 'fichas', idFicha), {
+            proprietarioUid: uidLimpo,
+            proprietarioNome: nomeJogador.trim(),
             proprietarioEmail: emailEncontrado,
-            tipo: 'jogador' 
+            tipo: 'jogador'
         }, { merge: true });
-        
-        await atualizarPainelMestre(); 
+
+        await atualizarPainelMestre();
         alert('Jogador vinculado com sucesso!');
-    } catch (e) { 
-        console.error(e); 
-        alert(`Erro ao vincular jogador: ${e.message}`); 
+    } catch (e) {
+        console.error(e);
+        alert(`Erro ao vincular jogador: ${e.message}`);
     }
 }
 
@@ -1919,20 +1937,8 @@ async function desvincularJogador(idFicha, ficha) {
 }
 
 // =====================================================
-// CENTRAL DE COMUNICAÇÃO / RÁDIO PORTÁTIL
+// CENTRAL DE COMUNICAÇÃO / RÁDIO PORTÁTIL - FUNÇÕES
 // =====================================================
-let commUnsubscribers = [];
-let commJogadores = [];
-let commMensagens = new Map();
-let commAlertaAtivo = false;
-let commAlertaTimer = null;
-let commPausaTimer = null;
-let commMensagemAlerta = null;
-const commRadioAudio = new Audio('radio_alerta.mp3');
-commRadioAudio.preload = 'auto';
-commRadioAudio.volume = 0.85;
-const COMM_LIMITE_ARQUIVO = 10 * 1024 * 1024;
-
 function commEhMestre() { return !!usuarioAtual && (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase(); }
 function commLimparListeners() { commUnsubscribers.forEach(fn => { try { fn(); } catch(e) {} }); commUnsubscribers = []; }
 function commPararAlerta() {
@@ -1946,19 +1952,19 @@ function commPararAlerta() {
 function commTocarCicloRadio(fim) {
     if (!commAlertaAtivo || Date.now() >= fim) { commPararAlerta(); return; }
     try { commRadioAudio.currentTime = 0; } catch(e) {}
-    
+
     const proximaPausa = () => {
         if (!commAlertaAtivo) return;
         if (Date.now() >= fim) { commPararAlerta(); return; }
         commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000);
     };
-    
+
     commRadioAudio.onended = proximaPausa;
-    
+
     // Tenta tocar o áudio do rádio
     commRadioAudio.play().catch((e) => {
         console.warn("Áudio bloqueado pelo navegador. Aguardando interação.", e);
-        commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000); 
+        commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000);
     });
 }
 function commIniciarAlerta(mensagem) {
@@ -1983,29 +1989,29 @@ function commCriarElementoMensagem(m, paraMestre=false) {
     const div = document.createElement('article');
     const isMine = m.senderUid === (usuarioAtual?.uid || '') || (m.senderUid === 'MESTRE' && commEhMestre());
     div.className = 'comm-message ' + (isMine ? 'mine' : 'other');
-    
-    const meta = document.createElement('div'); 
+
+    const meta = document.createElement('div');
     meta.className = 'comm-message-meta';
     let nomeExibir = m.senderName || (m.senderUid === 'MESTRE' ? 'Mestre' : 'Jogador');
     if (isMine && !paraMestre) nomeExibir = 'Você';
     let destinatarioTxt = paraMestre ? ` ➔ ${m.recipientName || m.recipientUid}` : '';
-    
+
     meta.innerHTML = `<span>${nomeExibir}${destinatarioTxt}</span> <span>${commFormatarHora(Number(m.criadoEmMs || Date.now()))}</span>`;
     div.appendChild(meta);
-    
-    if (m.texto) { 
-        const txt = document.createElement('div'); 
-        txt.className='comm-message-text'; 
-        txt.textContent=m.texto; 
-        div.appendChild(txt); 
+
+    if (m.texto) {
+        const txt = document.createElement('div');
+        txt.className='comm-message-text';
+        txt.textContent=m.texto;
+        div.appendChild(txt);
     }
-    
+
     if (paraMestre) {
-        const apagar = document.createElement('button'); 
-        apagar.type='button'; 
-        apagar.className='block text-red-300 hover:text-red-100'; 
-        apagar.textContent='Excluir mensagem'; 
-        apagar.onclick=()=>commExcluirMensagem(m); 
+        const apagar = document.createElement('button');
+        apagar.type='button';
+        apagar.className='block text-red-300 hover:text-red-100';
+        apagar.textContent='Excluir mensagem';
+        apagar.onclick=()=>commExcluirMensagem(m);
         div.appendChild(apagar);
     }
     return div;
@@ -2025,9 +2031,9 @@ function commRenderizarHistoricoMestre() {
     let lista=[...commMensagens.values()];
     if(filtro==='grupo_geral') lista=lista.filter(m=>m.grupoId==='grupo_geral');
     else if(filtro!=='todas') lista=lista.filter(m=>m.recipientUid===filtro || m.senderUid===filtro);
-    
+
     lista.sort((a,b)=>Number(a.criadoEmMs||0)-Number(b.criadoEmMs||0));
-    
+
     alvo.innerHTML='';
     if(!lista.length){alvo.innerHTML='<p class="text-slate-400 text-sm">Nenhuma comunicação enviada ou recebida.</p>';return;}
     lista.slice(0,100).forEach(m=>alvo.appendChild(commCriarElementoMensagem(m,true)));
