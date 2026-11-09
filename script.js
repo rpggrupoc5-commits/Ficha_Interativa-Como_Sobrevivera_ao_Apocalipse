@@ -296,12 +296,14 @@ document.getElementById('btn-esqueci-senha').onclick = () => {
 };
 
 document.getElementById('btn-entrar').onclick = () => {
-    commDesbloquearAudio();
     tocarSom(audioAbertura);
+    // Destrava o áudio do rádio no navegador do usuário
+    commRadioAudio.play().then(() => { commRadioAudio.pause(); commRadioAudio.currentTime = 0; }).catch(() => {});
+    
     const email = document.getElementById('login-email').value;
     const senha = document.getElementById('login-senha').value;
     mensagemErro.classList.add('hidden');
-
+    
     signInWithEmailAndPassword(auth, email, senha).catch((error) => {
         console.error("Falha no login Firebase:", error);
         mensagemErro.innerText = `Erro no login (${error.code || "desconhecido"}): ${error.message}`;
@@ -471,7 +473,7 @@ function monitorarRevogacao(fichaId) {
     intervalMonitorRevogacao = setInterval(async () => {
         try {
             const snap = await getDoc(doc(db, 'fichas', fichaId, 'acessos', usuarioAtual.uid));
-
+            
             if (!snap.exists()) {
                 clearInterval(intervalMonitorRevogacao);
                 desativarAutosave();
@@ -485,7 +487,7 @@ function monitorarRevogacao(fichaId) {
 
             const novaPermissao = snap.data().permissao || "visualizar";
             const permissaoAtualMapeada = modoAcesso === "convidado-editar" ? "editar" : "visualizar";
-
+            
             if (novaPermissao !== permissaoAtualMapeada) {
                 clearInterval(intervalMonitorRevogacao);
                 alert(`O mestre alterou sua permissão para ${novaPermissao.toUpperCase()}. A página será recarregada.`);
@@ -626,7 +628,7 @@ function mostrarAreaFicha() {
 function configurarAutosave() {
     if (modoAcesso === "convidado-visualizar") return;
     autosaveHabilitado = true;
-
+    
     let indicador = document.getElementById('indicador-autosave');
     if (!indicador) {
         indicador = document.createElement('div');
@@ -635,7 +637,7 @@ function configurarAutosave() {
         indicador.style.opacity = '0';
         document.body.appendChild(indicador);
     }
-
+    
     document.querySelectorAll('#area-ficha input, #area-ficha textarea, #modal-item input, #modal-item textarea, #modal-foto input, #modal-foto textarea').forEach(el => {
         el.addEventListener('input', () => {
             tocarSomTecla();
@@ -738,7 +740,7 @@ function recalcularPesoGeral() {
         if (item.id === 'foto-personagem') return;
         if (item.id.startsWith('inv-')) return; 
         if (item.classList.contains('slot-bloqueado')) return;
-
+        
         const qtd = parseFloat(item.dataset.qtd) || 1;
         const pesoStr = (item.dataset.peso || "0").toString().replace(',', '.');
         pesoEquip += qtd * (parseFloat(pesoStr) || 0);
@@ -755,10 +757,10 @@ function recalcularPesoGeral() {
     }
 
     const pesoPers = parseFloat((pesoPersonagemInput?.value || '0').toString().replace(',', '.')) || 0;
-
+    
     if (pesoPersonagemEl) pesoPersonagemEl.innerText = (pesoPers + pesoEquip + pesoMochila).toFixed(2);
     if (pesoTotalGeralEl) pesoTotalGeralEl.innerText = (pesoPers + pesoEquip + pesoMochila + pesoItens).toFixed(2);
-
+    
     if (espacosEl) espacosEl.innerText = document.querySelectorAll('#inventario .item-adicionado').length;
 }
 
@@ -782,7 +784,7 @@ const modalHTML = `
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Quantidade:<input type="number" id="modal-qtd" value="1" class="input-campo p-2"></label>
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg):<input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
             </div>
-
+            
             <div class="text-right font-bold text-sm text-[#8a1313] mt-1">
                 Peso Total: <span id="modal-peso-total">0.00</span> kg
             </div>
@@ -924,10 +926,10 @@ function abrirModal(q, dados = null) {
     if (modoAcesso === "convidado-visualizar") return;
     tocarSom(audioClique);
     quadradoAtual = q;
-
+    
     const isMochilaSlot = (q.getAttribute('data-original') || '').includes('MOCHILA') || (q.innerText || '').includes('MOCHILA') || (dados && dados.tipo === 'mochila');
     const camposMochila = document.getElementById('campos-mochila');
-
+    
     if (isMochilaSlot) {
         camposMochila.classList.remove('hidden');
         camposMochila.classList.add('flex');
@@ -942,7 +944,7 @@ function abrirModal(q, dados = null) {
         inputPeso.value = dados.peso;
         inputDesc.value = dados.desc || "";
         imagemAtualBase64 = dados.img || null;
-
+        
         if (isMochilaSlot && dados.mochilaCapacidade) {
             document.getElementById('modal-mochila-capacidade').value = dados.mochilaCapacidade;
             document.getElementById('modal-mochila-ativa').checked = dados.mochilaAtiva;
@@ -954,7 +956,7 @@ function abrirModal(q, dados = null) {
     } else {
         inputNome.value = ""; inputQtd.value = 1; inputPeso.value = ""; inputDesc.value = "";
         imagemAtualBase64 = null;
-
+        
         if (isMochilaSlot) {
             document.getElementById('modal-mochila-capacidade').value = "16";
             document.getElementById('modal-mochila-ativa').checked = true;
@@ -998,7 +1000,7 @@ btnExcluir.onclick = () => {
     quadradoAtual.removeAttribute('data-itemdata');
     quadradoAtual.removeAttribute('data-peso');
     quadradoAtual.removeAttribute('data-qtd');
-
+    
     atualizarEstadoMochila();
     recalcularPesoGeral();
     modal.classList.add('hidden');
@@ -1009,7 +1011,7 @@ btnSalvarItem.onclick = () => {
     const nome = inputNome.value;
     const pesoString = inputPeso.value.replace(',', '.');
     const qtd = parseInt(inputQtd.value) || 0;
-
+    
     const camposMochilaVisiveis = !document.getElementById('campos-mochila').classList.contains('hidden');
     const mochilaCap = camposMochilaVisiveis ? document.getElementById('modal-mochila-capacidade').value : null;
     const mochilaAtiva = camposMochilaVisiveis ? document.getElementById('modal-mochila-ativa').checked : null;
@@ -1018,10 +1020,10 @@ btnSalvarItem.onclick = () => {
     if (!nome.trim()) return alert("Digite o nome.");
     if (qtd <= 0) return alert("Quantidade > 0.");
     if (inputPeso.value.trim() === "") return alert("Digite o peso.");
-
+    
     tocarSom(audioEntrarPainel);
     const dados = { img: imagemAtualBase64, nome, qtd, peso: pesoString, desc: inputDesc.value };
-
+    
     if (camposMochilaVisiveis) {
         dados.tipo = 'mochila';
         dados.mochilaCapacidade = parseInt(mochilaCap);
@@ -1038,7 +1040,7 @@ btnSalvarItem.onclick = () => {
 function renderizarItem(q, dados) {
     const isEquipamento = !q.id.startsWith('inv-');
     const classeTexto = isEquipamento ? 'opacity-0 group-hover:opacity-100 transition-opacity' : 'opacity-100';
-
+    
     const qtd = parseFloat(dados.qtd) || 1;
     const pesoStr = (dados.peso || "0").toString().replace(',', '.');
     const pesoUnit = parseFloat(pesoStr) || 0;
@@ -1068,7 +1070,7 @@ function atualizarEstadoMochila() {
     mochilaStatus = false;
 
     const mochilaEl = document.querySelector('.slot-vazio.item-adicionado[data-item-data*="mochila"]');
-
+    
     if (mochilaEl) {
         const dadosMochila = JSON.parse(mochilaEl.dataset.itemData);
         mochilaAtivaId = mochilaEl.id;
@@ -1346,7 +1348,7 @@ async function carregarFicha() {
         el.removeAttribute('data-itemdata');
         el.removeAttribute('data-peso');
         el.removeAttribute('data-qtd');
-
+        
         if (el.id.startsWith('inv-')) {
             el.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
         } 
@@ -1439,7 +1441,7 @@ async function carregarContasJogadores() {
             const email = document.createElement('p'); email.className = 'text-sm text-[#3a2e27] break-all'; email.textContent = conta.email || 'E-mail não informado';
             const uid = document.createElement('p'); uid.className = 'uid-conta break-all mt-2'; uid.textContent = `UID: ${conta.uid || conta.id}`;
             dados.append(nome, email, uid);
-
+            
             const acoes = document.createElement('div');
             acoes.className = 'flex gap-2';
             acoes.append(criarBotaoPainel('COPIAR UID', 'btn-azul', () => { tocarSom(audioClique); copiarTexto(conta.uid || conta.id); }));
@@ -1506,7 +1508,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     });
     const conteudo = document.createElement('div');
     conteudo.className = 'p-4 flex flex-col gap-2 flex-1';
-
+    
     if (modoMestre) {
         const infoBox = document.createElement('div');
         infoBox.className = 'bg-black text-white p-3 rounded-md shadow-inner texto-card-mestre flex flex-col gap-1';
@@ -1514,27 +1516,27 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
         const nome = document.createElement('h3'); 
         nome.className = 'fonte-titulo text-3xl text-[#e6d5b8]'; 
         nome.textContent = ficha.nome || 'Personagem sem nome';
-
+        
         const nivelExp = document.createElement('p'); 
         nivelExp.className = 'text-base font-bold text-[#d2b48c]'; 
         nivelExp.textContent = `NÍVEL: ${ficha.nivel || '1'} | EXP: ${ficha.exp || '0'}`;
-
+        
         const jogador = document.createElement('p'); 
         jogador.className = 'text-base font-bold text-white mt-2';
         const nomeDono = ficha.proprietarioNome || 'NÃO VINCULADO';
         jogador.textContent = `Jogador (Dono): ${nomeDono}`;
-
+        
         const emailDono = document.createElement('p'); 
         emailDono.className = 'text-base font-bold text-white';
         emailDono.textContent = `Email do Dono: ${ficha.proprietarioEmail || (ficha.tipo === 'pdm' ? 'N/A' : 'Nenhum')}`;
-
+        
         const uid = document.createElement('p'); 
         uid.className = 'text-base font-bold text-white break-all';
         uid.textContent = `UID do Dono: ${ficha.proprietarioUid || 'N/A'}`;
 
         infoBox.append(nome, nivelExp, jogador, emailDono, uid);
         conteudo.append(infoBox);
-
+        
         try {
             const acessosSnap = await getDocs(collection(db, 'fichas', idFicha, 'acessos'));
             if (!acessosSnap.empty) {
@@ -1542,19 +1544,19 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
                 tituloAcesso.className = 'text-sm font-bold text-[#f3dfc1] mt-4 mb-2 border-b border-[#7a4e32] pb-1';
                 tituloAcesso.textContent = 'CONVIDADOS COM ACESSO:';
                 conteudo.append(tituloAcesso);
-
+                
                 for (const a of acessosSnap.docs) {
                     const d = a.data();
                     const linha = document.createElement('div');
                     linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-2 bg-black/30 p-2 rounded mb-1';
-
+                    
                     const txtConvidado = document.createElement('span');
                     txtConvidado.className = 'text-sm font-bold text-[#e6d5b8] break-all texto-card-mestre';
                     txtConvidado.textContent = `UID: ${a.id} | Permissão: ${d.permissao.toUpperCase()}`;
-
+                    
                     const acoesConv = document.createElement('div');
                     acoesConv.className = 'flex gap-1 mt-2 md:mt-0';
-
+                    
                     const btnMudar = document.createElement('button');
                     btnMudar.className = 'btn-azul px-2 py-1 rounded text-xs font-bold w-full md:w-auto';
                     btnMudar.textContent = d.permissao === 'editar' ? 'MUDAR P/ VER' : 'MUDAR P/ EDITAR';
@@ -1564,7 +1566,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
                     btnRevogar.className = 'btn-perigo px-2 py-1 rounded text-xs font-bold w-full md:w-auto';
                     btnRevogar.textContent = 'REVOGAR';
                     btnRevogar.onclick = () => { tocarSom(audioClique); revogarAcesso(idFicha, a.id); };
-
+                    
                     acoesConv.append(btnMudar, btnRevogar);
                     linha.append(txtConvidado, acoesConv);
                     conteudo.append(linha);
@@ -1580,7 +1582,7 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
     }
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
-
+    
     const linkFicha = document.createElement('a');
     linkFicha.href = `${window.location.pathname}?ficha=${idFicha}`;
     linkFicha.target = '_blank';
@@ -1619,7 +1621,7 @@ async function carregarDashboardJogador() {
             <span class="text-2xl font-bold mt-4 block text-[#8a1313] bg-[#e6d5b8]/80 p-4 rounded-lg border-2 border-[#8a1313] shadow-md">
                 ⚠️ SUA CONTA FOI CRIADA COM SUCESSO!<br>
                 <span class="text-lg font-normal mt-2 block text-[#1a110a]">Peça ao Mestre para vincular uma ficha ao seu UID:</span>
-                <span class="font-mono bg-black/20 px-3 py-1 rounded select-all mt-2 inline-block text-white shadow-inner text-sm break-all w-full">${usuarioAtual.uid}</span>
+                <span class="font-mono bg-black/20 px-3 py-1 rounded select-all mt-2 inline-block text-white shadow-inner">${usuarioAtual.uid}</span>
             </span></p>`; 
             return; 
         }
@@ -1696,13 +1698,13 @@ function gerarLinkConvite(idFicha) {
 async function carregarSolicitacoesPendentes() {
     const container = document.getElementById('solicitacoes-mestre');
     if (!container) return;
-
+    
     container.innerHTML = '<p class="text-[#111] text-lg">Buscando solicitações...</p>';
-
+    
     try {
         const fichasSnap = await getDocs(collection(db, 'fichas'));
         const todas = [];
-
+        
         for (const fichaDoc of fichasSnap.docs) {
             try {
                 const solSnap = await getDocs(collection(db, 'fichas', fichaDoc.id, 'solicitacoes'));
@@ -1721,42 +1723,42 @@ async function carregarSolicitacoesPendentes() {
                 console.warn("Erro ao ler solicitações da ficha " + fichaDoc.id, errFicha);
             }
         }
-
+        
         container.innerHTML = '';
-
+        
         if (todas.length === 0) { 
             container.innerHTML = '<p class="text-[#111] text-lg font-bold">Nenhuma solicitação pendente no momento.</p>'; 
             return; 
         }
-
+        
         todas.forEach(sol => {
             const linha = document.createElement('div');
             linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 rounded border-2 border-[#7a4e32] bg-white/90 p-4';
-
+            
             const dados = document.createElement('div');
             dados.className = 'min-w-0';
-
+            
             const nome = document.createElement('p'); 
             nome.className = 'font-bold text-[#211b17] text-lg'; 
             nome.textContent = `Ficha: ${sol.fichaNome}`;
-
+            
             const uid = document.createElement('p'); 
             uid.className = 'text-[#211b17] font-bold mt-1 break-all text-base'; 
             uid.textContent = `UID do Convidado: ${sol.uidConvidado}`;
-
+            
             dados.append(nome, uid);
-
+            
             const acoes = document.createElement('div'); 
             acoes.className = 'flex flex-wrap gap-2 mt-2 md:mt-0';
-
+            
             acoes.append(criarBotaoPainel('APROVAR (EDITAR)', 'btn-verde text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'editar'); }));
             acoes.append(criarBotaoPainel('APROVAR (VER)', 'btn-azul text-base', () => { tocarSom(audioClique); aprovarSolicitacao(sol.fichaId, sol.uidConvidado, 'visualizar'); }));
             acoes.append(criarBotaoPainel('RECUSAR', 'btn-perigo text-base', () => { tocarSom(audioSairPainel); recusarSolicitacao(sol.fichaId, sol.uidConvidado); }));
-
+            
             linha.append(dados, acoes);
             container.appendChild(linha);
         });
-
+        
     } catch (e) {
         console.error('Erro ao carregar solicitações:', e);
         container.innerHTML = `<p class="text-red-800 font-bold text-lg">Erro ao buscar solicitações (${e.code || 'erro'}): ${e.message}</p>`;
@@ -1880,7 +1882,7 @@ async function vincularJogador(idFicha, ficha) {
     const uidLimpo = uid.trim();
     if (!uidLimpo || uidLimpo.length < 10) return alert('Informe o UID completo da conta Firebase.');
     const nomeJogador = prompt('Nome do jogador (opcional):', ficha.proprietarioNome || ''); if (nomeJogador === null) return;
-
+    
     try {
         let emailEncontrado = '';
         const userSnap = await getDoc(doc(db, 'usuarios', uidLimpo));
@@ -1894,7 +1896,7 @@ async function vincularJogador(idFicha, ficha) {
             proprietarioEmail: emailEncontrado,
             tipo: 'jogador' 
         }, { merge: true });
-
+        
         await atualizarPainelMestre(); 
         alert('Jogador vinculado com sucesso!');
     } catch (e) { 
@@ -1922,427 +1924,185 @@ let commAlertaAtivo = false;
 let commAlertaTimer = null;
 let commPausaTimer = null;
 let commMensagemAlerta = null;
-let commAlertaAteMs = 0;
-let commMensagensJaNotificadas = new Set();
-let commAudioContexto = null;
-let commRadioAudioDesbloqueado = false;
-let commAudioPreparacao = null;
 const commRadioAudio = new Audio('radio_alerta.mp3');
 commRadioAudio.preload = 'auto';
 commRadioAudio.volume = 0.85;
 const COMM_LIMITE_ARQUIVO = 10 * 1024 * 1024;
 
 function commEhMestre() { return !!usuarioAtual && (usuarioAtual.email || '').trim().toLowerCase() === emailMestre.toLowerCase(); }
-function commModalJogadorAberto() {
-    const modal = document.getElementById('comm-modal-jogador');
-    return !!modal && !modal.classList.contains('hidden');
-}
-function commObterContextoAudio() {
-    try {
-        const AudioContexto = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContexto) return null;
-        if (!commAudioContexto) commAudioContexto = new AudioContexto();
-        return commAudioContexto;
-    } catch (erro) {
-        console.warn('Áudio do chat indisponível neste navegador:', erro);
-        return null;
-    }
-}
-
-function commDesbloquearAudio() {
-    const contexto = commObterContextoAudio();
-    if (contexto && contexto.state === 'suspended') {
-        contexto.resume().catch(erro => console.warn('Não foi possível liberar o áudio do chat:', erro));
-    }
-
-    if (commRadioAudioDesbloqueado || commAlertaAtivo || commAudioPreparacao) return;
-    const estavaMudo = commRadioAudio.muted;
-    try {
-        commRadioAudio.muted = true;
-        const reproducao = commRadioAudio.play();
-        if (reproducao && typeof reproducao.then === 'function') {
-            commAudioPreparacao = reproducao.then(() => {
-                commRadioAudio.pause();
-                try { commRadioAudio.currentTime = 0; } catch (e) {}
-                commRadioAudio.muted = estavaMudo;
-                commRadioAudioDesbloqueado = true;
-            }).catch(() => {
-                commRadioAudio.muted = estavaMudo;
-            }).finally(() => {
-                commAudioPreparacao = null;
-            });
-        } else {
-            commRadioAudio.pause();
-            try { commRadioAudio.currentTime = 0; } catch (e) {}
-            commRadioAudio.muted = estavaMudo;
-            commRadioAudioDesbloqueado = true;
-        }
-    } catch (erro) {
-        commRadioAudio.muted = estavaMudo;
-        commAudioPreparacao = null;
-    }
-}
-
-function commTocarSomChat() {
-    const contexto = commObterContextoAudio();
-    if (!contexto) return;
-    const emitir = () => {
-        if (contexto.state !== 'running') return;
-        const agora = contexto.currentTime;
-        const notas = [784, 1046];
-        notas.forEach((frequencia, indice) => {
-            const inicio = agora + indice * 0.13;
-            const oscilador = contexto.createOscillator();
-            const volume = contexto.createGain();
-            oscilador.type = 'sine';
-            oscilador.frequency.setValueAtTime(frequencia, inicio);
-            volume.gain.setValueAtTime(0.0001, inicio);
-            volume.gain.exponentialRampToValueAtTime(0.11, inicio + 0.018);
-            volume.gain.exponentialRampToValueAtTime(0.0001, inicio + 0.12);
-            oscilador.connect(volume);
-            volume.connect(contexto.destination);
-            oscilador.start(inicio);
-            oscilador.stop(inicio + 0.13);
-        });
-    };
-    if (contexto.state === 'running') emitir();
-    else contexto.resume().then(emitir).catch(erro => console.warn('Não foi possível tocar o aviso do chat:', erro));
-}
-
-function commLimparListeners() {
-    commUnsubscribers.forEach(fn => { try { fn(); } catch(e) {} });
-    commUnsubscribers = [];
-}
+function commLimparListeners() { commUnsubscribers.forEach(fn => { try { fn(); } catch(e) {} }); commUnsubscribers = []; }
 function commPararAlerta() {
     commAlertaAtivo = false;
     if (commAlertaTimer) clearTimeout(commAlertaTimer);
     if (commPausaTimer) clearTimeout(commPausaTimer);
-    commAlertaTimer = null;
-    commPausaTimer = null;
-    commAlertaAteMs = 0;
-    commMensagemAlerta = null;
-    try {
-        commRadioAudio.pause();
-        commRadioAudio.currentTime = 0;
-        commRadioAudio.onended = null;
-    } catch(e) {}
-    const led = document.getElementById('walkie-led');
-    if (led) led.classList.remove('ativo');
-    if (!commModalJogadorAberto()) {
-        const tela = document.getElementById('walkie-screen-main');
-        if (tela) tela.textContent = 'SEM NOVAS COMUNICAÇÕES';
-    }
+    commAlertaTimer = null; commPausaTimer = null;
+    try { commRadioAudio.pause(); commRadioAudio.currentTime = 0; } catch(e) {}
+    const led = document.getElementById('walkie-led'); if (led) led.classList.remove('ativo');
 }
-function commAgendarProximoToque() {
-    if (!commAlertaAtivo) return;
-    const restante = commAlertaAteMs - Date.now();
-    if (restante <= 0) {
-        commPararAlerta();
-        return;
-    }
-    commPausaTimer = setTimeout(commTocarCicloRadio, Math.min(3000, restante));
-}
-function commTocarCicloRadio() {
-    if (commAudioPreparacao) {
-        commAudioPreparacao.then(() => {
-            if (commAlertaAtivo) commTocarCicloRadio();
-        });
-        return;
-    }
-    if (!commAlertaAtivo || commModalJogadorAberto()) {
-        if (commModalJogadorAberto()) commPararAlerta();
-        return;
-    }
-    if (Date.now() >= commAlertaAteMs) {
-        commPararAlerta();
-        return;
-    }
+function commTocarCicloRadio(fim) {
+    if (!commAlertaAtivo || Date.now() >= fim) { commPararAlerta(); return; }
     try { commRadioAudio.currentTime = 0; } catch(e) {}
-    commRadioAudio.onended = commAgendarProximoToque;
-    const reproducao = commRadioAudio.play();
-    if (reproducao && typeof reproducao.catch === 'function') {
-        reproducao.catch(erro => {
-            console.warn('O navegador bloqueou temporariamente o toque do rádio:', erro);
-            if (commAlertaAtivo && Date.now() < commAlertaAteMs) {
-                commPausaTimer = setTimeout(commTocarCicloRadio, 1000);
-            }
-        });
-    }
+    
+    const proximaPausa = () => {
+        if (!commAlertaAtivo) return;
+        if (Date.now() >= fim) { commPararAlerta(); return; }
+        commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000);
+    };
+    
+    commRadioAudio.onended = proximaPausa;
+    
+    commRadioAudio.play().then(() => {
+        // Tudo certo, o áudio tocou
+    }).catch(() => { 
+        // O navegador bloqueou. Avisa o jogador na telinha do rádio.
+        const tela = document.getElementById('walkie-screen-main');
+        if (tela) tela.textContent = "CLIQUE NA TELA PARA OUVIR O ÁUDIO";
+        commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000); 
+    });
 }
 function commIniciarAlerta(mensagem) {
-    if (!mensagem || commModalJogadorAberto()) return;
-    if (mensagem.id) commMensagensJaNotificadas.add(mensagem.id);
     const fim = Number(mensagem.alertaAteMs || (Number(mensagem.criadoEmMs || Date.now()) + 30000));
-    if (!Number.isFinite(fim) || fim <= Date.now()) return;
-
+    if (fim <= Date.now()) return;
     commMensagemAlerta = mensagem;
-    commAlertaAteMs = Math.max(commAlertaAteMs, fim);
     const tela = document.getElementById('walkie-screen-main');
     if (tela) tela.textContent = (mensagem.texto || 'NOVA COMUNICAÇÃO').slice(0, 65);
-    const led = document.getElementById('walkie-led');
-    if (led) led.classList.add('ativo');
-
-    if (commAlertaTimer) clearTimeout(commAlertaTimer);
-    commAlertaTimer = setTimeout(commPararAlerta, Math.max(0, commAlertaAteMs - Date.now()));
-
-    if (!commAlertaAtivo) {
-        commAlertaAtivo = true;
-        commTocarCicloRadio();
+    const led = document.getElementById('walkie-led'); if (led) led.classList.add('ativo');
+    if (commAlertaAtivo) {
+        if (commAlertaTimer) clearTimeout(commAlertaTimer);
+        commAlertaTimer = setTimeout(commPararAlerta, Math.max(0, fim - Date.now()));
+        return;
     }
+    commAlertaAtivo = true;
+    commAlertaTimer = setTimeout(commPararAlerta, Math.max(0, fim - Date.now()));
+    commTocarCicloRadio(fim);
 }
 function commFormatarHora(ms) { try { return new Date(ms).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); } catch(e) { return ''; } }
 function commCriarElementoMensagem(m, paraMestre=false) {
     const div = document.createElement('article');
     div.className = 'comm-message' + (m.senderUid === (usuarioAtual?.uid || '') ? ' mine' : '');
-    const meta = document.createElement('div');
-    meta.className = 'comm-message-meta';
+    const meta = document.createElement('div'); meta.className = 'comm-message-meta';
     meta.textContent = `${m.senderName || (m.senderUid === 'MESTRE' ? 'Mestre' : 'Jogador')} · ${commFormatarHora(Number(m.criadoEmMs || Date.now()))}${paraMestre ? ` · Para: ${m.recipientName || m.recipientUid}` : ''}`;
     div.appendChild(meta);
-    if (m.texto) {
-        const txt = document.createElement('div');
-        txt.className = 'comm-message-text';
-        txt.textContent = m.texto;
-        div.appendChild(txt);
-    }
+    if (m.texto) { const txt = document.createElement('div'); txt.className='comm-message-text'; txt.textContent=m.texto; div.appendChild(txt); }
     if (paraMestre) {
-        const apagar = document.createElement('button');
-        apagar.type = 'button';
-        apagar.className = 'block text-red-300';
-        apagar.textContent = 'Excluir mensagem';
-        apagar.onclick = () => commExcluirMensagem(m);
-        div.appendChild(apagar);
+        const apagar=document.createElement('button'); apagar.type='button'; apagar.className='block text-red-300'; apagar.textContent='Excluir mensagem'; apagar.onclick=()=>commExcluirMensagem(m); div.appendChild(apagar);
     }
     return div;
 }
 function commRenderizarHistoricoJogador() {
-    const alvo = document.getElementById('comm-jogador-historico');
-    if (!alvo) return;
-    const lista = [...commMensagens.values()].sort((a,b) => Number(a.criadoEmMs || 0) - Number(b.criadoEmMs || 0));
-    alvo.innerHTML = '';
-    if (!lista.length) {
-        alvo.innerHTML = '<p class="text-slate-400 text-center py-8">Nenhuma comunicação registrada.</p>';
-        return;
-    }
-    lista.forEach(m => alvo.appendChild(commCriarElementoMensagem(m, false)));
-    alvo.scrollTop = alvo.scrollHeight;
+    const alvo=document.getElementById('comm-jogador-historico'); if(!alvo) return;
+    const lista=[...commMensagens.values()].sort((a,b)=>Number(a.criadoEmMs||0)-Number(b.criadoEmMs||0));
+    alvo.innerHTML='';
+    if(!lista.length){alvo.innerHTML='<p class="text-slate-400 text-center py-8">Nenhuma comunicação registrada.</p>';return;}
+    lista.forEach(m=>alvo.appendChild(commCriarElementoMensagem(m,false)));
+    alvo.scrollTop=alvo.scrollHeight;
 }
 function commRenderizarHistoricoMestre() {
-    const alvo = document.getElementById('comm-master-historico');
-    if (!alvo) return;
-    const filtro = document.getElementById('comm-master-filtro')?.value || 'todas';
-    let lista = [...commMensagens.values()];
-    if (filtro === 'grupo_geral') lista = lista.filter(m => m.grupoId === 'grupo_geral');
-    else if (filtro !== 'todas') lista = lista.filter(m => m.recipientUid === filtro || m.senderUid === filtro);
-    lista.sort((a,b) => Number(b.criadoEmMs || 0) - Number(a.criadoEmMs || 0));
-    alvo.innerHTML = '';
-    if (!lista.length) {
-        alvo.innerHTML = '<p class="text-slate-400 text-sm">Nenhuma comunicação enviada ou recebida.</p>';
-        return;
-    }
-    lista.slice(0,100).forEach(m => alvo.appendChild(commCriarElementoMensagem(m, true)));
+    const alvo=document.getElementById('comm-master-historico'); if(!alvo) return;
+    const filtro=document.getElementById('comm-master-filtro')?.value || 'todas';
+    let lista=[...commMensagens.values()];
+    if(filtro==='grupo_geral') lista=lista.filter(m=>m.grupoId==='grupo_geral');
+    else if(filtro!=='todas') lista=lista.filter(m=>m.recipientUid===filtro || m.senderUid===filtro);
+    lista.sort((a,b)=>Number(b.criadoEmMs||0)-Number(a.criadoEmMs||0));
+    alvo.innerHTML='';
+    if(!lista.length){alvo.innerHTML='<p class="text-slate-400 text-sm">Nenhuma comunicação enviada ou recebida.</p>';return;}
+    lista.slice(0,100).forEach(m=>alvo.appendChild(commCriarElementoMensagem(m,true)));
 }
 async function commCarregarJogadores() {
-    if (!commEhMestre()) return;
-    const alvo = document.getElementById('comm-master-lista-jogadores');
-    if (!alvo) return;
+    if(!commEhMestre()) return;
+    const alvo=document.getElementById('comm-master-lista-jogadores'); if(!alvo) return;
     try {
-        const snap = await getDocs(collection(db, 'usuarios'));
-        commJogadores = snap.docs.map(d => ({uid:d.id,...d.data()})).filter(u => (u.email || '').toLowerCase() !== emailMestre.toLowerCase());
-        alvo.innerHTML = '';
-        if (!commJogadores.length) {
-            alvo.innerHTML = '<p class="text-sm text-slate-400">Nenhuma conta de jogador cadastrada.</p>';
-            return;
-        }
-        commJogadores.sort((a,b) => (a.nome || a.email || '').localeCompare(b.nome || b.email || '', 'pt-BR')).forEach(u => {
-            const label = document.createElement('label');
-            label.className = 'flex items-center gap-2 rounded p-2 bg-slate-900/80 hover:bg-slate-800 text-sm';
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.className = 'comm-destinatario accent-sky-500';
-            input.value = u.uid;
-            const span = document.createElement('span');
-            span.textContent = `${u.nome || u.email || 'Jogador'}${u.email ? ' · ' + u.email : ''}`;
-            label.append(input, span);
-            alvo.appendChild(label);
+        const snap=await getDocs(collection(db,'usuarios'));
+        commJogadores=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(u=>(u.email||'').toLowerCase()!==emailMestre.toLowerCase());
+        alvo.innerHTML='';
+        if(!commJogadores.length){alvo.innerHTML='<p class="text-sm text-slate-400">Nenhuma conta de jogador cadastrada.</p>';return;}
+        commJogadores.sort((a,b)=>(a.nome||a.email||'').localeCompare(b.nome||b.email||'','pt-BR')).forEach(u=>{
+            const label=document.createElement('label');label.className='flex items-center gap-2 rounded p-2 bg-slate-900/80 hover:bg-slate-800 text-sm';
+            const input=document.createElement('input');input.type='checkbox';input.className='comm-destinatario accent-sky-500';input.value=u.uid;
+            const span=document.createElement('span');span.textContent=`${u.nome||u.email||'Jogador'}${u.email?' · '+u.email:''}`;
+            label.append(input,span);alvo.appendChild(label);
         });
-        const filtro = document.getElementById('comm-master-filtro');
-        if (filtro) {
-            const valorAtual = filtro.value;
-            filtro.querySelectorAll('option[data-jogador]').forEach(o => o.remove());
-            commJogadores.forEach(u => {
-                const op = document.createElement('option');
-                op.value = u.uid;
-                op.dataset.jogador = '1';
-                op.textContent = u.nome || u.email || 'Jogador';
-                filtro.appendChild(op);
-            });
-            if ([...filtro.options].some(o => o.value === valorAtual)) filtro.value = valorAtual;
-        }
-    } catch(e) {
-        console.error(e);
-        alvo.innerHTML = '<p class="text-red-300 text-sm">Não foi possível carregar a lista de jogadores.</p>';
-    }
+        const filtro=document.getElementById('comm-master-filtro');
+        if(filtro){const valorAtual=filtro.value;filtro.querySelectorAll('option[data-jogador]').forEach(o=>o.remove());commJogadores.forEach(u=>{const op=document.createElement('option');op.value=u.uid;op.dataset.jogador='1';op.textContent=u.nome||u.email||'Jogador';filtro.appendChild(op);});if([...filtro.options].some(o=>o.value===valorAtual))filtro.value=valorAtual;}
+    } catch(e) { console.error(e); alvo.innerHTML='<p class="text-red-300 text-sm">Não foi possível carregar a lista de jogadores.</p>'; }
 }
 async function commEnviarPara(destinatario, nomeDestinatario, texto, grupoId) {
-    const agora = Date.now();
-    const remetenteMestre = commEhMestre();
-    const remetenteUid = remetenteMestre ? 'MESTRE' : usuarioAtual.uid;
-    const remetenteNome = remetenteMestre ? 'Mestre' : (usuarioAtual.displayName || usuarioAtual.email?.split('@')[0] || 'Jogador');
-    await addDoc(collection(db, 'comunicacoes'), {
-        senderUid: remetenteUid,
-        senderName: remetenteNome,
-        recipientUid: destinatario,
-        recipientName: nomeDestinatario,
-        grupoId: grupoId || (destinatario === 'MESTRE' ? 'privado_mestre' : `privado_${destinatario}`),
-        tipo: 'texto',
-        texto: texto,
-        mediaPath: null,
-        criadoEm: serverTimestamp(),
-        criadoEmMs: agora,
-        alertaAteMs: agora + 30000,
-        audioAbertoPor: [],
-        statusArquivo: 'pronto'
+    const agora=Date.now();
+    const remetenteMestre=commEhMestre();
+    const remetenteUid=remetenteMestre?'MESTRE':usuarioAtual.uid;
+    const remetenteNome=remetenteMestre?'Mestre':(usuarioAtual.displayName || usuarioAtual.email?.split('@')[0] || 'Jogador');
+    await addDoc(collection(db,'comunicacoes'),{
+        senderUid:remetenteUid, senderName:remetenteNome,
+        recipientUid:destinatario, recipientName:nomeDestinatario,
+        grupoId:grupoId || (destinatario==='MESTRE'?'privado_mestre':`privado_${destinatario}`),
+        tipo:'texto', texto:texto, mediaPath:null,
+        criadoEm:serverTimestamp(), criadoEmMs:agora,
+        alertaAteMs:agora+30000, audioAbertoPor:[], statusArquivo:'pronto'
     });
 }
+
 async function commEnviarMestre() {
-    const texto = document.getElementById('comm-master-texto')?.value.trim() || '';
-    const geral = document.getElementById('comm-grupo-geral')?.checked;
-    let destinos = [...document.querySelectorAll('.comm-destinatario:checked')].map(el => el.value);
-    if (geral) destinos = commJogadores.map(u => u.uid);
-    destinos = [...new Set(destinos)];
-    if (!destinos.length) { alert('Selecione ao menos um jogador ou marque GRUPO GERAL.'); return; }
-    if (!texto) { alert('Digite uma mensagem antes de transmitir.'); return; }
-    const btn = document.getElementById('comm-master-enviar');
-    if (btn) { btn.disabled = true; btn.textContent = 'TRANSMITINDO...'; }
+    const texto=document.getElementById('comm-master-texto')?.value.trim()||'';
+    const geral=document.getElementById('comm-grupo-geral')?.checked;
+    let destinos=[...document.querySelectorAll('.comm-destinatario:checked')].map(el=>el.value);
+    if(geral) destinos=commJogadores.map(u=>u.uid);
+    destinos=[...new Set(destinos)];
+    if(!destinos.length){alert('Selecione ao menos um jogador ou marque GRUPO GERAL.');return;}
+    if(!texto){alert('Digite uma mensagem antes de transmitir.');return;}
+    const btn=document.getElementById('comm-master-enviar');btn.disabled=true;btn.textContent='TRANSMITINDO...';
     try {
-        const grupoId = geral ? 'grupo_geral' : (destinos.length > 1 ? `grupo_${Date.now()}` : `privado_${destinos[0]}`);
-        for (const uid of destinos) {
-            const u = commJogadores.find(x => x.uid === uid);
-            await commEnviarPara(uid, u?.nome || u?.email || 'Jogador', texto, grupoId);
-        }
-        const campo = document.getElementById('comm-master-texto');
-        if (campo) campo.value = '';
-        document.querySelectorAll('.comm-destinatario').forEach(el => el.checked = false);
-        const grupo = document.getElementById('comm-grupo-geral');
-        if (grupo) grupo.checked = false;
-    } catch(e) {
-        console.error(e);
-        alert(e.message || 'Não foi possível transmitir a mensagem.');
-    } finally {
-        if (btn) { btn.disabled = false; btn.textContent = 'TRANSMITIR'; }
-    }
+        const grupoId=geral?'grupo_geral':(destinos.length>1?`grupo_${Date.now()}`:`privado_${destinos[0]}`);
+        for(const uid of destinos){const u=commJogadores.find(x=>x.uid===uid);await commEnviarPara(uid,u?.nome||u?.email||'Jogador',texto,grupoId);}
+        document.getElementById('comm-master-texto').value='';
+        document.querySelectorAll('.comm-destinatario').forEach(el=>el.checked=false);document.getElementById('comm-grupo-geral').checked=false;
+    } catch(e){console.error(e);alert(e.message||'Não foi possível transmitir a mensagem.');}
+    finally{btn.disabled=false;btn.textContent='TRANSMITIR';}
 }
 async function commEnviarJogador() {
-    const campo = document.getElementById('comm-jogador-texto');
-    const texto = campo?.value.trim() || '';
-    if (!texto) { alert('Digite uma mensagem antes de enviar.'); return; }
-    const btn = document.getElementById('comm-jogador-enviar');
-    if (btn) { btn.disabled = true; btn.textContent = 'ENVIANDO...'; }
-    try {
-        await commEnviarPara('MESTRE', 'Mestre', texto, 'privado_mestre');
-        if (campo) campo.value = '';
-    } catch(e) {
-        console.error(e);
-        alert(e.message || 'Não foi possível enviar.');
-    } finally {
-        if (btn) { btn.disabled = false; btn.textContent = 'ENVIAR'; }
-    }
+    const texto=document.getElementById('comm-jogador-texto')?.value.trim()||'';
+    if(!texto){alert('Digite uma mensagem antes de enviar.');return;}
+    const btn=document.getElementById('comm-jogador-enviar');btn.disabled=true;btn.textContent='ENVIANDO...';
+    try{await commEnviarPara('MESTRE','Mestre',texto,'privado_mestre');document.getElementById('comm-jogador-texto').value='';}
+    catch(e){console.error(e);alert(e.message||'Não foi possível enviar.');}
+    finally{btn.disabled=false;btn.textContent='ENVIAR';}
 }
 async function commExcluirMensagem(m) {
-    if (!commEhMestre() || !confirm('Excluir esta mensagem para o destinatário?')) return;
-    try { await deleteDoc(doc(db, 'comunicacoes', m.id)); }
-    catch(e) { console.error(e); alert('Não foi possível excluir a mensagem: ' + e.message); }
+    if(!commEhMestre()||!confirm('Excluir esta mensagem para o destinatário?')) return;
+    try{await deleteDoc(doc(db,'comunicacoes',m.id));}
+    catch(e){console.error(e);alert('Não foi possível excluir a mensagem: '+e.message);}
 }
 function commAbrirModalJogador() {
-    const modal = document.getElementById('comm-modal-jogador');
-    if (modal) modal.classList.remove('hidden');
-    [...commMensagens.values()].filter(m => m.recipientUid === usuarioAtual?.uid).forEach(m => commMensagensJaNotificadas.add(m.id));
     commPararAlerta();
-    const tela = document.getElementById('walkie-screen-main');
-    if (tela) tela.textContent = 'CANAL DE COMUNICAÇÃO';
+    const modal=document.getElementById('comm-modal-jogador');if(modal)modal.classList.remove('hidden');
+    const tela=document.getElementById('walkie-screen-main');if(tela)tela.textContent='CANAL DE COMUNICAÇÃO';
     commRenderizarHistoricoJogador();
 }
-function commFecharModalJogador() {
-    const modal = document.getElementById('comm-modal-jogador');
-    if (modal) modal.classList.add('hidden');
-    const tela = document.getElementById('walkie-screen-main');
-    if (tela) tela.textContent = 'SEM NOVAS COMUNICAÇÕES';
-}
+function commFecharModalJogador(){document.getElementById('comm-modal-jogador')?.classList.add('hidden');}
 function commProcessarMensagensJogador(lista) {
-    commMensagens = new Map(lista.map(m => [m.id, m]));
+    const anteriores=new Set(commMensagens.keys());
+    commMensagens=new Map(lista.map(m=>[m.id,m]));
+    const recebidas=lista.filter(m=>m.recipientUid===usuarioAtual?.uid);
+    const modalAberto=!document.getElementById('comm-modal-jogador')?.classList.contains('hidden');
+    const pendente=recebidas.filter(m=>Number(m.alertaAteMs||0)>Date.now()).sort((a,b)=>Number(b.criadoEmMs||0)-Number(a.criadoEmMs||0))[0];
+    if(pendente && (!anteriores.has(pendente.id) || !commAlertaAtivo)) commIniciarAlerta(pendente);
     commRenderizarHistoricoJogador();
 }
 function iniciarComunicacaoMestre() {
-    commLimparListeners();
-    commMensagens = new Map();
+    commLimparListeners();commMensagens=new Map();
     commCarregarJogadores();
-    const unsub = onSnapshot(collection(db, 'comunicacoes'), snap => {
-        commMensagens = new Map(snap.docs.map(d => [d.id, {id:d.id,...d.data()}]));
-        commRenderizarHistoricoMestre();
-    }, e => console.error('Falha ao ouvir a central de comunicação:', e));
+    const unsub=onSnapshot(collection(db,'comunicacoes'),snap=>{
+        commMensagens=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));commRenderizarHistoricoMestre();
+    },e=>console.error('Falha ao ouvir central de comunicação:',e));
     commUnsubscribers.push(unsub);
 }
 function iniciarComunicacaoJogador() {
-    if (!usuarioAtual || commEhMestre()) return;
-    commLimparListeners();
-    commMensagens = new Map();
-    let recebidas = [];
-    let enviadas = [];
-    let primeiroSnapshotRecebidas = true;
-
-    const atualizarHistorico = () => {
-        const unidas = [...new Map([...recebidas, ...enviadas].map(m => [m.id, m])).values()];
-        commProcessarMensagensJogador(unidas);
-    };
-
-    const consultaRecebidas = query(collection(db, 'comunicacoes'), where('recipientUid', '==', usuarioAtual.uid));
-    const unsubRecebidas = onSnapshot(consultaRecebidas, snap => {
-        const primeiraCarga = primeiroSnapshotRecebidas;
-        const novasMensagens = primeiraCarga
-            ? []
-            : snap.docChanges().filter(change => change.type === 'added').map(change => ({id:change.doc.id,...change.doc.data()}));
-        primeiroSnapshotRecebidas = false;
-        recebidas = snap.docs.map(d => ({id:d.id,...d.data()}));
-        atualizarHistorico();
-
-        if (primeiraCarga) {
-            recebidas.forEach(m => commMensagensJaNotificadas.add(m.id));
-            if (!commModalJogadorAberto()) {
-                const pendenteInicial = recebidas
-                    .filter(m => m.senderUid !== usuarioAtual.uid && Number(m.alertaAteMs || 0) > Date.now())
-                    .sort((a,b) => Number(b.criadoEmMs || 0) - Number(a.criadoEmMs || 0))[0];
-                if (pendenteInicial) commIniciarAlerta(pendenteInicial);
-            }
-            return;
-        }
-
-        const realmenteNovas = novasMensagens.filter(m => !commMensagensJaNotificadas.has(m.id) && m.senderUid !== usuarioAtual.uid);
-        if (commModalJogadorAberto()) {
-            realmenteNovas.forEach(m => {
-                commMensagensJaNotificadas.add(m.id);
-                commTocarSomChat();
-            });
-            return;
-        }
-
-        const pendentes = realmenteNovas
-            .filter(m => Number(m.alertaAteMs || 0) > Date.now())
-            .sort((a,b) => Number(b.criadoEmMs || 0) - Number(a.criadoEmMs || 0));
-        if (pendentes.length) commIniciarAlerta(pendentes[0]);
-        realmenteNovas.forEach(m => commMensagensJaNotificadas.add(m.id));
-    }, e => console.error('Falha ao carregar mensagens recebidas:', e));
-    commUnsubscribers.push(unsubRecebidas);
-
-    const consultaEnviadas = query(collection(db, 'comunicacoes'), where('senderUid', '==', usuarioAtual.uid));
-    const unsubEnviadas = onSnapshot(consultaEnviadas, snap => {
-        enviadas = snap.docs.map(d => ({id:d.id,...d.data()}));
-        atualizarHistorico();
-    }, e => console.error('Falha ao carregar mensagens enviadas:', e));
-    commUnsubscribers.push(unsubEnviadas);
+    if(!usuarioAtual||commEhMestre()) return;
+    commLimparListeners();commMensagens=new Map();
+    let recebidas=[],enviadas=[];
+    const atualizar=()=>commProcessarMensagensJogador([...new Map([...recebidas,...enviadas].map(m=>[m.id,m])).values()]);
+    commUnsubscribers.push(onSnapshot(query(collection(db,'comunicacoes'),where('recipientUid','==',usuarioAtual.uid)),snap=>{recebidas=snap.docs.map(d=>({id:d.id,...d.data()}));atualizar();},e=>console.error('Falha ao carregar mensagens recebidas:',e)));
+    commUnsubscribers.push(onSnapshot(query(collection(db,'comunicacoes'),where('senderUid','==',usuarioAtual.uid)),snap=>{enviadas=snap.docs.map(d=>({id:d.id,...d.data()}));atualizar();},e=>console.error('Falha ao carregar mensagens enviadas:',e)));
 }
-
-document.addEventListener('pointerdown', commDesbloquearAudio, true);
-document.addEventListener('keydown', commDesbloquearAudio, true);
 
 const btnCommEnviarMestre=document.getElementById('comm-master-enviar');if(btnCommEnviarMestre)btnCommEnviarMestre.addEventListener('click',commEnviarMestre);
 const btnCommEnviarJogador=document.getElementById('comm-jogador-enviar');if(btnCommEnviarJogador)btnCommEnviarJogador.addEventListener('click',commEnviarJogador);
