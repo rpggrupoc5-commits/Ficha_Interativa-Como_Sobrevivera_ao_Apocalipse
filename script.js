@@ -28,7 +28,6 @@ import {
     serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// IMPORTANDO O BANCO DE ITENS
 import { bancoDeItens } from './itens.js';
 
 const firebaseConfig = {
@@ -84,10 +83,9 @@ audioSalvarManual.volume = 0.9;
 audioEntrarFicha.volume = 0.8;
 audioSairFicha.volume = 0.8;
 audioEntrarPainel.volume = 0.8;
-audioSairPainel.volume = 1.0; // Aumentado em 20% conforme solicitado
+audioSairPainel.volume = 1.0;
 audioCancelarItem.volume = 0.8;
 
-// Sons de lançamento de dados do Gerador de Itens (LOOT)
 const sonsDados = [new Audio('dados1.mp3'), new Audio('dados2.mp3'), new Audio('dados3.mp3')];
 sonsDados.forEach(som => { som.preload = 'auto'; som.volume = 0.9; });
 let ultimoSomDado = -1;
@@ -98,7 +96,6 @@ function tocarSomDado() {
     ultimoSomDado = indice;
     tocarSom(sonsDados[indice], true);
 }
-
 
 function tocarSom(audio, pausarAnterior = true) {
     if (!audio) return;
@@ -154,14 +151,11 @@ window.gerarLoot = function(categoria) {
     const pesoUnitario = Number(itemSorteado.peso) || 0;
     const pesoTotal = (qtdSorteada * pesoUnitario).toFixed(2);
 
-    // O item aleatório também informa de qual categoria ele veio.
     let categoriaReal = categoria;
     if (categoria === 'item_aleatorio') {
         categoriaReal = Object.keys(listasCategorias).find(chave => listasCategorias[chave]?.includes(itemSorteado)) || 'item_aleatorio';
     }
-	    }
 
-    // Variações cosméticas: não alteram dano, movimento ou qualquer regra de combate.
     const estadosArmas = [
         "Bem conservada", "Desgastada", "Antiga", "Danificada", "Enferrujada",
         "Improvisada", "Reparada", "Com marcas de uso", "Rara", "Em ótimo estado"
@@ -348,7 +342,8 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         usuarioAtual = user;
         const mestreLogado = (user.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
-		        if (user.email) {
+
+        if (user.email) {
             try {
                 await registrarContaJogador(user);
             } catch (erroPerfil) {
@@ -558,7 +553,7 @@ function mostrarTelaSolicitacao(estado) {
         document.getElementById('btn-verificar').onclick = () => { tocarSom(audioClique); window.location.reload(); };
         document.getElementById('btn-voltar-login').onclick = () => { tocarSom(audioSairFicha); signOut(auth).then(() => window.location.reload()); };
     } else if (estado === 'recusado') {
-		        painel.innerHTML = `
+        painel.innerHTML = `
             <div class="painel-papel p-6 rounded-lg w-[420px] max-w-full flex flex-col gap-4">
                 <h2 class="fonte-titulo text-3xl text-[#111] text-center">ACESSO RECUSADO</h2>
                 <p class="text-[#111] text-center font-bold">O mestre recusou sua solicitação de acesso a esta ficha.</p>
@@ -724,7 +719,6 @@ let imagemAtualBase64 = null;
 let quadradoFotoAtual = null;
 let imagemFotoBase64 = null;
 
-// Controle de estado da mochila ativa
 let mochilaAtivaId = null;
 let mochilaCapacidade = 0;
 let mochilaStatus = false; 
@@ -778,7 +772,7 @@ const modalHTML = `
                 <div id="modal-preview" class="w-24 h-24 rounded flex flex-col justify-center items-center relative overflow-hidden text-black/30 border-2 border-dashed border-[#3a2e27] bg-black/10">
                     <i class="fa-solid fa-camera text-2xl mb-1"></i>
                     <span class="text-[9px] font-bold text-center leading-tight">SEM IMAGEM</span>
-					                </div>
+                </div>
                 <div class="flex-1 flex flex-col gap-2">
                     <label class="flex flex-col text-sm font-bold text-[#111]">Nome do Item:<input type="text" id="modal-nome" class="input-campo p-2"></label>
                     <button id="btn-upload" class="btn-metal p-2 rounded font-bold transition text-sm"><i class="fa-solid fa-camera"></i> Escolher Imagem</button>
@@ -789,7 +783,6 @@ const modalHTML = `
                 <label class="flex flex-col text-sm font-bold text-[#111] flex-1">Peso Unit. (kg):<input type="text" id="modal-peso" class="input-campo p-2" placeholder="Ex: 0.5"></label>
             </div>
 
-            <!-- NOVO CAMPO: Peso Total Dinâmico -->
             <div class="text-right font-bold text-sm text-[#8a1313] mt-1">
                 Peso Total: <span id="modal-peso-total">0.00</span> kg
             </div>
@@ -853,7 +846,6 @@ const btnCancelar = document.getElementById('btn-cancelar');
 const btnSalvarItem = document.getElementById('btn-salvar-item');
 const btnUpload = document.getElementById('btn-upload');
 
-// Elementos do Peso Total Dinâmico
 const modalPesoTotalEl = document.getElementById('modal-peso-total');
 
 const modalFoto = document.getElementById('modal-foto');
@@ -916,7 +908,6 @@ function atualizarPreviewModal() {
     }
 }
 
-// Função para atualizar o cálculo do peso total no Modal em tempo real
 function atualizarPesoTotalModal() {
     const qtd = parseFloat(inputQtd.value) || 0;
     const pesoStr = inputPeso.value.replace(',', '.');
@@ -973,7 +964,7 @@ function abrirModal(q, dados = null) {
         document.querySelector('#modal-item h3').innerText = isMochilaSlot ? "EQUIPAR MOCHILA" : "NOVO ITEM";
         btnSalvarItem.innerText = "ADICIONAR";
     }
-    atualizarPesoTotalModal(); // Atualiza o cálculo ao abrir
+    atualizarPesoTotalModal();
     atualizarPreviewModal();
     modal.classList.remove('hidden');
 }
@@ -997,14 +988,14 @@ btnExcluir.onclick = () => {
 
     tocarSom(audioSairPainel);
     if (quadradoAtual.id.startsWith('inv-')) {
-		    } else {
+        quadradoAtual.innerHTML = '<span class="text-2xl text-black/20 group-hover:text-red-800 transition-colors">+</span>';
+    } else {
         const original = quadradoAtual.getAttribute('data-original') || '';
         quadradoAtual.innerHTML = original + '<span class="text-lg text-black/30"><i class="fa-solid fa-upload"></i></span>';
     }
     quadradoAtual.classList.remove('item-adicionado');
-    // Remove os dados vinculados ao slot. dataset.itemData corresponde a data-item-data.
     delete quadradoAtual.dataset.itemData;
-    quadradoAtual.removeAttribute('data-itemdata'); // limpa também o atributo legado, se existir
+    quadradoAtual.removeAttribute('data-itemdata');
     quadradoAtual.removeAttribute('data-peso');
     quadradoAtual.removeAttribute('data-qtd');
 
@@ -1048,7 +1039,6 @@ function renderizarItem(q, dados) {
     const isEquipamento = !q.id.startsWith('inv-');
     const classeTexto = isEquipamento ? 'opacity-0 group-hover:opacity-100 transition-opacity' : 'opacity-100';
 
-    // Calcula o peso total deste item (Quantidade x Peso Unitário)
     const qtd = parseFloat(dados.qtd) || 1;
     const pesoStr = (dados.peso || "0").toString().replace(',', '.');
     const pesoUnit = parseFloat(pesoStr) || 0;
@@ -1210,8 +1200,6 @@ async function salvarFicha(opcoes = {}) {
     }
 
     const todosSlots = Array.from(document.querySelectorAll('.slot-vazio'));
-    // Os slots do inventário também possuem a classe .slot-vazio.
-    // Excluí-los aqui evita gravar cada item da mochila novamente em itensEquipamento.
     const itensEquipamento = Array.from(
         document.querySelectorAll('.slot-vazio.item-adicionado')
     ).filter(el => !el.closest('#inventario'));
@@ -1222,7 +1210,8 @@ async function salvarFicha(opcoes = {}) {
         const indice = todosSlots.indexOf(el);
         const imagemId = `equipamento_${indice}`;
         if (dados.img) imagensAtivas[imagemId] = dados.img;
-		        const dadosSalvar = { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" };
+        
+        const dadosSalvar = { nome: dados.nome, qtd: dados.qtd, peso: dados.peso, desc: dados.desc || "", img: "" };
         if (dados.tipo === 'mochila') {
             dadosSalvar.tipo = 'mochila';
             dadosSalvar.mochilaCapacidade = dados.mochilaCapacidade;
@@ -1354,7 +1343,7 @@ async function carregarFicha() {
     document.querySelectorAll('.slot-vazio, .foto-personagem').forEach(el => {
         el.classList.remove('item-adicionado');
         delete el.dataset.itemData;
-        el.removeAttribute('data-itemdata'); // compatibilidade com fichas que tenham o atributo antigo
+        el.removeAttribute('data-itemdata');
         el.removeAttribute('data-peso');
         el.removeAttribute('data-qtd');
 
@@ -1383,8 +1372,6 @@ async function carregarFicha() {
         const posicoesEquipamentoCarregadas = new Set();
 
         d.itensEquipamento.forEach(item => {
-            // Registros antigos criados pelo seletor incorreto podem ter posicao nula.
-            // Eles eram cópias de itens da mochila e não devem ocupar slots de equipamento.
             if (!item || typeof item.posicao !== 'string' || !item.posicao.trim()) return;
             if (posicoesEquipamentoCarregadas.has(item.posicao)) return;
 
@@ -1446,7 +1433,7 @@ async function carregarContasJogadores() {
         contas.forEach(conta => {
             const linha = document.createElement('div');
             linha.className = 'flex flex-col md:flex-row md:items-center justify-between gap-3 rounded border border-[#7a4e32] bg-white/70 p-3';
-			            const dados = document.createElement('div');
+            const dados = document.createElement('div');
             dados.className = 'min-w-0';
             const nome = document.createElement('p'); nome.className = 'font-bold text-[#211b17] text-lg'; nome.textContent = conta.nome || 'Jogador';
             const email = document.createElement('p'); email.className = 'text-sm text-[#3a2e27] break-all'; email.textContent = conta.email || 'E-mail não informado';
@@ -1594,7 +1581,6 @@ async function criarCardFicha(idFicha, ficha, modoMestre = false) {
 
     const acoes = document.createElement('div'); acoes.className = 'mt-auto pt-3 flex flex-wrap gap-2';
 
-    // Correção: Transformando o botão em um link real (Tag <a>) para não ser bloqueado pelo navegador
     const linkFicha = document.createElement('a');
     linkFicha.href = `${window.location.pathname}?ficha=${idFicha}`;
     linkFicha.target = '_blank';
@@ -1633,7 +1619,7 @@ async function carregarDashboardJogador() {
             <span class="text-2xl font-bold mt-4 block text-[#8a1313] bg-[#e6d5b8]/80 p-4 rounded-lg border-2 border-[#8a1313] shadow-md">
                 ⚠️ SUA CONTA FOI CRIADA COM SUCESSO!<br>
                 <span class="text-lg font-normal mt-2 block text-[#1a110a]">Peça ao Mestre para vincular uma ficha ao seu UID:</span>
-                <span class="font-mono bg-black/20 px-3 py-1 rounded select-all mt-2 inline-block text-white shadow-inner">${usuarioAtual.uid}</span>
+                <span class="font-mono bg-black/20 px-3 py-1 rounded select-all mt-2 inline-block text-white shadow-inner text-sm break-all w-full">${usuarioAtual.uid}</span>
             </span></p>`; 
             return; 
         }
@@ -1676,7 +1662,7 @@ function voltarAoPainel() {
         salvarFicha({ silencioso: true, semAlerta: true }).finally(() => {
             window.close();
             setTimeout(() => {
-				                const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
+                const url = new URL(window.location.href); url.searchParams.delete('ficha'); url.searchParams.delete('convite');
                 window.location.href = url.toString();
             }, 100);
         });
@@ -1900,7 +1886,7 @@ async function vincularJogador(idFicha, ficha) {
         const userSnap = await getDoc(doc(db, 'usuarios', uidLimpo));
         if (userSnap.exists()) {
             emailEncontrado = userSnap.data().email || '';
-			        }
+        }
 
         await setDoc(doc(db, 'fichas', idFicha), { 
             proprietarioUid: uidLimpo, 
@@ -1963,8 +1949,6 @@ function commObterContextoAudio() {
     }
 }
 
-// O navegador só permite iniciar sons automáticos depois de uma interação do usuário.
-// O áudio é preparado silenciosamente no primeiro toque/clique/tecla, sem emitir um toque extra.
 function commDesbloquearAudio() {
     const contexto = commObterContextoAudio();
     if (contexto && contexto.state === 'suspended') {
@@ -1999,8 +1983,6 @@ function commDesbloquearAudio() {
     }
 }
 
-// Som curto e diferente para cada nova mensagem recebida enquanto o chat está aberto.
-// É sintetizado no próprio navegador: não exige outro MP3 nem Firebase Storage.
 function commTocarSomChat() {
     const contexto = commObterContextoAudio();
     if (!contexto) return;
@@ -2058,7 +2040,6 @@ function commAgendarProximoToque() {
         commPararAlerta();
         return;
     }
-    // São 3 segundos completos de silêncio depois que o arquivo termina.
     commPausaTimer = setTimeout(commTocarCicloRadio, Math.min(3000, restante));
 }
 function commTocarCicloRadio() {
@@ -2081,7 +2062,6 @@ function commTocarCicloRadio() {
     const reproducao = commRadioAudio.play();
     if (reproducao && typeof reproducao.catch === 'function') {
         reproducao.catch(erro => {
-            // Se o navegador ainda não liberou o áudio, tenta novamente sem travar o alerta.
             console.warn('O navegador bloqueou temporariamente o toque do rádio:', erro);
             if (commAlertaAtivo && Date.now() < commAlertaAteMs) {
                 commPausaTimer = setTimeout(commTocarCicloRadio, 1000);
@@ -2126,7 +2106,7 @@ function commCriarElementoMensagem(m, paraMestre=false) {
     }
     if (paraMestre) {
         const apagar = document.createElement('button');
-		        apagar.type = 'button';
+        apagar.type = 'button';
         apagar.className = 'block text-red-300';
         apagar.textContent = 'Excluir mensagem';
         apagar.onclick = () => commExcluirMensagem(m);
@@ -2326,8 +2306,6 @@ function iniciarComunicacaoJogador() {
         atualizarHistorico();
 
         if (primeiraCarga) {
-            // Mensagens antigas não disparam o som do chat. Apenas recuperamos um alerta
-            // que ainda esteja dentro dos 30 segundos, caso o jogador não tenha aberto o chat.
             recebidas.forEach(m => commMensagensJaNotificadas.add(m.id));
             if (!commModalJogadorAberto()) {
                 const pendenteInicial = recebidas
@@ -2340,7 +2318,6 @@ function iniciarComunicacaoJogador() {
 
         const realmenteNovas = novasMensagens.filter(m => !commMensagensJaNotificadas.has(m.id) && m.senderUid !== usuarioAtual.uid);
         if (commModalJogadorAberto()) {
-            // Dentro do chat: apenas o aviso curto de mensagem, nunca o alarme do rádio.
             realmenteNovas.forEach(m => {
                 commMensagensJaNotificadas.add(m.id);
                 commTocarSomChat();
@@ -2364,11 +2341,9 @@ function iniciarComunicacaoJogador() {
     commUnsubscribers.push(unsubEnviadas);
 }
 
-// Qualquer interação real do jogador prepara o áudio para alertas futuros.
 document.addEventListener('pointerdown', commDesbloquearAudio, true);
 document.addEventListener('keydown', commDesbloquearAudio, true);
 
-// Inicialização dos controles da interface
 const btnCommEnviarMestre=document.getElementById('comm-master-enviar');if(btnCommEnviarMestre)btnCommEnviarMestre.addEventListener('click',commEnviarMestre);
 const btnCommEnviarJogador=document.getElementById('comm-jogador-enviar');if(btnCommEnviarJogador)btnCommEnviarJogador.addEventListener('click',commEnviarJogador);
 document.getElementById('comm-selecionar-todos')?.addEventListener('click',()=>document.querySelectorAll('.comm-destinatario').forEach(el=>el.checked=true));
