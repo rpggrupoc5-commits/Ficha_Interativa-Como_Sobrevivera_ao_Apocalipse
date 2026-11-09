@@ -1,4 +1,3 @@
-
 export const bancoDeItens = {
     comida: [
         { nome: "Maçã", qtdMin: 1, qtdMax: 4, peso: 0.15 },
@@ -22,7 +21,6 @@ export const bancoDeItens = {
         { nome: "Café em Grãos", qtdMin: 1, qtdMax: 2, peso: 0.25 },
         { nome: "Leite em Pó", qtdMin: 1, qtdMax: 2, peso: 0.30 }
     ],
-
     bebida: [
         { nome: "Água Mineral", qtdMin: 1, qtdMax: 2, peso: 0.50 },
         { nome: "Refrigerante", qtdMin: 1, qtdMax: 4, peso: 0.35 },
@@ -45,7 +43,6 @@ export const bancoDeItens = {
         { nome: "Isotônico", qtdMin: 1, qtdMax: 3, peso: 0.40 },
         { nome: "Bebida Láctea", qtdMin: 1, qtdMax: 2, peso: 0.25 }
     ],
-
     remedio: [
         { nome: "Dipirona", qtdMin: 1, qtdMax: 3, peso: 0.01 },
         { nome: "Curativo", qtdMin: 1, qtdMax: 5, peso: 0.02 },
@@ -68,9 +65,7 @@ export const bancoDeItens = {
         { nome: "Xarope para Tosse", qtdMin: 1, qtdMax: 1, peso: 0.20 },
         { nome: "Colírio", qtdMin: 1, qtdMax: 2, peso: 0.02 }
     ],
-
     arma_branca: [
-        // Itens originais
         { nome: "Faca de Combate", qtdMin: 1, qtdMax: 1, peso: 0.50 },
         { nome: "Canivete Suíço", qtdMin: 1, qtdMax: 1, peso: 0.10 },
         { nome: "Soco-Inglês", qtdMin: 1, qtdMax: 1, peso: 0.30 },
@@ -83,8 +78,6 @@ export const bancoDeItens = {
         { nome: "Arco Pesado", qtdMin: 1, qtdMax: 1, peso: 1.40 },
         { nome: "Besta Leve", qtdMin: 1, qtdMax: 1, peso: 1.80 },
         { nome: "Besta Pesada", qtdMin: 1, qtdMax: 1, peso: 2.50 },
-
-        // Armas simples e improvisadas
         { nome: "Clava", qtdMin: 1, qtdMax: 1, peso: 1.50 },
         { nome: "Cutelo", qtdMin: 1, qtdMax: 1, peso: 1.00 },
         { nome: "Faca de Sobrevivência", qtdMin: 1, qtdMax: 1, peso: 0.45 },
@@ -121,7 +114,6 @@ export const bancoDeItens = {
         { nome: "Taco de Hóquei", qtdMin: 1, qtdMax: 1, peso: 0.70 },
         { nome: "Remo", qtdMin: 1, qtdMax: 1, peso: 1.40 }
     ],
-
     arma_de_fogo: [
         { nome: "Pistola 9mm", qtdMin: 1, qtdMax: 1, peso: 1.20 },
         { nome: "Pistola .45", qtdMin: 1, qtdMax: 1, peso: 1.30 },
@@ -155,19 +147,15 @@ export const bancoDeItens = {
         { nome: "Munição de Fuzil", qtdMin: 5, qtdMax: 30, peso: 0.02 },
         { nome: "Caixa de Munição Variada", qtdMin: 1, qtdMax: 1, peso: 1.00 }
     ],
-
-    // Compatibilidade com chamadas antigas à categoria "arma".
-    arma: [],
+    arma: [] ,
     item_aleatorio: []
 };
 
-// Mantém a categoria antiga disponível.
 bancoDeItens.arma = [
     ...bancoDeItens.arma_branca,
     ...bancoDeItens.arma_de_fogo
 ];
 
-// Reúne todas as categorias sem duplicar armas.
 bancoDeItens.item_aleatorio = [
     ...bancoDeItens.comida,
     ...bancoDeItens.bebida,
