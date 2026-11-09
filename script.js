@@ -1643,7 +1643,7 @@ async function carregarDashboardJogador() {
             <span class="text-2xl font-bold mt-4 block text-[#8a1313] bg-[#e6d5b8]/80 p-4 rounded-lg border-2 border-[#8a1313] shadow-md">
                 ⚠️ SUA CONTA FOI CRIADA COM SUCESSO!<br>
                 <span class="text-lg font-normal mt-2 block text-[#1a110a]">Peça ao Mestre para vincular uma ficha ao seu UID:</span>
-                <span class="font-mono bg-black/20 px-3 py-1 rounded select-all mt-2 inline-block text-white shadow-inner">${usuarioAtual.uid}</span>
+                <span class="font-mono bg-black/20 px-2 py-2 rounded select-all mt-2 block w-full max-w-full box-border text-white text-sm break-all whitespace-normal overflow-hidden shadow-inner">${usuarioAtual.uid}</span>
             </span></p>`;
             return;
         }
