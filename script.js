@@ -2007,6 +2007,19 @@ function commCriarElementoMensagem(m, paraMestre=false) {
     }
 
     if (paraMestre) {
+        const selecao = document.createElement('label');
+        selecao.className = 'comm-selecao-mensagem';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'comm-mensagem-checkbox';
+        checkbox.dataset.messageId = m.id;
+        checkbox.addEventListener('change', commAtualizarContadorExclusao);
+
+        selecao.appendChild(checkbox);
+        selecao.appendChild(document.createTextNode(' Selecionar'));
+        div.appendChild(selecao);
+
         const apagar = document.createElement('button');
         apagar.type='button';
         apagar.className='block text-red-300 hover:text-red-100';
@@ -2035,9 +2048,10 @@ function commRenderizarHistoricoMestre() {
     lista.sort((a,b)=>Number(a.criadoEmMs||0)-Number(b.criadoEmMs||0));
 
     alvo.innerHTML='';
-    if(!lista.length){alvo.innerHTML='<p class="text-slate-400 text-sm">Nenhuma comunicação enviada ou recebida.</p>';return;}
+    if(!lista.length){alvo.innerHTML='<p class="text-slate-400 text-sm">Nenhuma comunicação enviada ou recebida.</p>';commAtualizarContadorExclusao();return;}
     lista.slice(0,100).forEach(m=>alvo.appendChild(commCriarElementoMensagem(m,true)));
     alvo.scrollTop = alvo.scrollHeight;
+    commAtualizarContadorExclusao();
 }
 async function commCarregarJogadores() {
     if(!commEhMestre()) return;
@@ -2101,6 +2115,46 @@ async function commExcluirMensagem(m) {
     try{await deleteDoc(doc(db,'comunicacoes',m.id));}
     catch(e){console.error(e);alert('Não foi possível excluir a mensagem: '+e.message);}
 }
+
+function commAtualizarContadorExclusao() {
+    const selecionadas = document.querySelectorAll('#comm-master-historico .comm-mensagem-checkbox:checked');
+    const botao = document.getElementById('comm-excluir-mensagens');
+    if (botao) botao.textContent = `EXCLUIR SELECIONADAS (${selecionadas.length})`;
+}
+
+async function commExcluirMensagensSelecionadas() {
+    const selecionadas = [...document.querySelectorAll('#comm-master-historico .comm-mensagem-checkbox:checked')];
+    const ids = [...new Set(selecionadas.map(el => el.dataset.messageId).filter(Boolean))];
+
+    if (!ids.length) {
+        alert('Selecione pelo menos uma mensagem.');
+        return;
+    }
+
+    if (!confirm(`Deseja excluir ${ids.length} mensagem(ns)? Elas também desaparecerão do histórico dos jogadores.`)) return;
+
+    const botao = document.getElementById('comm-excluir-mensagens');
+    if (botao) {
+        botao.disabled = true;
+        botao.textContent = 'EXCLUINDO...';
+    }
+
+    try {
+        await Promise.all(ids.map(id => deleteDoc(doc(db, 'comunicacoes', id))));
+        ids.forEach(id => commMensagens.delete(id));
+        commRenderizarHistoricoMestre();
+        commRenderizarHistoricoJogador();
+    } catch (e) {
+        console.error(e);
+        alert('Não foi possível excluir todas as mensagens. Atualize o histórico e tente novamente.');
+    } finally {
+        if (botao) {
+            botao.disabled = false;
+            commAtualizarContadorExclusao();
+        }
+    }
+}
+
 function commAbrirModalJogador() {
     // Força o navegador a liberar o áudio no clique do botão ATENDER
     commRadioAudio.play().then(() => { commRadioAudio.pause(); commRadioAudio.currentTime = 0; }).catch(() => {});
@@ -2175,3 +2229,13 @@ document.getElementById('comm-master-filtro')?.addEventListener('change',commRen
 document.getElementById('walkie-atender')?.addEventListener('click',commAbrirModalJogador);
 document.getElementById('comm-fechar-modal')?.addEventListener('click',commFecharModalJogador);
 document.getElementById('comm-modal-jogador')?.addEventListener('click',e=>{if(e.target.id==='comm-modal-jogador')commFecharModalJogador();});
+
+document.getElementById('comm-selecionar-mensagens')?.addEventListener('click', () => {
+    const caixas = [...document.querySelectorAll('#comm-master-historico .comm-mensagem-checkbox')];
+    const todasMarcadas = caixas.length > 0 && caixas.every(el => el.checked);
+
+    caixas.forEach(el => el.checked = !todasMarcadas);
+    commAtualizarContadorExclusao();
+});
+
+document.getElementById('comm-excluir-mensagens')?.addEventListener('click', commExcluirMensagensSelecionadas);
