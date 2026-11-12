@@ -63,7 +63,6 @@ const emailMestre = "rpggrupoc5@gmail.com";
 
 // =====================================================
 // CENTRAL DE COMUNICAÇÃO / RÁDIO PORTÁTIL - DECLARAÇÕES
-// (movidas para o topo para evitar TDZ)
 // =====================================================
 let commUnsubscribers = [];
 let commJogadores = [];
@@ -474,8 +473,6 @@ async function abrirRotaFicha(fichaId, veioDeConvite) {
             await carregarFicha();
             aplicarPermissoesNaTela();
             configurarAutosave();
-            // Fichas vinculadas ao UID do jogador também precisam iniciar
-            // os listeners do rádio, assim como fichas abertas por convite.
             iniciarComunicacaoJogador();
             return;
         }
@@ -1962,7 +1959,6 @@ function commTocarCicloRadio(fim) {
 
     commRadioAudio.onended = proximaPausa;
 
-    // Tenta tocar o áudio do rádio
     commRadioAudio.play().catch((e) => {
         console.warn("Áudio bloqueado pelo navegador. Aguardando interação.", e);
         commPausaTimer = setTimeout(() => commTocarCicloRadio(fim), 3000);
@@ -2238,6 +2234,7 @@ async function commCarregarJogadores() {
     try {
         const snap=await getDocs(collection(db,'usuarios'));
         commJogadores=snap.docs.map(d=>({uid:d.id,...d.data()})).filter(u=>(u.email||'').toLowerCase()!==emailMestre.toLowerCase());
+        rolagemAtualizarDestinatariosMestre();
         alvo.innerHTML='';
         if(!commJogadores.length){alvo.innerHTML='<p class="text-sm text-slate-400">Nenhuma conta de jogador cadastrada.</p>';return;}
         commJogadores.sort((a,b)=>(a.nome||a.email||'').localeCompare(b.nome||b.email||'','pt-BR')).forEach(u=>{
@@ -2336,7 +2333,6 @@ async function commExcluirMensagensSelecionadas() {
 }
 
 function commAbrirModalJogador() {
-    // Força o navegador a liberar o áudio no clique do botão ATENDER
     commRadioAudio.play().then(() => { commRadioAudio.pause(); commRadioAudio.currentTime = 0; }).catch(() => {});
 
     commPararAlerta();
@@ -2435,3 +2431,43 @@ document.getElementById('comm-selecionar-mensagens')?.addEventListener('click', 
 });
 
 document.getElementById('comm-excluir-mensagens')?.addEventListener('click', commExcluirMensagensSelecionadas);
+
+/* ==========================================
+   INTERFACE DE ROLAGEM DE DADOS
+========================================== */
+
+function rolagemAtualizarDestinatariosMestre() {
+    const select = document.getElementById('rolagem-destinatario-mestre');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Selecione um jogador</option>';
+
+    commJogadores.forEach(jogador => {
+        const option = document.createElement('option');
+        option.value = jogador.uid;
+        option.textContent = jogador.nome || jogador.email || 'Jogador';
+        select.appendChild(option);
+    });
+}
+
+function rolagemAtualizarPrivacidadeMestre() {
+    const privacidade = document.getElementById('rolagem-privacidade-mestre');
+    const container = document.getElementById('rolagem-destinatario-container');
+
+    if (!privacidade || !container) return;
+
+    if (privacidade.value === 'jogador') {
+        container.classList.remove('hidden');
+    } else {
+        container.classList.add('hidden');
+        document.getElementById('rolagem-destinatario-mestre').value = '';
+    }
+}
+
+document.getElementById('rolagem-privacidade-mestre')
+    ?.addEventListener('change', rolagemAtualizarPrivacidadeMestre);
+
+document.getElementById('comm-modal-jogador')
+    ?.addEventListener('transitionend', () => {});
+
+rolagemAtualizarDestinatariosMestre();
