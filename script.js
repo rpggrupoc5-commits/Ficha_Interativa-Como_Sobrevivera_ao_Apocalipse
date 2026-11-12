@@ -68,6 +68,7 @@ const emailMestre = "rpggrupoc5@gmail.com";
 let commUnsubscribers = [];
 let commJogadores = [];
 let commMensagens = new Map();
+let commConversaSelecionadaUid = null;
 let commAlertaAtivo = false;
 let commAlertaTimer = null;
 let commPausaTimer = null;
@@ -2053,6 +2054,184 @@ function commRenderizarHistoricoMestre() {
     alvo.scrollTop = alvo.scrollHeight;
     commAtualizarContadorExclusao();
 }
+
+// =====================================================
+// CONVERSAS ATIVAS DO MESTRE
+// =====================================================
+
+function commSelecionarConversaMestre(uid) {
+    commConversaSelecionadaUid = uid;
+
+    commAtualizarListaConversasMestre();
+    commRenderizarConversaMestre();
+}
+
+function commAtualizarListaConversasMestre() {
+    const alvo = document.getElementById('comm-master-conversas-lista');
+    if (!alvo) return;
+
+    const conversas = new Map();
+
+    [...commMensagens.values()].forEach(m => {
+        let uid = null;
+
+        if (m.senderUid === 'MESTRE') {
+            uid = m.recipientUid;
+        } else {
+            uid = m.senderUid;
+        }
+
+        if (!uid || uid === 'MESTRE') return;
+
+        const jogador = commJogadores.find(u => u.uid === uid);
+        if (!jogador) return;
+
+        const anterior = conversas.get(uid);
+
+        if (!anterior || Number(m.criadoEmMs || 0) > Number(anterior.criadoEmMs || 0)) {
+            conversas.set(uid, {
+                uid,
+                nome: jogador.nome || jogador.email || 'Jogador',
+                texto: m.texto || 'Mensagem',
+                criadoEmMs: Number(m.criadoEmMs || 0)
+            });
+        }
+    });
+
+    const lista = [...conversas.values()].sort(
+        (a, b) => b.criadoEmMs - a.criadoEmMs
+    );
+
+    alvo.innerHTML = '';
+
+    if (!lista.length) {
+        alvo.innerHTML = `
+            <p class="text-sm text-slate-400 text-center py-4">
+                Nenhuma conversa iniciada.
+            </p>
+        `;
+
+        commConversaSelecionadaUid = null;
+        commRenderizarConversaMestre();
+        return;
+    }
+
+    if (!lista.some(c => c.uid === commConversaSelecionadaUid)) {
+        commConversaSelecionadaUid = lista[0].uid;
+    }
+
+    lista.forEach(c => {
+        const botao = document.createElement('button');
+
+        botao.type = 'button';
+        botao.className = 'comm-conversa-item';
+
+        if (c.uid === commConversaSelecionadaUid) {
+            botao.classList.add('ativa');
+        }
+
+        const nome = document.createElement('strong');
+        nome.textContent = c.nome;
+
+        const mensagem = document.createElement('small');
+        mensagem.textContent = c.texto;
+
+        botao.append(nome, mensagem);
+
+        botao.onclick = () => commSelecionarConversaMestre(c.uid);
+
+        alvo.appendChild(botao);
+    });
+
+    commRenderizarConversaMestre();
+}
+
+function commRenderizarConversaMestre() {
+    const historico = document.getElementById('comm-master-conversa-historico');
+    const titulo = document.getElementById('comm-master-conversa-titulo');
+    const campo = document.getElementById('comm-master-resposta-texto');
+    const botao = document.getElementById('comm-master-resposta-enviar');
+
+    if (!historico || !titulo) return;
+
+    const uid = commConversaSelecionadaUid;
+
+    if (!uid) {
+        titulo.textContent = 'Selecione uma conversa';
+        historico.innerHTML = `
+            <p class="text-slate-400 text-center py-8">
+                Nenhuma conversa disponível.
+            </p>
+        `;
+
+        if (campo) campo.disabled = true;
+        if (botao) botao.disabled = true;
+        return;
+    }
+
+    const jogador = commJogadores.find(u => u.uid === uid);
+
+    titulo.textContent = jogador?.nome || jogador?.email || 'Jogador';
+
+    if (campo) campo.disabled = false;
+    if (botao) botao.disabled = false;
+
+    const lista = [...commMensagens.values()]
+        .filter(m => m.senderUid === uid || m.recipientUid === uid)
+        .sort((a, b) =>
+            Number(a.criadoEmMs || 0) - Number(b.criadoEmMs || 0)
+        );
+
+    historico.innerHTML = '';
+
+    if (!lista.length) {
+        historico.innerHTML = `
+            <p class="text-slate-400 text-center py-8">
+                Nenhuma mensagem nesta conversa.
+            </p>
+        `;
+        return;
+    }
+
+    lista.forEach(m => {
+        historico.appendChild(commCriarElementoMensagem(m, true));
+    });
+
+    historico.scrollTop = historico.scrollHeight;
+}
+
+async function commEnviarRespostaMestre() {
+    const campo = document.getElementById('comm-master-resposta-texto');
+    const botao = document.getElementById('comm-master-resposta-enviar');
+
+    const uid = commConversaSelecionadaUid;
+    const texto = campo?.value.trim() || '';
+
+    if (!uid) {
+        alert('Selecione uma conversa primeiro.');
+        return;
+    }
+
+    if (!texto) return;
+
+    const jogador = commJogadores.find(u => u.uid === uid);
+    const nome = jogador?.nome || jogador?.email || 'Jogador';
+
+    botao.disabled = true;
+    botao.textContent = 'ENVIANDO...';
+
+    try {
+        await commEnviarPara(uid, nome, texto, `privado_${uid}`);
+        campo.value = '';
+    } catch (e) {
+        console.error(e);
+        alert(e.message || 'Não foi possível enviar a resposta.');
+    } finally {
+        botao.disabled = false;
+        botao.textContent = 'ENVIAR RESPOSTA';
+    }
+}
+
 async function commCarregarJogadores() {
     if(!commEhMestre()) return;
     const alvo=document.getElementById('comm-master-lista-jogadores'); if(!alvo) return;
@@ -2069,6 +2248,7 @@ async function commCarregarJogadores() {
         });
         const filtro=document.getElementById('comm-master-filtro');
         if(filtro){const valorAtual=filtro.value;filtro.querySelectorAll('option[data-jogador]').forEach(o=>o.remove());commJogadores.forEach(u=>{const op=document.createElement('option');op.value=u.uid;op.dataset.jogador='1';op.textContent=u.nome||u.email||'Jogador';filtro.appendChild(op);});if([...filtro.options].some(o=>o.value===valorAtual))filtro.value=valorAtual;}
+        commAtualizarListaConversasMestre();
     } catch(e) { console.error(e); alvo.innerHTML='<p class="text-red-300 text-sm">Não foi possível carregar a lista de jogadores.</p>'; }
 }
 async function commEnviarPara(destinatario, nomeDestinatario, texto, grupoId) {
@@ -2194,7 +2374,11 @@ function iniciarComunicacaoMestre() {
     commLimparListeners();commMensagens=new Map();
     commCarregarJogadores();
     const unsub=onSnapshot(collection(db,'comunicacoes'),snap=>{
-        commMensagens=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));commRenderizarHistoricoMestre();
+        commMensagens=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
+
+        commRenderizarHistoricoMestre();
+        commAtualizarListaConversasMestre();
+
     },e=>console.error('Falha ao ouvir central de comunicação:',e));
     commUnsubscribers.push(unsub);
 }
@@ -2210,8 +2394,20 @@ function iniciarComunicacaoJogador() {
 const btnCommEnviarMestre=document.getElementById('comm-master-enviar');if(btnCommEnviarMestre)btnCommEnviarMestre.addEventListener('click',commEnviarMestre);
 const btnCommEnviarJogador=document.getElementById('comm-jogador-enviar');if(btnCommEnviarJogador)btnCommEnviarJogador.addEventListener('click',commEnviarJogador);
 
+// ENVIO DE RESPOSTAS NAS CONVERSAS ATIVAS
+document.getElementById('comm-master-resposta-enviar')
+    ?.addEventListener('click', commEnviarRespostaMestre);
+
+document.getElementById('comm-master-resposta-texto')
+    ?.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            commEnviarRespostaMestre();
+        }
+    });
+
 // SOM DAS TECLAS NA CENTRAL DE COMUNICAÇÃO
-['comm-master-texto', 'comm-jogador-texto'].forEach(id => {
+['comm-master-texto', 'comm-jogador-texto', 'comm-master-resposta-texto'].forEach(id => {
     const campo = document.getElementById(id);
 
     if (campo) {
