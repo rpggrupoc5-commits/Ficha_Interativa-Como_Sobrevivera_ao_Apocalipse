@@ -489,6 +489,32 @@
             }
         }
 
+        /* INTERFACE DE ROLAGEM DE DADOS */
+        .rolagem-select {
+            width: 100%;
+            background: #111a16;
+            border: 1px solid #80613b;
+            border-radius: 6px;
+            padding: 10px;
+            color: #f0e6d2;
+            font-weight: bold;
+            outline: none;
+        }
+
+        .rolagem-select:focus {
+            border-color: #d6a84f;
+            box-shadow: 0 0 0 2px #d6a84f33;
+        }
+
+        .rolagem-select option {
+            background: #111a16;
+            color: #f0e6d2;
+        }
+
+        #rolagem-destinatario-container:not(.hidden) {
+            display: flex;
+        }
+
     </style>
 </head>
 <body>
@@ -593,6 +619,63 @@
                                 </div>
                                 <p class="text-xs text-slate-400 mt-2">Nesta versão gratuita, a central transmite mensagens de texto. Os alertas sonoros do rádio funcionam normalmente.</p>
                             </div>
+
+                            <div class="rounded border border-amber-700 bg-black/30 p-3 mt-3">
+                                <h3 class="font-bold text-lg text-amber-200 mb-3">🎲 ROLAGEM DE DADOS</h3>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <label class="flex flex-col gap-1 text-sm">
+                                        Quantidade de dados:
+                                        <select id="rolagem-qtd-mestre" class="rolagem-select">
+                                            <option value="1">1 dado</option>
+                                            <option value="2">2 dados</option>
+                                            <option value="3">3 dados</option>
+                                            <option value="4">4 dados</option>
+                                            <option value="5">5 dados</option>
+                                            <option value="6">6 dados</option>
+                                            <option value="7">7 dados</option>
+                                            <option value="8">8 dados</option>
+                                            <option value="9">9 dados</option>
+                                            <option value="10">10 dados</option>
+                                        </select>
+                                    </label>
+
+                                    <label class="flex flex-col gap-1 text-sm">
+                                        Tipo de dado:
+                                        <select id="rolagem-tipo-mestre" class="rolagem-select">
+                                            <option value="4">D4</option>
+                                            <option value="6" selected>D6</option>
+                                            <option value="8">D8</option>
+                                            <option value="10">D10</option>
+                                            <option value="12">D12</option>
+                                            <option value="20">D20</option>
+                                            <option value="100">D100</option>
+                                        </select>
+                                    </label>
+                                </div>
+
+                                <label class="flex flex-col gap-1 text-sm mt-3">
+                                    Privacidade da rolagem:
+                                    <select id="rolagem-privacidade-mestre" class="rolagem-select">
+                                        <option value="publica">Pública — todos os jogadores</option>
+                                        <option value="mestre">Privada — somente eu</option>
+                                        <option value="jogador">Privada — eu e um jogador</option>
+                                    </select>
+                                </label>
+
+                                <label id="rolagem-destinatario-container" class="hidden flex-col gap-1 text-sm mt-3">
+                                    Escolher jogador:
+                                    <select id="rolagem-destinatario-mestre" class="rolagem-select">
+                                        <option value="">Selecione um jogador</option>
+                                    </select>
+                                </label>
+
+                                <button id="rolagem-executar-mestre" type="button" disabled
+                                    class="w-full mt-4 rounded bg-amber-800 px-4 py-3 font-bold text-white opacity-60 cursor-not-allowed">
+                                    ROLAGEM SERÁ ATIVADA NA PRÓXIMA ETAPA
+                                </button>
+                            </div>
+
                             <div class="rounded border border-slate-700 bg-black/30 p-3">
                                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2"><h3 class="font-bold text-lg text-sky-100">REGISTRO DE COMUNICAÇÕES</h3><div class="flex gap-2 items-center"><select id="comm-master-filtro" class="rounded bg-slate-900 border border-slate-600 p-2 text-xs text-white"><option value="todas">Todas as conversas</option><option value="grupo_geral">Grupo Geral</option></select><button id="comm-master-atualizar" class="text-xs underline text-sky-300">Atualizar</button></div></div>
                                 <div class="flex flex-wrap gap-2 mb-2">
@@ -827,6 +910,53 @@
         <div class="comm-modal-card">
             <div class="flex justify-between items-center gap-3 border-b border-slate-700 pb-3"><div><h2 id="comm-modal-titulo" class="fonte-titulo text-2xl text-sky-200">CANAL DE COMUNICAÇÃO</h2><p class="text-xs text-slate-400">Mensagens recebidas e enviadas</p></div><button id="comm-fechar-modal" class="text-2xl text-slate-300 hover:text-white" aria-label="Fechar">×</button></div>
             <div id="comm-jogador-historico" class="comm-chat-list"></div>
+            <div class="rounded border border-amber-700 bg-black/30 p-3">
+                <h3 class="font-bold text-lg text-amber-200 mb-3">🎲 ROLAR DADOS</h3>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex flex-col gap-1 text-sm">
+                        Quantidade:
+                        <select id="rolagem-qtd-jogador" class="rolagem-select">
+                            <option value="1">1 dado</option>
+                            <option value="2">2 dados</option>
+                            <option value="3">3 dados</option>
+                            <option value="4">4 dados</option>
+                            <option value="5">5 dados</option>
+                            <option value="6">6 dados</option>
+                            <option value="7">7 dados</option>
+                            <option value="8">8 dados</option>
+                            <option value="9">9 dados</option>
+                            <option value="10">10 dados</option>
+                        </select>
+                    </label>
+
+                    <label class="flex flex-col gap-1 text-sm">
+                        Tipo:
+                        <select id="rolagem-tipo-jogador" class="rolagem-select">
+                            <option value="4">D4</option>
+                            <option value="6" selected>D6</option>
+                            <option value="8">D8</option>
+                            <option value="10">D10</option>
+                            <option value="12">D12</option>
+                            <option value="20">D20</option>
+                            <option value="100">D100</option>
+                        </select>
+                    </label>
+                </div>
+
+                <label class="flex flex-col gap-1 text-sm mt-3">
+                    Privacidade:
+                    <select id="rolagem-privacidade-jogador" class="rolagem-select">
+                        <option value="publica">Pública — todos os jogadores</option>
+                        <option value="mestre">Privada — somente Mestre</option>
+                    </select>
+                </label>
+
+                <button id="rolagem-executar-jogador" type="button" disabled
+                    class="w-full mt-4 rounded bg-amber-800 px-4 py-3 font-bold text-white opacity-60 cursor-not-allowed">
+                    ROLAGEM SERÁ ATIVADA NA PRÓXIMA ETAPA
+                </button>
+            </div>
             <div class="border-t border-slate-700 pt-3"><textarea id="comm-jogador-texto" rows="2" maxlength="3000" placeholder="Digite uma resposta para o Mestre..." class="w-full rounded bg-slate-900 border border-slate-600 p-3 text-white"></textarea><div class="flex justify-end mt-2"><button id="comm-jogador-enviar" class="rounded bg-sky-700 hover:bg-sky-600 px-5 py-2 font-bold">ENVIAR</button></div></div>
         </div>
     </div>
