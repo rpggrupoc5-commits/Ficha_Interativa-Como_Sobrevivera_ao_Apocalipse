@@ -330,6 +330,60 @@
         #comm-master-lista-jogadores label:has(input:checked){background:#34452c!important;border-color:#91a66e;}
         @media(max-width:640px){.comm-modal{padding:5px}.comm-modal-card{padding:10px;max-height:96vh}.comm-chat-list{min-height:220px;max-height:52vh;padding:9px}.comm-message{max-width:94%;font-size:14px}}
 
+        /* MELHORIA DE LEITURA DA CENTRAL DE COMUNICACAO */
+        .comm-message {
+            font-size: 18px !important;
+            line-height: 1.6;
+            padding: 13px 16px;
+        }
+
+        .comm-message-meta {
+            font-size: 15px !important;
+            line-height: 1.5;
+        }
+
+        .comm-message-text {
+            font-size: 18px !important;
+            line-height: 1.6;
+        }
+
+        .comm-message button {
+            font-size: 14px !important;
+        }
+
+        .comm-selecao-mensagem {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 10px;
+            padding-top: 7px;
+            border-top: 1px solid #ffffff30;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .comm-mensagem-checkbox {
+            width: 19px;
+            height: 19px;
+            accent-color: #a4bd78;
+            cursor: pointer;
+        }
+
+        @media(max-width:640px) {
+            .comm-message {
+                font-size: 17px !important;
+                padding: 12px;
+            }
+
+            .comm-message-meta {
+                font-size: 14px !important;
+            }
+
+            .comm-message-text {
+                font-size: 17px !important;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -436,6 +490,10 @@
                             </div>
                             <div class="rounded border border-slate-700 bg-black/30 p-3">
                                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2"><h3 class="font-bold text-lg text-sky-100">REGISTRO DE COMUNICAÇÕES</h3><div class="flex gap-2 items-center"><select id="comm-master-filtro" class="rounded bg-slate-900 border border-slate-600 p-2 text-xs text-white"><option value="todas">Todas as conversas</option><option value="grupo_geral">Grupo Geral</option></select><button id="comm-master-atualizar" class="text-xs underline text-sky-300">Atualizar</button></div></div>
+                                <div class="flex flex-wrap gap-2 mb-2">
+                                    <button id="comm-selecionar-mensagens" type="button" class="rounded bg-slate-700 hover:bg-slate-600 px-3 py-2 text-sm font-bold text-white">SELECIONAR TODAS</button>
+                                    <button id="comm-excluir-mensagens" type="button" class="rounded bg-red-800 hover:bg-red-700 px-3 py-2 text-sm font-bold text-white">EXCLUIR SELECIONADAS (0)</button>
+                                </div>
                                 <div id="comm-master-historico" class="comm-chat-list"></div>
                             </div>
                         </div>
