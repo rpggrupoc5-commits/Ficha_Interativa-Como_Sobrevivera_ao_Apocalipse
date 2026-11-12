@@ -384,6 +384,111 @@
             }
         }
 
+        /* =====================================================
+           CONVERSAS ATIVAS DO MESTRE
+        ===================================================== */
+        .comm-master-conversas {
+            display: grid;
+            grid-template-columns: 250px minmax(0, 1fr);
+            gap: 12px;
+            height: 560px;
+            min-height: 0;
+        }
+
+        .comm-master-conversas-lista {
+            overflow-y: auto;
+            min-height: 0;
+            background: #101712;
+            border: 1px solid #48523e;
+            border-radius: 10px;
+            padding: 8px;
+        }
+
+        .comm-conversa-item {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            text-align: left;
+            padding: 11px;
+            margin-bottom: 6px;
+            background: #242d23;
+            border: 1px solid #48523e;
+            color: #eadcc4;
+            border-radius: 8px;
+            letter-spacing: normal;
+        }
+
+        .comm-conversa-item.ativa {
+            background: #405536;
+            border-color: #a2bd7b;
+        }
+
+        .comm-conversa-item small {
+            font-size: 12px;
+            opacity: .75;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .comm-master-conversa-painel {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+            background: #101712;
+            border: 1px solid #48523e;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .comm-master-conversa-historico {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 14px;
+        }
+
+        .comm-master-conversa-composer {
+            flex-shrink: 0;
+            padding: 12px;
+            border-top: 1px solid #48523e;
+            background: #171f18;
+        }
+
+        #comm-master-resposta-texto {
+            width: 100%;
+            resize: vertical;
+            background: #0c120e;
+            border: 1px solid #59664b;
+            border-radius: 8px;
+            color: #f0e6d2;
+            padding: 12px;
+            outline: none;
+        }
+
+        @media(max-width:700px) {
+            .comm-master-conversas {
+                grid-template-columns: 1fr;
+                height: 700px;
+            }
+
+            .comm-master-conversas-lista {
+                max-height: 160px;
+            }
+
+            .comm-master-conversa-painel {
+                min-height: 0;
+            }
+
+            .comm-master-conversa-historico {
+                padding: 9px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -495,6 +600,73 @@
                                     <button id="comm-excluir-mensagens" type="button" class="rounded bg-red-800 hover:bg-red-700 px-3 py-2 text-sm font-bold text-white">EXCLUIR SELECIONADAS (0)</button>
                                 </div>
                                 <div id="comm-master-historico" class="comm-chat-list"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CONVERSAS ATIVAS DO MESTRE -->
+                    <div class="mt-5 border-t border-sky-800 pt-4">
+
+                        <div class="mb-3">
+                            <h3 class="font-bold text-xl text-sky-100">CONVERSAS ATIVAS</h3>
+                            <p class="text-sm text-slate-400">
+                                Selecione um jogador para abrir e continuar a conversa.
+                            </p>
+                        </div>
+
+                        <div class="comm-master-conversas">
+
+                            <!-- LISTA DE CONVERSAS -->
+                            <div class="comm-master-conversas-lista">
+                                <div class="font-bold text-sky-200 text-sm mb-3">
+                                    JOGADORES
+                                </div>
+
+                                <div id="comm-master-conversas-lista">
+                                    <p class="text-sm text-slate-400 text-center py-4">
+                                        Carregando conversas...
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- PAINEL DA CONVERSA -->
+                            <div class="comm-master-conversa-painel">
+
+                                <div class="p-3 border-b border-slate-700 bg-black/20">
+                                    <h4 id="comm-master-conversa-titulo"
+                                        class="font-bold text-lg text-sky-100">
+                                        Selecione uma conversa
+                                    </h4>
+                                </div>
+
+                                <div id="comm-master-conversa-historico"
+                                     class="comm-master-conversa-historico">
+                                    <p class="text-slate-400 text-center py-8">
+                                        Selecione um jogador para visualizar as mensagens.
+                                    </p>
+                                </div>
+
+                                <!-- CAMPO FIXO DE RESPOSTA -->
+                                <div class="comm-master-conversa-composer">
+
+                                    <textarea
+                                        id="comm-master-resposta-texto"
+                                        rows="2"
+                                        maxlength="3000"
+                                        placeholder="Digite sua resposta..."
+                                        disabled></textarea>
+
+                                    <div class="flex justify-end mt-2">
+                                        <button
+                                            id="comm-master-resposta-enviar"
+                                            type="button"
+                                            disabled
+                                            class="rounded bg-sky-700 hover:bg-sky-600 px-5 py-2 font-bold">
+                                            ENVIAR RESPOSTA
+                                        </button>
+                                    </div>
+
+                                </div>
                             </div>
                         </div>
                     </div>
