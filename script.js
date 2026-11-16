@@ -315,7 +315,6 @@ document.getElementById('btn-esqueci-senha').onclick = () => {
 document.getElementById('btn-entrar').onclick = () => {
     tocarSom(audioAbertura);
 
-    // DESBLOQUEIO DO ÁUDIO (Libera o rádio no login)
     commRadioAudio.play().then(() => {
         commRadioAudio.pause();
         commRadioAudio.currentTime = 0;
@@ -364,6 +363,8 @@ function fichaSolicitada() {
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         usuarioAtual = user;
+        rolagemIniciarListener();
+
         const mestreLogado = (user.email || '').trim().toLowerCase() === emailMestre.toLowerCase();
 
         if (user.email) {
@@ -400,6 +401,7 @@ onAuthStateChanged(auth, async (user) => {
             carregarDashboardJogador();
         }
     } else {
+        rolagemPararListener();
         usuarioAtual = null;
         if (ehConvite() && fichaSolicitada()) {
             try {
@@ -2029,25 +2031,53 @@ function commCriarElementoMensagem(m, paraMestre=false) {
 }
 
 function commRenderizarHistoricoJogador() {
-    const alvo=document.getElementById('comm-jogador-historico'); if(!alvo) return;
-    const lista=[...commMensagens.values()].sort((a,b)=>Number(a.criadoEmMs||0)-Number(b.criadoEmMs||0));
-    alvo.innerHTML='';
-    if(!lista.length){alvo.innerHTML='<p class="text-slate-400 text-center py-8">Nenhuma comunicação registrada.</p>';return;}
-    lista.forEach(m=>alvo.appendChild(commCriarElementoMensagem(m,false)));
-    alvo.scrollTop=alvo.scrollHeight;
+    const alvo = document.getElementById('comm-jogador-historico');
+    if (!alvo) return;
+
+    const lista = [...commMensagens.values()].sort(
+        (a, b) => Number(a.criadoEmMs || 0) - Number(b.criadoEmMs || 0)
+    );
+
+    alvo.innerHTML = '';
+
+    if (!lista.length) {
+        alvo.innerHTML = '<p class="text-slate-400 text-center py-8">Nenhuma comunicação registrada.</p>';
+    } else {
+        lista.forEach(m => alvo.appendChild(commCriarElementoMensagem(m, false)));
+    }
+
+    rolagemRenderizarNoHistorico(alvo);
+    alvo.scrollTop = alvo.scrollHeight;
 }
+
 function commRenderizarHistoricoMestre() {
-    const alvo=document.getElementById('comm-master-historico'); if(!alvo) return;
-    const filtro=document.getElementById('comm-master-filtro')?.value || 'todas';
-    let lista=[...commMensagens.values()];
-    if(filtro==='grupo_geral') lista=lista.filter(m=>m.grupoId==='grupo_geral');
-    else if(filtro!=='todas') lista=lista.filter(m=>m.recipientUid===filtro || m.senderUid===filtro);
+    const alvo = document.getElementById('comm-master-historico');
+    if (!alvo) return;
 
-    lista.sort((a,b)=>Number(a.criadoEmMs||0)-Number(b.criadoEmMs||0));
+    const filtro = document.getElementById('comm-master-filtro')?.value || 'todas';
+    let lista = [...commMensagens.values()];
 
-    alvo.innerHTML='';
-    if(!lista.length){alvo.innerHTML='<p class="text-slate-400 text-sm">Nenhuma comunicação enviada ou recebida.</p>';commAtualizarContadorExclusao();return;}
-    lista.slice(0,100).forEach(m=>alvo.appendChild(commCriarElementoMensagem(m,true)));
+    if (filtro === 'grupo_geral') {
+        lista = lista.filter(m => m.grupoId === 'grupo_geral');
+    } else if (filtro !== 'todas') {
+        lista = lista.filter(m => m.recipientUid === filtro || m.senderUid === filtro);
+    }
+
+    lista.sort((a, b) =>
+        Number(a.criadoEmMs || 0) - Number(b.criadoEmMs || 0)
+    );
+
+    alvo.innerHTML = '';
+
+    if (!lista.length) {
+        alvo.innerHTML = '<p class="text-slate-400 text-sm">Nenhuma comunicação enviada ou recebida.</p>';
+    } else {
+        lista.slice(0, 100).forEach(m => {
+            alvo.appendChild(commCriarElementoMensagem(m, true));
+        });
+    }
+
+    rolagemRenderizarNoHistorico(alvo);
     alvo.scrollTop = alvo.scrollHeight;
     commAtualizarContadorExclusao();
 }
@@ -2187,12 +2217,24 @@ function commRenderizarConversaMestre() {
                 Nenhuma mensagem nesta conversa.
             </p>
         `;
+
+        const rolagensDaConversa = [...rolagensRecebidas.values()].filter(r =>
+            r.remetenteUid === uid || (r.allowedUids || []).includes(uid)
+        );
+        rolagemRenderizarNoHistorico(historico, rolagensDaConversa);
+
         return;
     }
 
     lista.forEach(m => {
         historico.appendChild(commCriarElementoMensagem(m, true));
     });
+
+    const rolagensDaConversa = [...rolagensRecebidas.values()].filter(r =>
+        r.remetenteUid === uid || (r.allowedUids || []).includes(uid)
+    );
+
+    rolagemRenderizarNoHistorico(historico, rolagensDaConversa);
 
     historico.scrollTop = historico.scrollHeight;
 }
@@ -2397,7 +2439,6 @@ function iniciarComunicacaoJogador() {
 const btnCommEnviarMestre=document.getElementById('comm-master-enviar');if(btnCommEnviarMestre)btnCommEnviarMestre.addEventListener('click',commEnviarMestre);
 const btnCommEnviarJogador=document.getElementById('comm-jogador-enviar');if(btnCommEnviarJogador)btnCommEnviarJogador.addEventListener('click',commEnviarJogador);
 
-// ENVIO DE RESPOSTAS NAS CONVERSAS ATIVAS
 document.getElementById('comm-master-resposta-enviar')
     ?.addEventListener('click', commEnviarRespostaMestre);
 
@@ -2409,7 +2450,6 @@ document.getElementById('comm-master-resposta-texto')
         }
     });
 
-// SOM DAS TECLAS NA CENTRAL DE COMUNICAÇÃO
 ['comm-master-texto', 'comm-jogador-texto', 'comm-master-resposta-texto'].forEach(id => {
     const campo = document.getElementById(id);
 
@@ -2440,8 +2480,14 @@ document.getElementById('comm-selecionar-mensagens')?.addEventListener('click', 
 document.getElementById('comm-excluir-mensagens')?.addEventListener('click', commExcluirMensagensSelecionadas);
 
 /* ==========================================
-   INTERFACE E EXECUÇÃO DAS ROLAGENS
+   SISTEMA DE ROLAGEM DE DADOS
 ========================================== */
+
+let rolagensRecebidas = new Map();
+let rolagensPublicas = new Map();
+let rolagensPrivadas = new Map();
+let rolagemUnsubscribers = [];
+let rolagemAnimacaoAtual = null;
 
 function rolagemAtualizarDestinatariosMestre() {
     const select = document.getElementById('rolagem-destinatario-mestre');
@@ -2467,18 +2513,318 @@ function rolagemAtualizarPrivacidadeMestre() {
         container.classList.remove('hidden');
     } else {
         container.classList.add('hidden');
-        document.getElementById('rolagem-destinatario-mestre').value = '';
+        const destinatario = document.getElementById('rolagem-destinatario-mestre');
+        if (destinatario) destinatario.value = '';
     }
 }
 
-function rolagemGerarResultados(quantidade, lados) {
-    const resultados = [];
+function rolagemInterpretarFormula(texto) {
+    const formula = String(texto || '').toLowerCase().replace(/\s+/g, '');
 
-    for (let i = 0; i < quantidade; i++) {
-        resultados.push(Math.floor(Math.random() * lados) + 1);
+    if (!formula || formula.length > 50) {
+        throw new Error('Digite uma fórmula de dados válida.');
     }
 
-    return resultados;
+    let posicao = 0;
+    let totalDados = 0;
+    let total = 0;
+    let dados = [];
+    let possuiDado = false;
+
+    while (posicao < formula.length) {
+        const restante = formula.slice(posicao);
+
+        const correspondencia = restante.match(
+            /^([+-]?)(?:(\d{1,2})d(4|6|8|10|12|20|100)|(\d{1,4}))/i
+        );
+
+        if (!correspondencia) {
+            throw new Error('Fórmula inválida. Exemplos: 2d6+4 ou 1d4+1d8+4.');
+        }
+
+        const sinal = correspondencia[1] === '-' ? -1 : 1;
+        const quantidade = correspondencia[2] ? Number(correspondencia[2]) : 0;
+        const lados = correspondencia[3] ? Number(correspondencia[3]) : 0;
+        const modificador = correspondencia[4] ? Number(correspondencia[4]) : 0;
+
+        if (lados) {
+            if (quantidade < 1 || quantidade > 10) {
+                throw new Error('Cada tipo de dado pode ter de 1 a 10 unidades.');
+            }
+
+            totalDados += quantidade;
+
+            if (totalDados > 30) {
+                throw new Error('O limite é de 30 dados por rolagem.');
+            }
+
+            possuiDado = true;
+
+            for (let i = 0; i < quantidade; i++) {
+                const resultado = Math.floor(Math.random() * lados) + 1;
+                dados.push(resultado);
+                total += resultado * sinal;
+            }
+        } else {
+            total += modificador * sinal;
+        }
+
+        posicao += correspondencia[0].length;
+    }
+
+    if (!possuiDado) {
+        throw new Error('A fórmula precisa conter pelo menos um dado.');
+    }
+
+    return { dados, total };
+}
+
+function rolagemMostrarAnimacao(rolagem) {
+    const overlay = document.getElementById('rolagem-overlay');
+    const titulo = document.getElementById('rolagem-titulo');
+    const palco = document.getElementById('rolagem-dados-animacao');
+    const resultado = document.getElementById('rolagem-resultado-animacao');
+
+    if (!overlay || !palco || !resultado) return;
+    if (rolagem.fechada) return;
+
+    rolagemAnimacaoAtual = rolagem.id;
+
+    titulo.textContent = `${rolagem.remetenteNome || 'Jogador'} está rolando os dados`;
+
+    palco.innerHTML = '';
+
+    (rolagem.dados || []).forEach(valor => {
+        const dado = document.createElement('div');
+        dado.className = 'dado-animado';
+        dado.textContent = valor;
+        palco.appendChild(dado);
+    });
+
+    resultado.textContent = `${rolagem.expressao} — Total: ${rolagem.total}`;
+
+    overlay.classList.remove('hidden');
+    tocarSomDado();
+}
+
+function rolagemOcultarAnimacao() {
+    const overlay = document.getElementById('rolagem-overlay');
+
+    if (overlay) overlay.classList.add('hidden');
+
+    rolagemAnimacaoAtual = null;
+}
+
+async function rolagemFecharAnimacao() {
+    if (!rolagemAnimacaoAtual || !usuarioAtual) return;
+
+    const id = rolagemAnimacaoAtual;
+
+    try {
+        await updateDoc(doc(db, 'rolagens', id), {
+            fechada: true,
+            fechadaEm: serverTimestamp(),
+            fechadaPor: usuarioAtual.uid
+        });
+
+        rolagemOcultarAnimacao();
+
+    } catch (erro) {
+        console.error('Erro ao fechar animação:', erro);
+        alert('Não foi possível fechar a animação. Tente novamente.');
+    }
+}
+
+function rolagemAtualizarLista() {
+    rolagensRecebidas = new Map([
+        ...rolagensPublicas,
+        ...rolagensPrivadas
+    ]);
+
+    const lista = [...rolagensRecebidas.values()].sort((a, b) => {
+        const dataA = a.criadoEm?.toMillis?.() || 0;
+        const dataB = b.criadoEm?.toMillis?.() || 0;
+        return dataA - dataB;
+    });
+
+    rolagemRenderizarNoHistorico(
+        document.getElementById('comm-jogador-historico'),
+        lista
+    );
+
+    rolagemRenderizarNoHistorico(
+        document.getElementById('comm-master-historico'),
+        lista
+    );
+}
+
+function rolagemRenderizarNoHistorico(alvo, lista = [...rolagensRecebidas.values()]) {
+    if (!alvo) return;
+
+    alvo.querySelectorAll('.comm-rolagem-registro').forEach(el => el.remove());
+
+    const recentes = [...lista].slice(-50);
+
+    recentes.forEach(rolagem => {
+        const card = document.createElement('div');
+        card.className = 'comm-rolagem-registro rounded-lg border border-amber-700 bg-[#20251d] p-3 my-2 text-amber-100';
+
+        const remetente = document.createElement('strong');
+        remetente.textContent = `🎲 ${rolagem.remetenteNome || 'Jogador'}`;
+
+        const formula = document.createElement('div');
+        formula.textContent = `Fórmula: ${rolagem.expressao}`;
+
+        const valores = document.createElement('div');
+        valores.textContent = `Resultados: ${(rolagem.dados || []).join(' + ')}`;
+
+        const total = document.createElement('strong');
+        total.textContent = `TOTAL: ${rolagem.total}`;
+
+        const estado = document.createElement('div');
+        estado.className = 'text-xs mt-1 text-amber-300';
+        estado.textContent = rolagem.fechada
+            ? 'Animação encerrada'
+            : 'Rolagem registrada';
+
+        card.append(remetente, formula, valores, total, estado);
+        alvo.appendChild(card);
+    });
+}
+
+function rolagemPararListener() {
+    rolagemUnsubscribers.forEach(unsubscribe => unsubscribe());
+    rolagemUnsubscribers = [];
+
+    rolagensRecebidas.clear();
+    rolagensPublicas.clear();
+    rolagensPrivadas.clear();
+
+    rolagemOcultarAnimacao();
+}
+
+function rolagemIniciarListener() {
+    if (!usuarioAtual) return;
+
+    rolagemPararListener();
+
+    const ehMestre = (usuarioAtual.email || '').trim().toLowerCase()
+        === emailMestre.toLowerCase();
+
+    if (ehMestre) {
+        let primeiraLeitura = true;
+
+        const unsubscribe = onSnapshot(
+            collection(db, 'rolagens'),
+            snapshot => {
+                snapshot.forEach(documento => {
+                    const rolagem = { id: documento.id, ...documento.data() };
+                    rolagensPublicas.set(documento.id, rolagem);
+                });
+
+                if (primeiraLeitura) {
+                    primeiraLeitura = false;
+                } else {
+                    snapshot.docChanges().forEach(mudanca => {
+                        const rolagem = {
+                            id: mudanca.doc.id,
+                            ...mudanca.doc.data()
+                        };
+
+                        if (mudanca.type === 'added' && !rolagem.fechada) {
+                            rolagemMostrarAnimacao(rolagem);
+                        }
+
+                        if (mudanca.type === 'modified' && rolagem.fechada &&
+                            rolagemAnimacaoAtual === rolagem.id) {
+                            rolagemOcultarAnimacao();
+                        }
+                    });
+                }
+
+                rolagemAtualizarLista();
+            },
+            erro => console.error('Erro ao receber rolagens:', erro)
+        );
+
+        rolagemUnsubscribers.push(unsubscribe);
+        return;
+    }
+
+    let primeiraLeituraPublica = true;
+    let primeiraLeituraPrivada = true;
+
+    const consultaPublica = query(
+        collection(db, 'rolagens'),
+        where('visibilidade', '==', 'publica')
+    );
+
+    const consultaPrivada = query(
+        collection(db, 'rolagens'),
+        where('allowedUids', 'array-contains', usuarioAtual.uid)
+    );
+
+    const unsubscribePublica = onSnapshot(consultaPublica, snapshot => {
+        snapshot.docChanges().forEach(mudanca => {
+            const rolagem = {
+                id: mudanca.doc.id,
+                ...mudanca.doc.data()
+            };
+
+            if (mudanca.type === 'removed') {
+                rolagensPublicas.delete(mudanca.doc.id);
+                return;
+            }
+
+            rolagensPublicas.set(mudanca.doc.id, rolagem);
+
+            if (!primeiraLeituraPublica &&
+                mudanca.type === 'added' &&
+                !rolagem.fechada) {
+                rolagemMostrarAnimacao(rolagem);
+            }
+
+            if (mudanca.type === 'modified' && rolagem.fechada &&
+                rolagemAnimacaoAtual === rolagem.id) {
+                rolagemOcultarAnimacao();
+            }
+        });
+
+        primeiraLeituraPublica = false;
+        rolagemAtualizarLista();
+    }, erro => console.error('Erro nas rolagens públicas:', erro));
+
+    const unsubscribePrivada = onSnapshot(consultaPrivada, snapshot => {
+        snapshot.docChanges().forEach(mudanca => {
+            const rolagem = {
+                id: mudanca.doc.id,
+                ...mudanca.doc.data()
+            };
+
+            if (mudanca.type === 'removed') {
+                rolagensPrivadas.delete(mudanca.doc.id);
+                return;
+            }
+
+            rolagensPrivadas.set(mudanca.doc.id, rolagem);
+
+            if (!primeiraLeituraPrivada &&
+                mudanca.type === 'added' &&
+                !rolagem.fechada) {
+                rolagemMostrarAnimacao(rolagem);
+            }
+
+            if (mudanca.type === 'modified' && rolagem.fechada &&
+                rolagemAnimacaoAtual === rolagem.id) {
+                rolagemOcultarAnimacao();
+            }
+        });
+
+        primeiraLeituraPrivada = false;
+        rolagemAtualizarLista();
+    }, erro => console.error('Erro nas rolagens privadas:', erro));
+
+    rolagemUnsubscribers.push(unsubscribePublica, unsubscribePrivada);
 }
 
 async function rolagemExecutar(ehMestre) {
@@ -2489,31 +2835,31 @@ async function rolagemExecutar(ehMestre) {
 
     const prefixo = ehMestre ? 'mestre' : 'jogador';
 
-    const quantidade = Number(
-        document.getElementById(`rolagem-qtd-${prefixo}`).value
-    );
+    const campoFormula = document.getElementById(`rolagem-formula-${prefixo}`);
+    const botao = document.getElementById(`rolagem-executar-${prefixo}`);
 
-    const lados = Number(
-        document.getElementById(`rolagem-tipo-${prefixo}`).value
-    );
+    if (!campoFormula || !botao) {
+        alert('Não foi possível localizar os campos da rolagem.');
+        return;
+    }
 
-    const botao = document.getElementById(
-        `rolagem-executar-${prefixo}`
-    );
+    let resultado;
 
-    if (!quantidade || quantidade < 1 || quantidade > 10 ||
-        ![4, 6, 8, 10, 12, 20, 100].includes(lados)) {
-        alert('Configuração de dados inválida.');
+    try {
+        resultado = rolagemInterpretarFormula(campoFormula.value);
+    } catch (erro) {
+        alert(erro.message);
+        campoFormula.focus();
         return;
     }
 
     let visibilidade = 'publica';
-    let allowedUids = [usuarioAtual.uid];
+    const allowedUids = [usuarioAtual.uid];
 
     if (ehMestre) {
         const privacidade = document.getElementById(
             'rolagem-privacidade-mestre'
-        ).value;
+        )?.value || 'publica';
 
         if (privacidade === 'mestre') {
             visibilidade = 'privada';
@@ -2522,7 +2868,7 @@ async function rolagemExecutar(ehMestre) {
         if (privacidade === 'jogador') {
             const destinatario = document.getElementById(
                 'rolagem-destinatario-mestre'
-            ).value;
+            )?.value;
 
             if (!destinatario) {
                 alert('Selecione o jogador que poderá ver esta rolagem.');
@@ -2535,7 +2881,7 @@ async function rolagemExecutar(ehMestre) {
     } else {
         const privacidade = document.getElementById(
             'rolagem-privacidade-jogador'
-        ).value;
+        )?.value || 'publica';
 
         if (privacidade === 'mestre') {
             visibilidade = 'privada';
@@ -2552,32 +2898,23 @@ async function rolagemExecutar(ehMestre) {
     botao.textContent = 'ROLANDO...';
 
     try {
-        const dados = rolagemGerarResultados(quantidade, lados);
-        const total = dados.reduce((soma, valor) => soma + valor, 0);
-
-        const expressao = `${quantidade}d${lados}`;
+        tocarSomDado();
 
         await addDoc(collection(db, 'rolagens'), {
             remetenteUid: usuarioAtual.uid,
             remetenteNome: nomeRemetente,
             visibilidade,
             allowedUids,
-            dados,
-            expressao,
-            total,
+            dados: resultado.dados,
+            expressao: campoFormula.value.trim(),
+            total: resultado.total,
             criadoEm: serverTimestamp(),
             fechada: false,
             fechadaEm: null,
             fechadaPor: null
         });
 
-        alert(
-            `🎲 RESULTADO DA ROLAGEM\n\n` +
-            `${nomeRemetente}\n` +
-            `${expressao}\n\n` +
-            `Dados: ${dados.join(' + ')}\n\n` +
-            `TOTAL: ${total}`
-        );
+        campoFormula.value = '';
 
     } catch (erro) {
         console.error('Erro ao executar rolagem:', erro);
@@ -2597,7 +2934,7 @@ document.getElementById('rolagem-executar-mestre')
 document.getElementById('rolagem-executar-jogador')
     ?.addEventListener('click', () => rolagemExecutar(false));
 
-document.getElementById('comm-modal-jogador')
-    ?.addEventListener('transitionend', () => {});
+document.getElementById('rolagem-overlay')
+    ?.addEventListener('click', rolagemFecharAnimacao);
 
 rolagemAtualizarDestinatariosMestre();
