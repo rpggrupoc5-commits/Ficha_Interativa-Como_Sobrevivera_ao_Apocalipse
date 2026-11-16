@@ -325,6 +325,69 @@
         .comm-message.other .comm-message-meta{color:#c6aa85;}
         .comm-message-text{white-space:pre-wrap;overflow-wrap:anywhere;}
         #comm-modal-jogador textarea,#comm-master-texto{background:#0c120e!important;border:1px solid #59664b!important;border-radius:10px!important;color:#f0e6d2!important;}
+        
+        /* MELHORIA DA CAIXA DE TEXTO DO WALK TALK */
+        #comm-modal-jogador textarea,
+        #comm-master-texto,
+        #comm-master-resposta-texto {
+            display: block;
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            min-height: 90px;
+            padding: 14px;
+            background: linear-gradient(145deg, #111a13, #0a100c) !important;
+            border: 1px solid #71815b !important;
+            border-radius: 10px !important;
+            color: #f0e6d2 !important;
+            font-family: 'Barlow Condensed', sans-serif;
+            font-size: 18px !important;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+            box-shadow: inset 0 2px 8px #0008;
+        }
+
+        #comm-modal-jogador textarea:focus,
+        #comm-master-texto:focus,
+        #comm-master-resposta-texto:focus {
+            border-color: #b4c98a !important;
+            box-shadow: 0 0 0 2px #9caf7133, inset 0 2px 8px #0008;
+        }
+
+        #comm-modal-jogador textarea::placeholder,
+        #comm-master-texto::placeholder,
+        #comm-master-resposta-texto::placeholder {
+            color: #a6ad9b !important;
+            opacity: 1;
+        }
+
+        #comm-master-resposta-texto {
+            min-height: 75px;
+            max-height: 180px;
+        }
+
+        @media (max-width: 640px) {
+            #comm-modal-jogador textarea,
+            #comm-master-texto,
+            #comm-master-resposta-texto {
+                min-height: 105px;
+                font-size: 17px !important;
+                padding: 12px;
+            }
+
+            #comm-master-resposta-texto {
+                min-height: 85px;
+            }
+
+            #comm-modal-jogador button#comm-jogador-enviar,
+            #comm-master-enviar,
+            #comm-master-resposta-enviar {
+                min-height: 46px;
+                padding: 10px 18px;
+            }
+        }
+
         #comm-modal-jogador button#comm-jogador-enviar,#comm-master-enviar{background:linear-gradient(180deg,#667a4d,#34452c)!important;border:1px solid #87966a!important;border-radius:8px!important;color:#fff!important;}
         #comm-master-lista-jogadores label{border:1px solid #3d4937;cursor:pointer;}
         #comm-master-lista-jogadores label:has(input:checked){background:#34452c!important;border-color:#91a66e;}
