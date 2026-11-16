@@ -105,6 +105,7 @@ audioCancelarItem.volume = 0.8;
 const sonsDados = [new Audio('dados1.mp3'), new Audio('dados2.mp3'), new Audio('dados3.mp3')];
 sonsDados.forEach(som => { som.preload = 'auto'; som.volume = 0.9; });
 let ultimoSomDado = -1;
+
 function tocarSomDado() {
     if (!sonsDados.length) return;
     let indice = Math.floor(Math.random() * sonsDados.length);
@@ -2248,6 +2249,7 @@ async function commCarregarJogadores() {
         commAtualizarListaConversasMestre();
     } catch(e) { console.error(e); alvo.innerHTML='<p class="text-red-300 text-sm">Não foi possível carregar a lista de jogadores.</p>'; }
 }
+
 async function commEnviarPara(destinatario, nomeDestinatario, texto, grupoId) {
     const agora=Date.now();
     const remetenteMestre=commEhMestre();
@@ -2279,6 +2281,7 @@ async function commEnviarMestre() {
     } catch(e){console.error(e);alert(e.message||'Não foi possível transmitir a mensagem.');}
     finally{btn.disabled=false;btn.textContent='TRANSMITIR';}
 }
+
 async function commEnviarJogador() {
     const texto=document.getElementById('comm-jogador-texto')?.value.trim()||'';
     if(!texto){alert('Digite uma mensagem antes de enviar.');return;}
@@ -2287,6 +2290,7 @@ async function commEnviarJogador() {
     catch(e){console.error(e);alert(e.message||'Não foi possível enviar.');}
     finally{btn.disabled=false;btn.textContent='ENVIAR';}
 }
+
 async function commExcluirMensagem(m) {
     if(!commEhMestre()||!confirm('Excluir esta mensagem para o destinatário?')) return;
     try{await deleteDoc(doc(db,'comunicacoes',m.id));}
@@ -2341,6 +2345,7 @@ function commAbrirModalJogador() {
     commRenderizarHistoricoJogador();
 }
 function commFecharModalJogador(){document.getElementById('comm-modal-jogador')?.classList.add('hidden');}
+
 function commProcessarMensagensJogador(lista) {
     const anteriores = new Set(commMensagens.keys());
 
@@ -2366,6 +2371,7 @@ function commProcessarMensagensJogador(lista) {
 
     commRenderizarHistoricoJogador();
 }
+
 function iniciarComunicacaoMestre() {
     commLimparListeners();commMensagens=new Map();
     commCarregarJogadores();
@@ -2378,6 +2384,7 @@ function iniciarComunicacaoMestre() {
     },e=>console.error('Falha ao ouvir central de comunicação:',e));
     commUnsubscribers.push(unsub);
 }
+
 function iniciarComunicacaoJogador() {
     if(!usuarioAtual||commEhMestre()) return;
     commLimparListeners();commMensagens=new Map();
