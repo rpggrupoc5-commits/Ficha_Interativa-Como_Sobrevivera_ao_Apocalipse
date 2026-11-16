@@ -578,6 +578,140 @@
             display: flex;
         }
 
+        /* =====================================================
+           CORREÇÃO DEFINITIVA DA RESPONSIVIDADE DO WALK TALK
+           ===================================================== */
+
+        /* Janela principal de comunicação */
+        #comm-modal-jogador {
+            padding: 10px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        #comm-modal-jogador .comm-modal-card {
+            width: min(900px, 100%);
+            max-height: calc(100vh - 20px);
+            max-height: calc(100dvh - 20px);
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            box-sizing: border-box;
+            gap: 12px;
+        }
+
+        /* Histórico de mensagens */
+        #comm-modal-jogador .comm-chat-list {
+            flex: 0 1 auto;
+            width: 100%;
+            min-height: 120px;
+            max-height: clamp(130px, 28dvh, 300px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+
+        /* Área de rolagem de dados */
+        #comm-modal-jogador .comm-modal-card > .rounded.border-amber-700 {
+            flex: 0 0 auto;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        /* Campos de seleção dos dados */
+        #comm-modal-jogador .grid.grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            min-width: 0;
+            gap: 8px;
+        }
+
+        #comm-modal-jogador .rolagem-select {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        /* Caixa de resposta e botão enviar */
+        #comm-modal-jogador .comm-modal-card > div:last-child {
+            flex: 0 0 auto;
+            position: sticky;
+            bottom: -10px;
+            z-index: 5;
+            background: #111812;
+            padding: 12px 0 4px;
+            box-sizing: border-box;
+        }
+
+        #comm-modal-jogador #comm-jogador-texto {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            min-height: 75px;
+            max-height: 130px;
+            box-sizing: border-box;
+            resize: vertical;
+            font-size: 16px;
+        }
+
+        #comm-modal-jogador #comm-jogador-enviar {
+            min-width: 120px;
+            min-height: 44px;
+        }
+
+        /* Ajustes para celular */
+        @media (max-width: 640px) {
+
+            #comm-modal-jogador {
+                padding: 6px;
+                align-items: flex-start;
+            }
+
+            #comm-modal-jogador .comm-modal-card {
+                width: 100%;
+                max-height: calc(100vh - 12px);
+                max-height: calc(100dvh - 12px);
+                padding: 10px;
+                gap: 10px;
+                border-radius: 12px;
+            }
+
+            #comm-modal-jogador .comm-chat-list {
+                min-height: 110px;
+                max-height: clamp(120px, 25dvh, 240px);
+                padding: 9px;
+            }
+
+            #comm-modal-jogador .comm-message {
+                max-width: 94%;
+                overflow-wrap: anywhere;
+            }
+
+            #comm-modal-jogador .rounded.border-amber-700 {
+                padding: 10px;
+            }
+
+            #comm-modal-jogador .rounded.border-amber-700 h3 {
+                font-size: 17px;
+            }
+
+            #comm-modal-jogador .rolagem-select {
+                padding: 10px 7px;
+                font-size: 14px;
+            }
+
+            #comm-modal-jogador #comm-jogador-texto {
+                min-height: 65px;
+                max-height: 110px;
+                padding: 12px;
+            }
+
+            #comm-modal-jogador #comm-jogador-enviar {
+                width: auto;
+                min-width: 110px;
+            }
+        }
+
     </style>
 </head>
 <body>
