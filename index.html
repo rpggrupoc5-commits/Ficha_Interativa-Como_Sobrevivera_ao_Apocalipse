@@ -712,6 +712,54 @@
             }
         }
 
+
+        /* NOVA INTERFACE DAS ROLAGENS E ANIMACAO DOS DADOS */
+        .rolagem-formula {
+            width: 100%; box-sizing: border-box; padding: 12px;
+            border: 1px solid #9a7444; border-radius: 7px;
+            background: #111a16; color: #f0e6d2;
+            font-size: 18px; font-weight: bold; outline: none;
+        }
+        .rolagem-formula:focus { border-color: #e5bd70; box-shadow: 0 0 0 2px #d6a84f33; }
+        .rolagem-overlay {
+            position: fixed; inset: 0; z-index: 20000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px; background: rgba(0,0,0,.88);
+        }
+        .rolagem-overlay.hidden { display: none; }
+        .rolagem-palco {
+            width: min(760px, 100%); min-height: 300px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 22px; padding: 28px; box-sizing: border-box;
+            border: 2px solid #9a7444; border-radius: 16px;
+            background: radial-gradient(ellipse at center, #303b2b 0%, #111811 65%, #080b08 100%);
+            box-shadow: 0 0 50px #000, inset 0 0 35px #0009; color: #f0e6d2;
+            text-align: center; cursor: pointer;
+        }
+        .rolagem-dados-animacao { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; perspective: 900px; }
+        .dado-animado {
+            width: 76px; height: 76px; display: flex; align-items: center; justify-content: center;
+            border: 3px solid #d8c39a; border-radius: 15px;
+            background: linear-gradient(145deg, #a83b25, #4d1712);
+            color: #fff4d7; font: 900 30px 'Oswald', sans-serif;
+            text-shadow: 2px 3px 3px #000; box-shadow: 0 9px 0 #27100c, 0 14px 22px #000b;
+            animation: dado-sacudir 1.15s ease-in-out infinite;
+        }
+        .dado-animado:nth-child(2n) { animation-delay: .12s; background: linear-gradient(145deg,#667c49,#26351e); }
+        .dado-animado:nth-child(3n) { animation-delay: .24s; background: linear-gradient(145deg,#3d6e86,#142d3b); }
+        @keyframes dado-sacudir {
+            0%,100% { transform: translateY(0) rotateX(0) rotateY(0) rotateZ(0); }
+            25% { transform: translateY(-28px) rotateX(130deg) rotateY(95deg) rotateZ(35deg); }
+            55% { transform: translateY(5px) rotateX(250deg) rotateY(210deg) rotateZ(100deg); }
+            80% { transform: translateY(-12px) rotateX(320deg) rotateY(290deg) rotateZ(155deg); }
+        }
+        .rolagem-palco-hint { color: #c9b48c; font-size: 13px; }
+        @media(max-width:640px) {
+            .rolagem-palco { min-height: 260px; padding: 18px 12px; }
+            .dado-animado { width: 58px; height: 58px; font-size: 24px; }
+            .rolagem-formula { font-size: 16px; }
+        }
+
     </style>
 </head>
 <body>
@@ -819,6 +867,12 @@
 
                             <div class="rounded border border-amber-700 bg-black/30 p-3 mt-3">
                                 <h3 class="font-bold text-lg text-amber-200 mb-3">🎲 ROLAGEM DE DADOS</h3>
+
+                                <label class="flex flex-col gap-1 text-sm mb-3">
+                                    Fórmula da rolagem:
+                                    <input id="rolagem-formula-mestre" class="rolagem-formula" type="text" maxlength="80" placeholder="Ex.: 2d6+4 ou 1d4+1d8+4" autocomplete="off">
+                                    <span class="text-xs text-amber-100/70">Use dados e modificadores, por exemplo: 3d20+5 ou 4d6-2.</span>
+                                </label>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <label class="flex flex-col gap-1 text-sm">
@@ -1110,6 +1164,12 @@
             <div class="rounded border border-amber-700 bg-black/30 p-3">
                 <h3 class="font-bold text-lg text-amber-200 mb-3">🎲 ROLAR DADOS</h3>
 
+                <label class="flex flex-col gap-1 text-sm mb-3">
+                    Fórmula da rolagem:
+                    <input id="rolagem-formula-jogador" class="rolagem-formula" type="text" maxlength="80" placeholder="Ex.: 2d6+4 ou 1d4+1d8+4" autocomplete="off">
+                    <span class="text-xs text-amber-100/70">Use dados e modificadores, por exemplo: 3d20+5 ou 4d6-2.</span>
+                </label>
+
                 <div class="grid grid-cols-2 gap-3">
                     <label class="flex flex-col gap-1 text-sm">
                         Quantidade:
@@ -1155,6 +1215,16 @@
                 </button>
             </div>
             <div class="border-t border-slate-700 pt-3"><textarea id="comm-jogador-texto" rows="2" maxlength="3000" placeholder="Digite uma resposta para o Mestre..." class="w-full rounded bg-slate-900 border border-slate-600 p-3 text-white"></textarea><div class="flex justify-end mt-2"><button id="comm-jogador-enviar" class="rounded bg-sky-700 hover:bg-sky-600 px-5 py-2 font-bold">ENVIAR</button></div></div>
+        </div>
+    </div>
+
+    <!-- PALCO GLOBAL DAS ROLAGENS: visível somente para participantes autorizados -->
+    <div id="rolagem-overlay" class="rolagem-overlay hidden" role="dialog" aria-modal="true" aria-label="Rolagem de dados">
+        <div id="rolagem-palco" class="rolagem-palco" title="Clique para dispensar a animação">
+            <h2 id="rolagem-titulo" class="fonte-titulo text-3xl text-amber-100">ROLAGEM DE DADOS</h2>
+            <div id="rolagem-dados-animacao" class="rolagem-dados-animacao"></div>
+            <div id="rolagem-resultado-animacao" class="text-xl font-bold text-amber-100"></div>
+            <p class="rolagem-palco-hint">Clique nesta área para fechar a animação apenas na sua tela.</p>
         </div>
     </div>
 
