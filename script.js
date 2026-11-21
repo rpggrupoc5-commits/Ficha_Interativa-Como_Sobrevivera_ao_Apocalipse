@@ -2080,6 +2080,7 @@ function commRenderizarHistoricoMestre() {
     rolagemRenderizarNoHistorico(alvo);
     alvo.scrollTop = alvo.scrollHeight;
     commAtualizarContadorExclusao();
+    rolagemAtualizarContadorExclusao();
 }
 
 // =====================================================
@@ -2664,6 +2665,7 @@ function rolagemRenderizarNoHistorico(alvo, lista = [...rolagensRecebidas.values
     alvo.querySelectorAll('.comm-rolagem-registro').forEach(el => el.remove());
 
     const recentes = [...lista].slice(-50);
+    const paraMestre = alvo.id === 'comm-master-historico';
 
     recentes.forEach(rolagem => {
         const card = document.createElement('div');
@@ -2688,8 +2690,71 @@ function rolagemRenderizarNoHistorico(alvo, lista = [...rolagensRecebidas.values
             : 'Rolagem registrada';
 
         card.append(remetente, formula, valores, total, estado);
+
+        if (paraMestre) {
+            const selecao = document.createElement('label');
+            selecao.className = 'comm-selecao-mensagem';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'comm-rolagem-checkbox';
+            checkbox.dataset.rolagemId = rolagem.id;
+            checkbox.addEventListener('change', rolagemAtualizarContadorExclusao);
+
+            selecao.appendChild(checkbox);
+            selecao.appendChild(document.createTextNode(' Selecionar'));
+            card.appendChild(selecao);
+        }
+
         alvo.appendChild(card);
     });
+}
+
+function rolagemAtualizarContadorExclusao() {
+    const selecionadas = document.querySelectorAll('#comm-master-historico .comm-rolagem-checkbox:checked');
+    const botao = document.getElementById('comm-excluir-rolagens');
+    if (botao) botao.textContent = `EXCLUIR ROLAGENS (${selecionadas.length})`;
+}
+
+async function rolagemExcluirSelecionadas() {
+    if (!commEhMestre()) {
+        alert('Somente o Mestre pode excluir rolagens.');
+        return;
+    }
+
+    const selecionadas = [...document.querySelectorAll('#comm-master-historico .comm-rolagem-checkbox:checked')];
+    const ids = [...new Set(selecionadas.map(el => el.dataset.rolagemId).filter(Boolean))];
+
+    if (!ids.length) {
+        alert('Selecione pelo menos uma rolagem.');
+        return;
+    }
+
+    if (!confirm(`Deseja excluir ${ids.length} rolagem(ns)? Elas desaparecerão do histórico de todos.`)) return;
+
+    const botao = document.getElementById('comm-excluir-rolagens');
+    if (botao) {
+        botao.disabled = true;
+        botao.textContent = 'EXCLUINDO...';
+    }
+
+    try {
+        await Promise.all(ids.map(id => deleteDoc(doc(db, 'rolagens', id))));
+        ids.forEach(id => {
+            rolagensPublicas.delete(id);
+            rolagensPrivadas.delete(id);
+            rolagensRecebidas.delete(id);
+        });
+        rolagemAtualizarLista();
+    } catch (e) {
+        console.error(e);
+        alert('Não foi possível excluir todas as rolagens. Atualize o histórico e tente novamente.');
+    } finally {
+        if (botao) {
+            botao.disabled = false;
+            rolagemAtualizarContadorExclusao();
+        }
+    }
 }
 
 function rolagemPararListener() {
@@ -2843,10 +2908,29 @@ async function rolagemExecutar(ehMestre) {
         return;
     }
 
+    // CORREÇÃO: se a fórmula estiver vazia, monta a partir dos selects
+    let formulaParaUsar = campoFormula.value.trim();
+
+    if (!formulaParaUsar) {
+        const selectQtd = document.getElementById(`rolagem-qtd-${prefixo}`);
+        const selectTipo = document.getElementById(`rolagem-tipo-${prefixo}`);
+
+        if (selectQtd && selectTipo) {
+            const qtd = Number(selectQtd.value);
+            const tipo = Number(selectTipo.value);
+            formulaParaUsar = `${qtd}d${tipo}`;
+        }
+    }
+
+    if (!formulaParaUsar) {
+        alert('Escolha uma quantidade e um tipo de dado, ou digite uma fórmula.');
+        return;
+    }
+
     let resultado;
 
     try {
-        resultado = rolagemInterpretarFormula(campoFormula.value);
+        resultado = rolagemInterpretarFormula(formulaParaUsar);
     } catch (erro) {
         alert(erro.message);
         campoFormula.focus();
@@ -2906,7 +2990,7 @@ async function rolagemExecutar(ehMestre) {
             visibilidade,
             allowedUids,
             dados: resultado.dados,
-            expressao: campoFormula.value.trim(),
+            expressao: formulaParaUsar,
             total: resultado.total,
             criadoEm: serverTimestamp(),
             fechada: false,
@@ -2936,5 +3020,14 @@ document.getElementById('rolagem-executar-jogador')
 
 document.getElementById('rolagem-overlay')
     ?.addEventListener('click', rolagemFecharAnimacao);
+
+document.getElementById('comm-selecionar-rolagens')?.addEventListener('click', () => {
+    const caixas = [...document.querySelectorAll('#comm-master-historico .comm-rolagem-checkbox')];
+    const todasMarcadas = caixas.length > 0 && caixas.every(el => el.checked);
+    caixas.forEach(el => el.checked = !todasMarcadas);
+    rolagemAtualizarContadorExclusao();
+});
+
+document.getElementById('comm-excluir-rolagens')?.addEventListener('click', rolagemExcluirSelecionadas);
 
 rolagemAtualizarDestinatariosMestre();
