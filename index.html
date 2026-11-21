@@ -582,7 +582,6 @@
            CORREÇÃO DEFINITIVA DA RESPONSIVIDADE DO WALK TALK
            ===================================================== */
 
-        /* Janela principal de comunicação */
         #comm-modal-jogador {
             padding: 10px;
             box-sizing: border-box;
@@ -600,7 +599,6 @@
             gap: 12px;
         }
 
-        /* Histórico de mensagens */
         #comm-modal-jogador .comm-chat-list {
             flex: 0 1 auto;
             width: 100%;
@@ -611,7 +609,6 @@
             box-sizing: border-box;
         }
 
-        /* Área de rolagem de dados */
         #comm-modal-jogador .comm-modal-card > .rounded.border-amber-700 {
             flex: 0 0 auto;
             width: 100%;
@@ -619,7 +616,6 @@
             box-sizing: border-box;
         }
 
-        /* Campos de seleção dos dados */
         #comm-modal-jogador .grid.grid-cols-2 {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             min-width: 0;
@@ -632,7 +628,6 @@
             box-sizing: border-box;
         }
 
-        /* Caixa de resposta e botão enviar */
         #comm-modal-jogador .comm-modal-card > div:last-child {
             flex: 0 0 auto;
             position: sticky;
@@ -659,7 +654,6 @@
             min-height: 44px;
         }
 
-        /* Ajustes para celular */
         @media (max-width: 640px) {
 
             #comm-modal-jogador {
@@ -869,9 +863,9 @@
                                 <h3 class="font-bold text-lg text-amber-200 mb-3">🎲 ROLAGEM DE DADOS</h3>
 
                                 <label class="flex flex-col gap-1 text-sm mb-3">
-                                    Fórmula da rolagem:
+                                    Fórmula da rolagem (opcional):
                                     <input id="rolagem-formula-mestre" class="rolagem-formula" type="text" maxlength="80" placeholder="Ex.: 2d6+4 ou 1d4+1d8+4" autocomplete="off">
-                                    <span class="text-xs text-amber-100/70">Use dados e modificadores, por exemplo: 3d20+5 ou 4d6-2.</span>
+                                    <span class="text-xs text-amber-100/70">Deixe em branco para usar os campos de quantidade e tipo abaixo.</span>
                                 </label>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -930,8 +924,12 @@
                             <div class="rounded border border-slate-700 bg-black/30 p-3">
                                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2"><h3 class="font-bold text-lg text-sky-100">REGISTRO DE COMUNICAÇÕES</h3><div class="flex gap-2 items-center"><select id="comm-master-filtro" class="rounded bg-slate-900 border border-slate-600 p-2 text-xs text-white"><option value="todas">Todas as conversas</option><option value="grupo_geral">Grupo Geral</option></select><button id="comm-master-atualizar" class="text-xs underline text-sky-300">Atualizar</button></div></div>
                                 <div class="flex flex-wrap gap-2 mb-2">
-                                    <button id="comm-selecionar-mensagens" type="button" class="rounded bg-slate-700 hover:bg-slate-600 px-3 py-2 text-sm font-bold text-white">SELECIONAR TODAS</button>
+                                    <button id="comm-selecionar-mensagens" type="button" class="rounded bg-slate-700 hover:bg-slate-600 px-3 py-2 text-sm font-bold text-white">SELECIONAR TODAS (MENSAGENS)</button>
                                     <button id="comm-excluir-mensagens" type="button" class="rounded bg-red-800 hover:bg-red-700 px-3 py-2 text-sm font-bold text-white">EXCLUIR SELECIONADAS (0)</button>
+                                </div>
+                                <div class="flex flex-wrap gap-2 mb-2">
+                                    <button id="comm-selecionar-rolagens" type="button" class="rounded bg-slate-700 hover:bg-slate-600 px-3 py-2 text-sm font-bold text-white">SELECIONAR TODAS (ROLAGENS)</button>
+                                    <button id="comm-excluir-rolagens" type="button" class="rounded bg-red-800 hover:bg-red-700 px-3 py-2 text-sm font-bold text-white">EXCLUIR ROLAGENS (0)</button>
                                 </div>
                                 <div id="comm-master-historico" class="comm-chat-list"></div>
                             </div>
@@ -1165,9 +1163,9 @@
                 <h3 class="font-bold text-lg text-amber-200 mb-3">🎲 ROLAR DADOS</h3>
 
                 <label class="flex flex-col gap-1 text-sm mb-3">
-                    Fórmula da rolagem:
+                    Fórmula da rolagem (opcional):
                     <input id="rolagem-formula-jogador" class="rolagem-formula" type="text" maxlength="80" placeholder="Ex.: 2d6+4 ou 1d4+1d8+4" autocomplete="off">
-                    <span class="text-xs text-amber-100/70">Use dados e modificadores, por exemplo: 3d20+5 ou 4d6-2.</span>
+                    <span class="text-xs text-amber-100/70">Deixe em branco para usar os campos de quantidade e tipo abaixo.</span>
                 </label>
 
                 <div class="grid grid-cols-2 gap-3">
@@ -1218,7 +1216,7 @@
         </div>
     </div>
 
-    <!-- PALCO GLOBAL DAS ROLAGENS: visível somente para participantes autorizados -->
+    <!-- PALCO GLOBAL DAS ROLAGENS -->
     <div id="rolagem-overlay" class="rolagem-overlay hidden" role="dialog" aria-modal="true" aria-label="Rolagem de dados">
         <div id="rolagem-palco" class="rolagem-palco" title="Clique para dispensar a animação">
             <h2 id="rolagem-titulo" class="fonte-titulo text-3xl text-amber-100">ROLAGEM DE DADOS</h2>
